@@ -4,6 +4,8 @@ import { LoginUserDTO } from "../Domain/DTOs/LoginUserDTO";
 import { RegistrationUserDTO } from "../Domain/DTOs/RegistrationUserDTO";
 import { AuthResponseType } from "../Domain/types/AuthResponse";
 import { UserDTO } from "../Domain/DTOs/UserDTO";
+import { CreateUserDTO } from "../Domain/DTOs/CreateUserDTO";
+import { UpdateUserDTO } from "../Domain/DTOs/UpdateUserDTO";
 
 export class GatewayService implements IGatewayService {
   private readonly authClient: AxiosInstance;
@@ -27,7 +29,8 @@ export class GatewayService implements IGatewayService {
 
     // TODO: ADD MORE CLIENTS
   }
-
+  
+  
   // Auth microservice
   async login(data: LoginUserDTO): Promise<AuthResponseType> {
     try {
@@ -57,6 +60,21 @@ export class GatewayService implements IGatewayService {
     const response = await this.userClient.get<UserDTO>(`/users/${id}`);
     return response.data;
   }
+
+  async deleteUser(id: number): Promise<{ deleted: true }> {
+    const response = await this.userClient.delete<{ deleted: true }>(`/users/${id}`);
+    return response.data;
+  }
+
+  async createUser(data: CreateUserDTO): Promise<UserDTO> {
+    const response = await this.userClient.post<UserDTO>(`/users`, data);
+    return response.data;
+  }
+  async updateUser(id: number, data: UpdateUserDTO): Promise<UserDTO> {
+    const response = await this.userClient.put<UserDTO>(`/users/${id}`, data);
+    return response.data;
+  }
+
 
   // TODO: ADD MORE API CALLS
 }

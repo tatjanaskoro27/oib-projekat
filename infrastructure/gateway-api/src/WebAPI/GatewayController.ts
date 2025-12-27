@@ -21,6 +21,9 @@ export class GatewayController {
     // Users
     this.router.get("/users", authenticate, authorize("admin"), this.getAllUsers.bind(this));
     this.router.get("/users/:id", authenticate, authorize("admin", "seller"), this.getUserById.bind(this));
+    this.router.delete("/users/:id", authenticate,authorize("admin"), this.deleteUser.bind(this));
+    this.router.post("/users",authenticate,authorize("admin"),this.createUser.bind(this));
+    this.router.put("/users/:id",authenticate,authorize("admin"),this.updateUser.bind(this));
   }
 
   // Auth
@@ -60,6 +63,40 @@ export class GatewayController {
       res.status(404).json({ message: (err as Error).message });
     }
   }
+
+  private async deleteUser(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id, 10);
+
+      const result = await this.gatewayService.deleteUser(id);
+
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(404).json({
+        message: (err as Error).message,
+      });
+    }
+  }
+
+  private async createUser(req: Request, res: Response): Promise<void> {
+    try {
+      const created = await this.gatewayService.createUser(req.body);
+      res.status(201).json(created);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async updateUser(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const updated = await this.gatewayService.updateUser(id, req.body);
+      res.status(200).json(updated);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
 
   public getRouter(): Router {
     return this.router;
