@@ -34,7 +34,7 @@ export class AnalyticsController {
       }
     });
 
-    // ⭐ NOVA RUTA — mesečna prodaja po zadatoj godini
+    //  mesečna prodaja po zadatoj godini
     this.router.get("/prodaja/mesecna/:godina", async (req, res) => {
       try {
         const godina = Number(req.params.godina);
