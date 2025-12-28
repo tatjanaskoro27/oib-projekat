@@ -8,11 +8,9 @@ import { initialize_database } from "./Database/InitializeConnection";
 import { Db } from "./Database/DbConnectionPool";
 
 import { Dogadjaj } from "./Domain/models/Dogadjaj";
-import { ILogerService } from "./Domain/services/ILogerService";
-import { LogerService } from "./Services/LogerService";
 
-// ⚠️ privremeno NE uvodimo controller dok ne proverimo da servis krene
-// (rute ćemo dodati u sledećem koraku)
+import { DogadjajiService } from "./Services/DogadjajService";
+import { DogadjajiController } from "./WebAPI/controllers/DogadjajiController";
 
 dotenv.config({ quiet: true });
 
@@ -37,16 +35,17 @@ app.use(
 
 app.use(express.json());
 
-// DB init (TypeORM)
+// Init DB (TypeORM)
 initialize_database();
 
-// ORM Repository (VAŽNO – više nema User)
-const dogadjajRepository: Repository<Dogadjaj> =
-  Db.getRepository(Dogadjaj);
+// ORM repository
+const dogadjajRepository: Repository<Dogadjaj> = Db.getRepository(Dogadjaj);
 
-// Logger (ostaje, jer se koristi svuda)
-const logerService: ILogerService = new LogerService();
+// Service + Controller
+const dogadjajiService = new DogadjajiService(dogadjajRepository);
+const dogadjajiController = new DogadjajiController(dogadjajiService);
 
-// 🚧 Controller ćemo dodati posle, za sada samo proveravamo da servis radi
+// Routes
+app.use("/api/v1", dogadjajiController.getRouter());
 
 export default app;
