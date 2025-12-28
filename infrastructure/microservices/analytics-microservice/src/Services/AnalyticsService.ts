@@ -22,4 +22,22 @@ export class AnalyticsService {
 
     return Number(result.ukupno) || 0;
   }
+ //  mesečna prodaja za zadatu godinu
+  async mesecnaProdajaZaGodinu(
+    godina: number
+  ): Promise<{ mesec: number; ukupno: number }[]> {
+    const rows = await this.fiskalniRacunRepository
+      .createQueryBuilder("racun")
+      .select("MONTH(racun.datum)", "mesec")
+      .addSelect("SUM(racun.ukupanIznos)", "ukupno")
+      .where("YEAR(racun.datum) = :godina", { godina })
+      .groupBy("MONTH(racun.datum)")
+      .orderBy("MONTH(racun.datum)", "ASC")
+      .getRawMany();
+
+    return rows.map((row: any) => ({
+      mesec: Number(row.mesec),
+      ukupno: Number(row.ukupno),
+    }));
+  }
 }
