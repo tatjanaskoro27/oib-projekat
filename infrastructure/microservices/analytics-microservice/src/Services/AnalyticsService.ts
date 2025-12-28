@@ -8,12 +8,12 @@ export class AnalyticsService {
     this.fiskalniRacunRepository = fiskalniRacunRepository;
   }
 
-  // 1️⃣ pregled fiskalnih računa
+  //  pregled fiskalnih računa
   async pregledFiskalnihRacuna(): Promise<FiskalniRacun[]> {
     return await this.fiskalniRacunRepository.find();
   }
 
-  // 2️⃣ ukupna prodaja
+  //  ukupna prodaja
   async ukupnaProdaja(): Promise<number> {
     const result = await this.fiskalniRacunRepository
       .createQueryBuilder("racun")
