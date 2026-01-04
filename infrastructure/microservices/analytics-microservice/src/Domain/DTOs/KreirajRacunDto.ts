@@ -1,5 +1,5 @@
 export interface KreirajRacunDto {
-  datum?: string; // ISO string, opciono
+  datum?: string; 
   stavke: Array<{
     parfemNaziv: string;
     kolicina: number;

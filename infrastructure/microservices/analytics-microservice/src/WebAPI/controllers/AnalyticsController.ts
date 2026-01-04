@@ -4,26 +4,31 @@ import { AnalyticsService } from "../../Services/AnalyticsService";
 import { Db } from "../../Database/DbConnectionPool";
 //import { FiskalniRacun } from "../Domain/models/FiskalniRacun";
 import { FiskalniRacun } from "../../Domain/models/FiskalniRacun";
+//import { FiskalnaStavka } from "../../Domain/models/FiskalnaStavka";
+import { FiskalnaStavka } from "../../Domain/models/FiskalnaStavka";
+
 
 export class AnalyticsController {
   private service: AnalyticsService;
   private router: Router;
 
   constructor() {
-    this.service = new AnalyticsService(Db.getRepository(FiskalniRacun));
+    this.service = new AnalyticsService(Db.getRepository(FiskalniRacun),Db.getRepository(FiskalnaStavka ));
     this.router = Router();
     this.registerRoutes();
   }
 
   private registerRoutes() {
-    this.router.get("/racuni", async (req, res) => {
-      try {
-        const data = await this.service.pregledFiskalnihRacuna();
-        res.json(data);
-      } catch (err) {
-        res.status(500).json({ error: "Greška pri čitanju računa" });
-      }
+    this.router.post("/racuni", async (req, res) => {
+  try {
+    const result = await this.service.kreirajFiskalniRacun(req.body);
+    res.status(201).json(result);
+  } catch (err: any) {
+    res.status(400).json({
+      error: err?.message ?? "Neispravni podaci za kreiranje računa"
     });
+  }
+});
 
     this.router.get("/prodaja/ukupno", async (req, res) => {
       try {
