@@ -38,6 +38,15 @@ export class AnalyticsController {
         res.status(500).json({ error: "Greška pri izračunu ukupne prodaje" });
       }
     });
+    this.router.get("/racuni", async (req, res) => {
+  try {
+    const data = await this.service.pregledFiskalnihRacuna();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Greška pri čitanju računa" });
+  }
+});
+
 
     //  mesečna prodaja po zadatoj godini
     this.router.get("/prodaja/mesecna/:godina", async (req, res) => {
