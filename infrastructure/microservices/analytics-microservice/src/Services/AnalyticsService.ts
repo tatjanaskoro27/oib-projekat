@@ -1,5 +1,7 @@
 import { Repository } from "typeorm";
 import { FiskalniRacun } from "../Domain/models/FiskalniRacun";
+//import { KreirajRacunDto } from "../Domain/DTOs/KreirajRacunDto";
+import { KreirajRacunDto } from "../Domain/DTOs/KreirajRacunDto";
 export class AnalyticsService {
 
   private fiskalniRacunRepository: Repository<FiskalniRacun>;
