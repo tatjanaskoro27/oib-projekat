@@ -65,6 +65,24 @@ export class AnalyticsController {
         });
       }
     });
+    this.router.get("/prodaja/top10", async (req, res) => {
+  try {
+    const data = await this.service.top10NajprodavanijihParfema();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Greška pri dobijanju top 10 parfema" });
+  }
+});
+this.router.get("/prodaja/top10-prihod", async (req, res) => {
+  try {
+    const data = await this.service.prihodTop10Parfema();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Greška pri dobijanju top 10 prihoda" });
+  }
+});
+
+
   }
 
   public getRouter() {

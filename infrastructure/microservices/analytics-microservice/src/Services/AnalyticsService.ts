@@ -49,7 +49,7 @@ export class AnalyticsService {
     }));
   }
 
-  //  kreiranje računa + stavki (za POST /racuni)
+  // kreiranje računa + stavki (POST /racuni)
   async kreirajFiskalniRacun(
     dto: KreirajRacunDto
   ): Promise<{ racunId: number; ukupanIznos: number }> {
@@ -74,28 +74,23 @@ export class AnalyticsService {
       0
     );
 
-    // Transakcija: ili upiše i racun i stavke ili ništa
     return await this.fiskalniRacunRepository.manager.transaction(async (trx) => {
       const racunRepo = trx.getRepository(FiskalniRacun);
       const stavkaRepo = trx.getRepository(FiskalnaStavka);
 
- const insertResult = await racunRepo.insert({
-  ukupanIznos,
-  ...(dto.datum ? { datum: new Date(dto.datum) } : {}),
-});
+      const insertResult = await racunRepo.insert({
+        ukupanIznos,
+        ...(dto.datum ? { datum: new Date(dto.datum) } : {}),
+      });
 
-const racunId = insertResult.identifiers[0].id as number;
-
-
-if (!racunId) {
-  throw new Error("Nije moguće dobiti ID novog računa.");
-}
-
-
+      const racunId = insertResult.identifiers[0]?.id as number;
+      if (!racunId) {
+        throw new Error("Nije moguće dobiti ID novog računa.");
+      }
 
       const stavke = dto.stavke.map((s) =>
         stavkaRepo.create({
-          racunId: racunId,
+          racunId,
           parfemNaziv: s.parfemNaziv.trim(),
           kolicina: s.kolicina,
           cenaPoKomadu: Number(s.cenaPoKomadu),
@@ -104,7 +99,49 @@ if (!racunId) {
 
       await stavkaRepo.save(stavke);
 
-      return { racunId:racunId, ukupanIznos };
+      return { racunId, ukupanIznos };
     });
+  }
+
+  // ===============================
+  // NOVO – TOP 10 ANALIZE
+  // ===============================
+
+  // TOP 10 najprodavanijih parfema (po količini)
+  async top10NajprodavanijihParfema(): Promise<
+    { parfemNaziv: string; kolicina: number }[]
+  > {
+    const rows = await this.fiskalnaStavkaRepository
+      .createQueryBuilder("s")
+      .select("s.parfemNaziv", "parfemNaziv")
+      .addSelect("SUM(s.kolicina)", "kolicina")
+      .groupBy("s.parfemNaziv")
+      .orderBy("SUM(s.kolicina)", "DESC")
+      .limit(10)
+      .getRawMany();
+
+    return rows.map((r: any) => ({
+      parfemNaziv: r.parfemNaziv,
+      kolicina: Number(r.kolicina),
+    }));
+  }
+
+  // TOP 10 parfema po prihodu
+  async prihodTop10Parfema(): Promise<
+    { parfemNaziv: string; prihod: number }[]
+  > {
+    const rows = await this.fiskalnaStavkaRepository
+      .createQueryBuilder("s")
+      .select("s.parfemNaziv", "parfemNaziv")
+      .addSelect("SUM(s.kolicina * s.cenaPoKomadu)", "prihod")
+      .groupBy("s.parfemNaziv")
+      .orderBy("SUM(s.kolicina * s.cenaPoKomadu)", "DESC")
+      .limit(10)
+      .getRawMany();
+
+    return rows.map((r: any) => ({
+      parfemNaziv: r.parfemNaziv,
+      prihod: Number(r.prihod),
+    }));
   }
 }
