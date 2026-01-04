@@ -144,4 +144,43 @@ export class AnalyticsService {
       prihod: Number(r.prihod),
     }));
   }
+
+  // NEDELJNA PRODAJA (po opsegu datuma)
+  
+  async nedeljnaProdaja(start: string, end: string): Promise<{
+    start: string;
+    end: string;
+    ukupno: number;
+  }> {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new Error("Neispravan datum. Koristi format YYYY-MM-DD.");
+    }
+
+    // end uključujemo do kraja dana: 23:59:59.999
+    endDate.setHours(23, 59, 59, 999);
+
+    if (startDate > endDate) {
+      throw new Error("Start datum ne može biti posle end datuma.");
+    }
+
+    const result = await this.fiskalniRacunRepository
+      .createQueryBuilder("racun")
+      .select("SUM(racun.ukupanIznos)", "ukupno")
+      .where("racun.datum >= :start AND racun.datum <= :end", {
+        start: startDate,
+        end: endDate,
+      })
+      .getRawOne();
+
+    return {
+      start,
+      end,
+      ukupno: Number(result?.ukupno) || 0,
+    };
+  }
+
+
 }

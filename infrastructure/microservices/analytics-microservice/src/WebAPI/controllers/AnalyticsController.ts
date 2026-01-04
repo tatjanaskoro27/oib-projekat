@@ -47,6 +47,29 @@ export class AnalyticsController {
   }
 });
 
+    // ✅ nedeljna prodaja (query param: start, end)
+    // primer: /prodaja/nedeljna?start=2026-01-01&end=2026-01-07
+    this.router.get("/prodaja/nedeljna", async (req, res) => {
+      try {
+        const start = String(req.query.start ?? "");
+        const end = String(req.query.end ?? "");
+
+        if (!start || !end) {
+          return res.status(400).json({
+            error: "Query parametri start i end su obavezni (YYYY-MM-DD).",
+          });
+        }
+
+        const data = await this.service.nedeljnaProdaja(start, end);
+        res.json(data);
+      } catch (err: any) {
+        res.status(400).json({
+          error: err?.message ?? "Greška pri izračunu nedeljne prodaje",
+        });
+      }
+    });
+
+
 
     //  mesečna prodaja po zadatoj godini
     this.router.get("/prodaja/mesecna/:godina", async (req, res) => {
