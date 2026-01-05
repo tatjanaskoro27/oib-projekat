@@ -124,8 +124,31 @@ this.router.get("/prodaja/godisnja/:godina", async (req, res) => {
     });
   }
 });
+    // 📈 trend prodaje po danima (query: start, end)
+    // primer: /prodaja/trend?start=2026-01-01&end=2026-01-31
+    this.router.get("/prodaja/trend", async (req, res) => {
+      try {
+        const start = String(req.query.start ?? "");
+        const end = String(req.query.end ?? "");
+
+        if (!start || !end) {
+          return res.status(400).json({
+            error: "Query parametri start i end su obavezni (YYYY-MM-DD).",
+          });
+        }
+
+        const data = await this.service.trendProdaje(start, end);
+        res.json(data);
+      } catch (err: any) {
+        res.status(400).json({
+          error: err?.message ?? "Greška pri dobijanju trenda prodaje",
+        });
+      }
+    });
 
   }
+
+  
 
   public getRouter() {
     return this.router;

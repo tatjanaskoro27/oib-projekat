@@ -205,5 +205,41 @@ async godisnjaProdaja(godina: number): Promise<{
   };
 }
 
+  //  TREND PRODAJE (po danima u opsegu)
+  async trendProdaje(start: string, end: string): Promise<
+    { datum: string; ukupno: number }[]
+  > {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new Error("Neispravan datum. Koristi format YYYY-MM-DD.");
+    }
+
+    endDate.setHours(23, 59, 59, 999);
+
+    if (startDate > endDate) {
+      throw new Error("Start datum ne može biti posle end datuma.");
+    }
+
+    const rows = await this.fiskalniRacunRepository
+      .createQueryBuilder("racun")
+      .select("DATE(racun.datum)", "datum")
+      .addSelect("SUM(racun.ukupanIznos)", "ukupno")
+      .where("racun.datum >= :start AND racun.datum <= :end", {
+        start: startDate,
+        end: endDate,
+      })
+      .groupBy("DATE(racun.datum)")
+      .orderBy("DATE(racun.datum)", "ASC")
+      .getRawMany();
+
+   return rows.map((r: any) => ({
+  datum: new Date(r.datum).toISOString().slice(0, 10), // YYYY-MM-DD
+  ukupno: Number(r.ukupno) || 0,
+}));
+
+   
+  }
 
 }
