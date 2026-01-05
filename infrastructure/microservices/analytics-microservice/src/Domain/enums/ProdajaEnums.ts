@@ -1,0 +1,10 @@
+export enum TipProdaje {
+  MALOPRODAJA = "MALOPRODAJA",
+  VELEPRODAJA = "VELEPRODAJA",
+}
+
+export enum NacinPlacanja {
+  GOTOVINA = "GOTOVINA",
+  KARTICA = "KARTICA",
+  UPLATA_NA_RACUN = "UPLATA_NA_RACUN",
+}
