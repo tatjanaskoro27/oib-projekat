@@ -105,6 +105,25 @@ this.router.get("/prodaja/top10-prihod", async (req, res) => {
   }
 });
 
+// godišnja prodaja
+this.router.get("/prodaja/godisnja/:godina", async (req, res) => {
+  try {
+    const godina = Number(req.params.godina);
+
+    if (Number.isNaN(godina)) {
+      return res.status(400).json({
+        error: "Godina mora biti broj.",
+      });
+    }
+
+    const data = await this.service.godisnjaProdaja(godina);
+    res.json(data);
+  } catch (err: any) {
+    res.status(400).json({
+      error: err?.message ?? "Greška pri izračunu godišnje prodaje",
+    });
+  }
+});
 
   }
 

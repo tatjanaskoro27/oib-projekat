@@ -183,4 +183,27 @@ export class AnalyticsService {
   }
 
 
+
+  // GODIŠNJA PRODAJA
+async godisnjaProdaja(godina: number): Promise<{
+  godina: number;
+  ukupno: number;
+}> {
+  if (!Number.isInteger(godina) || godina < 2000) {
+    throw new Error("Neispravna godina.");
+  }
+
+  const result = await this.fiskalniRacunRepository
+    .createQueryBuilder("racun")
+    .select("SUM(racun.ukupanIznos)", "ukupno")
+    .where("YEAR(racun.datum) = :godina", { godina })
+    .getRawOne();
+
+  return {
+    godina,
+    ukupno: Number(result?.ukupno) || 0,
+  };
+}
+
+
 }
