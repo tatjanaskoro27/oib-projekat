@@ -78,10 +78,13 @@ export class AnalyticsService {
       const racunRepo = trx.getRepository(FiskalniRacun);
       const stavkaRepo = trx.getRepository(FiskalnaStavka);
 
-      const insertResult = await racunRepo.insert({
-        ukupanIznos,
-        ...(dto.datum ? { datum: new Date(dto.datum) } : {}),
-      });
+     const insertResult = await racunRepo.insert({
+  ukupanIznos,
+  ...(dto.datum ? { datum: new Date(dto.datum) } : {}),
+  ...(dto.tipProdaje ? { tipProdaje: dto.tipProdaje } : {}),
+  ...(dto.nacinPlacanja ? { nacinPlacanja: dto.nacinPlacanja } : {}),
+});
+
 
       const racunId = insertResult.identifiers[0]?.id as number;
       if (!racunId) {
