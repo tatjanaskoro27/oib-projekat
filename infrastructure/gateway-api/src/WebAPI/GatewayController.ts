@@ -24,6 +24,68 @@ export class GatewayController {
     this.router.delete("/users/:id", authenticate,authorize("admin"), this.deleteUser.bind(this));
     this.router.post("/users",authenticate,authorize("admin"),this.createUser.bind(this));
     this.router.put("/users/:id",authenticate,authorize("admin"),this.updateUser.bind(this));
+
+    //analytics
+     // racuni
+    this.router.get(
+      "/analytics/racuni",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getRacuni.bind(this)
+    );
+
+    this.router.post(
+      "/analytics/racuni",
+      authenticate,
+      authorize("admin", "seller"),
+      this.createRacun.bind(this)
+    );
+
+    // prodaja - novac
+    this.router.get(
+      "/analytics/prodaja/ukupno",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getUkupnaProdaja.bind(this)
+    );
+
+    this.router.get(
+      "/analytics/prodaja/nedeljna",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getProdajaNedeljna.bind(this)
+    );
+
+    this.router.get(
+      "/analytics/prodaja/trend",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getTrendProdaje.bind(this)
+    );
+
+    // prodaja - kolicina
+    this.router.get(
+      "/analytics/prodaja/kolicina/ukupno",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getUkupnoKomada.bind(this)
+    );
+
+    // top 10 prihod
+    this.router.get(
+      "/analytics/prodaja/top10-prihod",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getTop10Prihod.bind(this)
+    );
+
+    this.router.get(
+      "/analytics/prodaja/top10-prihod/ukupno",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getTop10PrihodUkupno.bind(this)
+    );
+  
   }
 
   // Auth
@@ -94,6 +156,95 @@ export class GatewayController {
       res.status(200).json(updated);
     } catch (err) {
       res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  //analytics handlers
+  private async getRacuni(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.getRacuni();
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  }
+
+  private async createRacun(req: Request, res: Response): Promise<void> {
+    try {
+      const created = await this.gatewayService.createRacun(req.body);
+      res.status(201).json(created);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getUkupnaProdaja(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.getUkupnaProdaja();
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getProdajaNedeljna(req: Request, res: Response): Promise<void> {
+    try {
+      const start = String(req.query.start ?? "");
+      const end = String(req.query.end ?? "");
+
+      if (!start || !end) {
+        res.status(400).json({ message: "Query parametri start i end su obavezni." });
+        return;
+      }
+
+      const data = await this.gatewayService.getProdajaNedeljna(start, end);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getTrendProdaje(req: Request, res: Response): Promise<void> {
+    try {
+      const start = String(req.query.start ?? "");
+      const end = String(req.query.end ?? "");
+
+      if (!start || !end) {
+        res.status(400).json({ message: "Query parametri start i end su obavezni." });
+        return;
+      }
+
+      const data = await this.gatewayService.getTrendProdaje(start, end);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getUkupnoKomada(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.getUkupnoKomada();
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getTop10Prihod(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.getTop10Prihod();
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getTop10PrihodUkupno(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.getTop10PrihodUkupno();
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
     }
   }
 

@@ -1,19 +1,37 @@
 import axios, { AxiosInstance } from "axios";
 import { IGatewayService } from "../Domain/services/IGatewayService";
+
 import { LoginUserDTO } from "../Domain/DTOs/LoginUserDTO";
 import { RegistrationUserDTO } from "../Domain/DTOs/RegistrationUserDTO";
 import { AuthResponseType } from "../Domain/types/AuthResponse";
+
 import { UserDTO } from "../Domain/DTOs/UserDTO";
 import { CreateUserDTO } from "../Domain/DTOs/CreateUserDTO";
 import { UpdateUserDTO } from "../Domain/DTOs/UpdateUserDTO";
 
+// analytics DTOs
+import { UkupnaProdajaDTO } from "../Domain/DTOs/UkupnaProdajaDTO";
+import { UkupnoKomadaDTO } from "../Domain/DTOs/UkupnoKomadaDTO";
+import { NedeljnaProdajaDTO } from "../Domain/DTOs/NedeljnaProdajaDTO";
+import { TrendProdajeDTO } from "../Domain/DTOs/TrendProdajeDTO";
+import { TopPrihodDTO } from "../Domain/DTOs/TopPrihodDTO";
+import { UkupanPrihodTop10DTO } from "../Domain/DTOs/UkupanPrihodTop10DTO";
+import { RacunDTO } from "../Domain/DTOs/RacunDTO";
+import { KreirajRacunDTO } from "../Domain/DTOs/KreirajRacunDTO";
+
 export class GatewayService implements IGatewayService {
   private readonly authClient: AxiosInstance;
   private readonly userClient: AxiosInstance;
+  private readonly analyticsClient: AxiosInstance;
 
   constructor() {
     const authBaseURL = process.env.AUTH_SERVICE_API;
     const userBaseURL = process.env.USER_SERVICE_API;
+    const analyticsBaseURL = process.env.ANALYTICS_SERVICE_API;
+
+    if (!authBaseURL) throw new Error("AUTH_SERVICE_API nije podešen u .env");
+    if (!userBaseURL) throw new Error("USER_SERVICE_API nije podešen u .env");
+    if (!analyticsBaseURL) throw new Error("ANALYTICS_SERVICE_API nije podešen u .env");
 
     this.authClient = axios.create({
       baseURL: authBaseURL,
@@ -27,11 +45,15 @@ export class GatewayService implements IGatewayService {
       timeout: 5000,
     });
 
-    // TODO: ADD MORE CLIENTS
+    this.analyticsClient = axios.create({
+      baseURL: analyticsBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000,
+    });
   }
-  
-  
+
   // Auth microservice
+
   async login(data: LoginUserDTO): Promise<AuthResponseType> {
     try {
       const response = await this.authClient.post<AuthResponseType>("/auth/login", data);
@@ -51,6 +73,8 @@ export class GatewayService implements IGatewayService {
   }
 
   // User microservice
+
+
   async getAllUsers(): Promise<UserDTO[]> {
     const response = await this.userClient.get<UserDTO[]>("/users");
     return response.data;
@@ -67,14 +91,71 @@ export class GatewayService implements IGatewayService {
   }
 
   async createUser(data: CreateUserDTO): Promise<UserDTO> {
-    const response = await this.userClient.post<UserDTO>(`/users`, data);
+    const response = await this.userClient.post<UserDTO>("/users", data);
     return response.data;
   }
+
   async updateUser(id: number, data: UpdateUserDTO): Promise<UserDTO> {
     const response = await this.userClient.put<UserDTO>(`/users/${id}`, data);
     return response.data;
   }
 
+//taci mikroservis
 
-  // TODO: ADD MORE API CALLS
+  async getRacuni(): Promise<RacunDTO[]> {
+    const response = await this.analyticsClient.get<RacunDTO[]>("/analytics/racuni");
+    return response.data;
+  }
+
+  async createRacun(
+    data: KreirajRacunDTO
+  ): Promise<{ racunId: number; ukupanIznos: number }> {
+    const response = await this.analyticsClient.post<{ racunId: number; ukupanIznos: number }>(
+      "/analytics/racuni",
+      data
+    );
+    return response.data;
+  }
+
+  async getUkupnaProdaja(): Promise<UkupnaProdajaDTO> {
+    const response = await this.analyticsClient.get<UkupnaProdajaDTO>("/analytics/prodaja/ukupno");
+    return response.data;
+  }
+
+  async getProdajaNedeljna(start: string, end: string): Promise<NedeljnaProdajaDTO> {
+    const response = await this.analyticsClient.get<NedeljnaProdajaDTO>(
+      "/analytics/prodaja/nedeljna",
+      { params: { start, end } }
+    );
+    return response.data;
+  }
+
+  async getTrendProdaje(start: string, end: string): Promise<TrendProdajeDTO[]> {
+    const response = await this.analyticsClient.get<TrendProdajeDTO[]>(
+      "/analytics/prodaja/trend",
+      { params: { start, end } }
+    );
+    return response.data;
+  }
+
+  async getUkupnoKomada(): Promise<UkupnoKomadaDTO> {
+    const response = await this.analyticsClient.get<UkupnoKomadaDTO>(
+      "/analytics/prodaja/kolicina/ukupno"
+    );
+    return response.data;
+  }
+
+  async getTop10Prihod(): Promise<TopPrihodDTO[]> {
+    const response = await this.analyticsClient.get<TopPrihodDTO[]>(
+      "/analytics/prodaja/top10-prihod"
+    );
+    return response.data;
+  }
+
+  async getTop10PrihodUkupno(): Promise<UkupanPrihodTop10DTO> {
+    const response = await this.analyticsClient.get<UkupanPrihodTop10DTO>(
+      "/analytics/prodaja/top10-prihod/ukupno"
+    );
+    return response.data;
+  }
 }
