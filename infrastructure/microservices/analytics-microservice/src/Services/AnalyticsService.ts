@@ -127,9 +127,7 @@ export class AnalyticsService {
   }
 
   // TOP 10 parfema po prihodu
-  async prihodTop10Parfema(): Promise<
-    { parfemNaziv: string; prihod: number }[]
-  > {
+  async prihodTop10Parfema(): Promise<{ parfemNaziv: string; prihod: number }[]> {
     const rows = await this.fiskalnaStavkaRepository
       .createQueryBuilder("s")
       .select("s.parfemNaziv", "parfemNaziv")
@@ -146,7 +144,6 @@ export class AnalyticsService {
   }
 
   // NEDELJNA PRODAJA (po opsegu datuma)
-  
   async nedeljnaProdaja(start: string, end: string): Promise<{
     start: string;
     end: string;
@@ -182,30 +179,28 @@ export class AnalyticsService {
     };
   }
 
-
-
   // GODIŠNJA PRODAJA
-async godisnjaProdaja(godina: number): Promise<{
-  godina: number;
-  ukupno: number;
-}> {
-  if (!Number.isInteger(godina) || godina < 2000) {
-    throw new Error("Neispravna godina.");
+  async godisnjaProdaja(godina: number): Promise<{
+    godina: number;
+    ukupno: number;
+  }> {
+    if (!Number.isInteger(godina) || godina < 2000) {
+      throw new Error("Neispravna godina.");
+    }
+
+    const result = await this.fiskalniRacunRepository
+      .createQueryBuilder("racun")
+      .select("SUM(racun.ukupanIznos)", "ukupno")
+      .where("YEAR(racun.datum) = :godina", { godina })
+      .getRawOne();
+
+    return {
+      godina,
+      ukupno: Number(result?.ukupno) || 0,
+    };
   }
 
-  const result = await this.fiskalniRacunRepository
-    .createQueryBuilder("racun")
-    .select("SUM(racun.ukupanIznos)", "ukupno")
-    .where("YEAR(racun.datum) = :godina", { godina })
-    .getRawOne();
-
-  return {
-    godina,
-    ukupno: Number(result?.ukupno) || 0,
-  };
-}
-
-  //  TREND PRODAJE (po danima u opsegu)
+  // TREND PRODAJE (po danima u opsegu)
   async trendProdaje(start: string, end: string): Promise<
     { datum: string; ukupno: number }[]
   > {
@@ -234,12 +229,101 @@ async godisnjaProdaja(godina: number): Promise<{
       .orderBy("DATE(racun.datum)", "ASC")
       .getRawMany();
 
-   return rows.map((r: any) => ({
-  datum: new Date(r.datum).toISOString().slice(0, 10), // YYYY-MM-DD
-  ukupno: Number(r.ukupno) || 0,
-}));
-
-   
+    return rows.map((r: any) => ({
+      datum: new Date(r.datum).toISOString().slice(0, 10), // YYYY-MM-DD
+      ukupno: Number(r.ukupno) || 0,
+    }));
   }
 
+  // ===============================
+  // NOVO – PRODATO KOMADA (količina)
+  // ===============================
+
+  // ukupno prodatih komada (sve stavke)
+  async ukupnoProdatihKomada(): Promise<number> {
+    const result = await this.fiskalnaStavkaRepository
+      .createQueryBuilder("s")
+      .select("SUM(s.kolicina)", "ukupno")
+      .getRawOne();
+
+    return Number(result?.ukupno) || 0;
+  }
+
+  // prodatih komada u opsegu (nedeljno/period)
+  async prodatihKomadaUPeriodu(start: string, end: string): Promise<{
+    start: string;
+    end: string;
+    ukupnoKomada: number;
+  }> {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new Error("Neispravan datum. Koristi format YYYY-MM-DD.");
+    }
+
+    endDate.setHours(23, 59, 59, 999);
+
+    if (startDate > endDate) {
+      throw new Error("Start datum ne može biti posle end datuma.");
+    }
+
+    const result = await this.fiskalnaStavkaRepository
+      .createQueryBuilder("s")
+      .innerJoin(FiskalniRacun, "r", "r.id = s.racunId")
+      .select("SUM(s.kolicina)", "ukupnoKomada")
+      .where("r.datum >= :start AND r.datum <= :end", {
+        start: startDate,
+        end: endDate,
+      })
+      .getRawOne();
+
+    return {
+      start,
+      end,
+      ukupnoKomada: Number(result?.ukupnoKomada) || 0,
+    };
+  }
+
+  // mesečno prodatih komada za godinu
+  async mesecnoProdatihKomadaZaGodinu(
+    godina: number
+  ): Promise<{ mesec: number; ukupnoKomada: number }[]> {
+    const rows = await this.fiskalnaStavkaRepository
+      .createQueryBuilder("s")
+      .innerJoin(FiskalniRacun, "r", "r.id = s.racunId")
+      .select("MONTH(r.datum)", "mesec")
+      .addSelect("SUM(s.kolicina)", "ukupnoKomada")
+      .where("YEAR(r.datum) = :godina", { godina })
+      .groupBy("MONTH(r.datum)")
+      .orderBy("MONTH(r.datum)", "ASC")
+      .getRawMany();
+
+    return rows.map((row: any) => ({
+      mesec: Number(row.mesec),
+      ukupnoKomada: Number(row.ukupnoKomada) || 0,
+    }));
+  }
+
+  // godišnje prodatih komada za godinu
+  async godisnjeProdatihKomada(godina: number): Promise<{
+    godina: number;
+    ukupnoKomada: number;
+  }> {
+    if (!Number.isInteger(godina) || godina < 2000) {
+      throw new Error("Neispravna godina.");
+    }
+
+    const result = await this.fiskalnaStavkaRepository
+      .createQueryBuilder("s")
+      .innerJoin(FiskalniRacun, "r", "r.id = s.racunId")
+      .select("SUM(s.kolicina)", "ukupnoKomada")
+      .where("YEAR(r.datum) = :godina", { godina })
+      .getRawOne();
+
+    return {
+      godina,
+      ukupnoKomada: Number(result?.ukupnoKomada) || 0,
+    };
+  }
 }
