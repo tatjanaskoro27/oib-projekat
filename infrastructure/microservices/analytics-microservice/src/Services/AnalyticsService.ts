@@ -78,13 +78,12 @@ export class AnalyticsService {
       const racunRepo = trx.getRepository(FiskalniRacun);
       const stavkaRepo = trx.getRepository(FiskalnaStavka);
 
-     const insertResult = await racunRepo.insert({
-  ukupanIznos,
-  ...(dto.datum ? { datum: new Date(dto.datum) } : {}),
-  ...(dto.tipProdaje ? { tipProdaje: dto.tipProdaje } : {}),
-  ...(dto.nacinPlacanja ? { nacinPlacanja: dto.nacinPlacanja } : {}),
-});
-
+      const insertResult = await racunRepo.insert({
+        ukupanIznos,
+        ...(dto.datum ? { datum: new Date(dto.datum) } : {}),
+        ...(dto.tipProdaje ? { tipProdaje: dto.tipProdaje } : {}),
+        ...(dto.nacinPlacanja ? { nacinPlacanja: dto.nacinPlacanja } : {}),
+      });
 
       const racunId = insertResult.identifiers[0]?.id as number;
       if (!racunId) {
@@ -146,6 +145,12 @@ export class AnalyticsService {
     }));
   }
 
+  // ✅ DODATO: UKUPAN PRIHOD TOP 10 (zbir svih prihoda iz top10 liste)
+  async ukupanPrihodTop10(): Promise<number> {
+    const top10 = await this.prihodTop10Parfema();
+    return top10.reduce((sum, p) => sum + Number(p.prihod || 0), 0);
+  }
+
   // NEDELJNA PRODAJA (po opsegu datuma)
   async nedeljnaProdaja(start: string, end: string): Promise<{
     start: string;
@@ -159,7 +164,6 @@ export class AnalyticsService {
       throw new Error("Neispravan datum. Koristi format YYYY-MM-DD.");
     }
 
-    // end uključujemo do kraja dana: 23:59:59.999
     endDate.setHours(23, 59, 59, 999);
 
     if (startDate > endDate) {
@@ -233,7 +237,7 @@ export class AnalyticsService {
       .getRawMany();
 
     return rows.map((r: any) => ({
-      datum: new Date(r.datum).toISOString().slice(0, 10), // YYYY-MM-DD
+      datum: new Date(r.datum).toISOString().slice(0, 10),
       ukupno: Number(r.ukupno) || 0,
     }));
   }
@@ -242,7 +246,6 @@ export class AnalyticsService {
   // NOVO – PRODATO KOMADA (količina)
   // ===============================
 
-  // ukupno prodatih komada (sve stavke)
   async ukupnoProdatihKomada(): Promise<number> {
     const result = await this.fiskalnaStavkaRepository
       .createQueryBuilder("s")
@@ -252,7 +255,6 @@ export class AnalyticsService {
     return Number(result?.ukupno) || 0;
   }
 
-  // prodatih komada u opsegu (nedeljno/period)
   async prodatihKomadaUPeriodu(start: string, end: string): Promise<{
     start: string;
     end: string;
@@ -288,7 +290,6 @@ export class AnalyticsService {
     };
   }
 
-  // mesečno prodatih komada za godinu
   async mesecnoProdatihKomadaZaGodinu(
     godina: number
   ): Promise<{ mesec: number; ukupnoKomada: number }[]> {
@@ -308,7 +309,6 @@ export class AnalyticsService {
     }));
   }
 
-  // godišnje prodatih komada za godinu
   async godisnjeProdatihKomada(godina: number): Promise<{
     godina: number;
     ukupnoKomada: number;

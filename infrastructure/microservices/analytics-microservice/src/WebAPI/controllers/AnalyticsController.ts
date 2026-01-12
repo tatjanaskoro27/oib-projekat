@@ -225,6 +225,16 @@ export class AnalyticsController {
         res.status(500).json({ error: "Greška pri dobijanju top 10 parfema" });
       }
     });
+        // ukupan prihod top 10 (jedan broj)
+    this.router.get("/prodaja/top10-prihod/ukupno", async (req, res) => {
+      try {
+        const ukupno = await this.service.ukupanPrihodTop10();
+        res.json({ ukupno });
+      } catch (err) {
+        res.status(500).json({ error: "Greška pri izračunu ukupnog prihoda top 10" });
+      }
+    });
+
 
     // top 10 po prihodu
     this.router.get("/prodaja/top10-prihod", async (req, res) => {
