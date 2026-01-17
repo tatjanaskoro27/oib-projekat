@@ -1,52 +1,46 @@
-import express from "express";
-import cors from "cors";
+import express from 'express';
+import cors from 'cors';
 import "reflect-metadata";
-import dotenv from "dotenv";
-import { Repository } from "typeorm";
-
-import { initialize_database } from "./Database/InitializeConnection";
-import { Db } from "./Database/DbConnectionPool";
-
-import { Dogadjaj } from "./Domain/models/Dogadjaj";
-import { ILogerService } from "./Domain/services/ILogerService";
-import { LogerService } from "./Services/LogerService";
-
-// ⚠️ privremeno NE uvodimo controller dok ne proverimo da servis krene
-// (rute ćemo dodati u sledećem koraku)
+import { initialize_database } from './Database/InitializeConnection';
+import dotenv from 'dotenv';
+import { Repository } from 'typeorm';
+import { User } from './Domain/models/User';
+import { Db } from './Database/DbConnectionPool';
+import { IAuthService } from './Domain/services/IAuthService';
+import { AuthService } from './Services/AuthService';
+import { AuthController } from './WebAPI/controllers/AuthController';
+import { ILogerService } from './Domain/services/ILogerService';
+import { LogerService } from './Services/LogerService';
 
 dotenv.config({ quiet: true });
 
 const app = express();
 
-// CORS
+// Read CORS settings from environment
 const corsOrigin = process.env.CORS_ORIGIN ?? "*";
-const corsMethods =
-  process.env.CORS_METHODS?.split(",").map(m => m.trim()) ?? [
-    "GET",
-    "POST",
-    "PUT",
-    "DELETE",
-  ];
+const corsMethods = process.env.CORS_METHODS?.split(",").map(m => m.trim()) ?? ["POST"];
 
-app.use(
-  cors({
-    origin: corsOrigin,
-    methods: corsMethods,
-  })
-);
+// Protected microservice from unauthorized access
+app.use(cors({
+  origin: corsOrigin,
+  methods: corsMethods,
+}));
 
 app.use(express.json());
 
-// DB init (TypeORM)
 initialize_database();
 
-// ORM Repository (VAŽNO – više nema User)
-const dogadjajRepository: Repository<Dogadjaj> =
-  Db.getRepository(Dogadjaj);
+// ORM Repositories
+const userRepository: Repository<User> = Db.getRepository(User);
 
-// Logger (ostaje, jer se koristi svuda)
+// Services
+const authService: IAuthService = new AuthService(userRepository);
 const logerService: ILogerService = new LogerService();
 
-// 🚧 Controller ćemo dodati posle, za sada samo proveravamo da servis radi
+// WebAPI routes
+const authController = new AuthController(authService, logerService);
+
+// Registering routes
+app.use('/api/v1', authController.getRouter());
 
 export default app;
