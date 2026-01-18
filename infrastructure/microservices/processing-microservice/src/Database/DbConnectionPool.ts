@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import dotenv from "dotenv";
-import { Plant } from "../Domain/models/Plant";
+import { Perfume } from "../Domain/models/Perfume";
 
 dotenv.config();
 
@@ -15,5 +15,5 @@ export const Db = new DataSource({
   ssl: { rejectUnauthorized: false },
   synchronize: true, // automatsko kreiranje tabela u bazi
   logging: false, // debug sql gresaka
-  entities: [Plant],
+  entities: [Perfume],
 });

@@ -7,10 +7,10 @@ import { Repository } from 'typeorm';
 import { Db } from './Database/DbConnectionPool';
 import { ILogerService } from './Domain/services/ILogerService';
 import { LogerService } from './Services/LogerService';
-import { Plant } from './Domain/models/Plant';
-import { IProductionService } from './Domain/services/IProductionService';
-import { ProductionService } from './Services/ProductionService';
-import { PlantsController } from './WebAPI/controllers/PlantsController';
+import { Perfume } from './Domain/models/Perfume';
+import { IProcessingService } from './Domain/services/IProcessingService';
+import { ProcessingService } from './Services/ProcessingService';
+import { ProcessingController } from './WebAPI/controllers/ProcessingController';
 
 dotenv.config({ quiet: true });
 
@@ -31,17 +31,17 @@ app.use(express.json());
 initialize_database();
 
 // ORM Repositories
-const plantRepository: Repository<Plant> = Db.getRepository(Plant);
+const perfumeRepository: Repository<Perfume> = Db.getRepository(Perfume);
 
 // Services
-const productionService: IProductionService = new ProductionService(plantRepository);
+const processingService: IProcessingService = new ProcessingService(perfumeRepository);
 const logerService: ILogerService = new LogerService();
 
 // WebAPI routes
-const plantsController = new PlantsController(productionService, logerService);
+const processingController = new ProcessingController(processingService, logerService);
 
 // Registering routes
-app.use('/api/v1', plantsController.getRouter());
+app.use('/api/v1', processingController.getRouter());
 
 // Health
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
