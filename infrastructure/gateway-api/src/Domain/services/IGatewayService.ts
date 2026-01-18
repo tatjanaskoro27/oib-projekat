@@ -1,19 +1,27 @@
-import { CreateUserDTO } from "../DTOs/CreateUserDTO";
-import { LoginUserDTO } from "../DTOs/LoginUserDTO";
-import { RegistrationUserDTO } from "../DTOs/RegistrationUserDTO";
-import { UpdateUserDTO } from "../DTOs/UpdateUserDTO";
-import { UserDTO } from "../DTOs/UserDTO";
+import { CreateUserDTO } from "../DTOs/user/CreateUserDTO";
+import { LoginUserDTO } from "../DTOs/user/LoginUserDTO";
+import { RegistrationUserDTO } from "../DTOs/user/RegistrationUserDTO";
+import { UpdateUserDTO } from "../DTOs/user/UpdateUserDTO";
+import { UserDTO } from "../DTOs/user/UserDTO";
 import { AuthResponseType } from "../types/AuthResponse";
 
 //analitiks
-import { UkupnaProdajaDTO } from "../DTOs/UkupnaProdajaDTO";
-import { UkupnoKomadaDTO } from "../DTOs/UkupnoKomadaDTO";
-import { NedeljnaProdajaDTO } from "../DTOs/NedeljnaProdajaDTO";
-import { TrendProdajeDTO } from "../DTOs/TrendProdajeDTO";
-import { TopPrihodDTO } from "../DTOs/TopPrihodDTO";
-import { UkupanPrihodTop10DTO } from "../DTOs/UkupanPrihodTop10DTO";
-import { RacunDTO } from "../DTOs/RacunDTO";
-import { KreirajRacunDTO } from "../DTOs/KreirajRacunDTO";
+import { UkupnaProdajaDTO } from "../DTOs/analytics/UkupnaProdajaDTO";
+import { UkupnoKomadaDTO } from "../DTOs/analytics/UkupnoKomadaDTO";
+import { NedeljnaProdajaDTO } from "../DTOs/analytics/NedeljnaProdajaDTO";
+import { TrendProdajeDTO } from "../DTOs/analytics/TrendProdajeDTO";
+import { TopPrihodDTO } from "../DTOs/analytics/TopPrihodDTO";
+import { UkupanPrihodTop10DTO } from "../DTOs/analytics/UkupanPrihodTop10DTO";
+import { RacunDTO } from "../DTOs/analytics/RacunDTO";
+import { KreirajRacunDTO } from "../DTOs/analytics/KreirajRacunDTO";
+
+//
+import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../DTOs/production/PlantDTOs";
+import { PlantResponse, HarvestResponse } from "../DTOs/production/PlantTypes";
+
+import { StartProcessingDTO, GetPerfumesDTO } from "../DTOs/processing/ProcessingDTOs";
+import { PerfumeResponse } from "../DTOs/processing/PerfumeTypes";
+
 
 
 export interface IGatewayService {
@@ -28,7 +36,7 @@ export interface IGatewayService {
   createUser(data: CreateUserDTO): Promise<UserDTO>;
   updateUser(id: number, data: UpdateUserDTO): Promise<UserDTO>;
 
-    // Analytics
+  // Analytics
   getRacuni(): Promise<RacunDTO[]>;
   createRacun(data: KreirajRacunDTO): Promise<{ racunId: number; ukupanIznos: number }>;
 
@@ -41,6 +49,14 @@ export interface IGatewayService {
   getTop10Prihod(): Promise<TopPrihodDTO[]>;
   getTop10PrihodUkupno(): Promise<UkupanPrihodTop10DTO>;
 
+  // Production
+  plant(dto: CreatePlantDTO): Promise<PlantResponse>;
+  updatePlantOilStrength(id: number, dto: UpdateOilStrengthDTO): Promise<PlantResponse>;
+  harvestPlants(dto: HarvestPlantsDTO): Promise<HarvestResponse>;
+
+  // Processing
+  startProcessing(dto: StartProcessingDTO): Promise<PerfumeResponse[]>;
+  getPerfumes(dto: GetPerfumesDTO): Promise<PerfumeResponse[]>;
 
 
 }

@@ -1,37 +1,52 @@
 import axios, { AxiosInstance } from "axios";
 import { IGatewayService } from "../Domain/services/IGatewayService";
 
-import { LoginUserDTO } from "../Domain/DTOs/LoginUserDTO";
-import { RegistrationUserDTO } from "../Domain/DTOs/RegistrationUserDTO";
+import { LoginUserDTO } from "../Domain/DTOs/user/LoginUserDTO";
+import { RegistrationUserDTO } from "../Domain/DTOs/user/RegistrationUserDTO";
 import { AuthResponseType } from "../Domain/types/AuthResponse";
 
-import { UserDTO } from "../Domain/DTOs/UserDTO";
-import { CreateUserDTO } from "../Domain/DTOs/CreateUserDTO";
-import { UpdateUserDTO } from "../Domain/DTOs/UpdateUserDTO";
+import { UserDTO } from "../Domain/DTOs/user/UserDTO";
+import { CreateUserDTO } from "../Domain/DTOs/user/CreateUserDTO";
+import { UpdateUserDTO } from "../Domain/DTOs/user/UpdateUserDTO";
 
 // analytics DTOs
-import { UkupnaProdajaDTO } from "../Domain/DTOs/UkupnaProdajaDTO";
-import { UkupnoKomadaDTO } from "../Domain/DTOs/UkupnoKomadaDTO";
-import { NedeljnaProdajaDTO } from "../Domain/DTOs/NedeljnaProdajaDTO";
-import { TrendProdajeDTO } from "../Domain/DTOs/TrendProdajeDTO";
-import { TopPrihodDTO } from "../Domain/DTOs/TopPrihodDTO";
-import { UkupanPrihodTop10DTO } from "../Domain/DTOs/UkupanPrihodTop10DTO";
-import { RacunDTO } from "../Domain/DTOs/RacunDTO";
-import { KreirajRacunDTO } from "../Domain/DTOs/KreirajRacunDTO";
+import { UkupnaProdajaDTO } from "../Domain/DTOs/analytics/UkupnaProdajaDTO";
+import { UkupnoKomadaDTO } from "../Domain/DTOs/analytics/UkupnoKomadaDTO";
+import { NedeljnaProdajaDTO } from "../Domain/DTOs/analytics/NedeljnaProdajaDTO";
+import { TrendProdajeDTO } from "../Domain/DTOs/analytics/TrendProdajeDTO";
+import { TopPrihodDTO } from "../Domain/DTOs/analytics/TopPrihodDTO";
+import { UkupanPrihodTop10DTO } from "../Domain/DTOs/analytics/UkupanPrihodTop10DTO";
+import { RacunDTO } from "../Domain/DTOs/analytics/RacunDTO";
+import { KreirajRacunDTO } from "../Domain/DTOs/analytics/KreirajRacunDTO";
+
+//
+import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../Domain/DTOs/production/PlantDTOs";
+import { PlantResponse, HarvestResponse } from "../Domain/DTOs/production/PlantTypes";
+
+import { StartProcessingDTO, GetPerfumesDTO } from "../Domain/DTOs/processing/ProcessingDTOs";
+import { PerfumeResponse } from "../Domain/DTOs/processing/PerfumeTypes";
+
 
 export class GatewayService implements IGatewayService {
   private readonly authClient: AxiosInstance;
   private readonly userClient: AxiosInstance;
   private readonly analyticsClient: AxiosInstance;
+  private readonly productionClient: AxiosInstance;
+  private readonly processingClient: AxiosInstance;
+
 
   constructor() {
     const authBaseURL = process.env.AUTH_SERVICE_API;
     const userBaseURL = process.env.USER_SERVICE_API;
     const analyticsBaseURL = process.env.ANALYTICS_SERVICE_API;
+    const productionBaseURL = process.env.PRODUCTION_SERVICE_API;
+    const processingBaseURL = process.env.PROCESSING_SERVICE_API;
 
     if (!authBaseURL) throw new Error("AUTH_SERVICE_API nije podešen u .env");
     if (!userBaseURL) throw new Error("USER_SERVICE_API nije podešen u .env");
     if (!analyticsBaseURL) throw new Error("ANALYTICS_SERVICE_API nije podešen u .env");
+    if (!productionBaseURL) throw new Error("PRODUCTION_SERVICE_API nije podešen u .env");
+    if (!processingBaseURL) throw new Error("PROCESSING_SERVICE_API nije podešen u .env");
 
     this.authClient = axios.create({
       baseURL: authBaseURL,
@@ -50,7 +65,21 @@ export class GatewayService implements IGatewayService {
       headers: { "Content-Type": "application/json" },
       timeout: 5000,
     });
+
+    this.productionClient = axios.create({
+      baseURL: productionBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000,
+    });
+
+    this.processingClient = axios.create({
+      baseURL: processingBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000,
+    });
   }
+
+
 
   // Auth microservice
 
@@ -100,7 +129,7 @@ export class GatewayService implements IGatewayService {
     return response.data;
   }
 
-//taci mikroservis
+  //taci mikroservis
 
   async getRacuni(): Promise<RacunDTO[]> {
     const response = await this.analyticsClient.get<RacunDTO[]>("/analytics/racuni");
@@ -158,4 +187,34 @@ export class GatewayService implements IGatewayService {
     );
     return response.data;
   }
+
+  //production
+
+  async plant(dto: CreatePlantDTO): Promise<PlantResponse> {
+    const response = await this.productionClient.post<PlantResponse>("/plants", dto);
+    return response.data;
+  }
+
+  async updatePlantOilStrength(id: number, dto: UpdateOilStrengthDTO): Promise<PlantResponse> {
+    const response = await this.productionClient.patch<PlantResponse>(`/plants/${id}/oil-strength`, dto);
+    return response.data;
+  }
+
+  async harvestPlants(dto: HarvestPlantsDTO): Promise<HarvestResponse> {
+    const response = await this.productionClient.post<HarvestResponse>("/plants/harvest", dto);
+    return response.data;
+  }
+
+  //processing
+
+  async startProcessing(dto: StartProcessingDTO): Promise<PerfumeResponse[]> {
+    const response = await this.processingClient.post<PerfumeResponse[]>("/processing/start", dto);
+    return response.data;
+  }
+
+  async getPerfumes(dto: GetPerfumesDTO): Promise<PerfumeResponse[]> {
+    const response = await this.processingClient.post<PerfumeResponse[]>("/processing/get", dto);
+    return response.data;
+  }
+
 }
