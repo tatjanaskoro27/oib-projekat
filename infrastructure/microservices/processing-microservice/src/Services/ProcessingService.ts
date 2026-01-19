@@ -3,27 +3,43 @@ import { Perfume } from "../Domain/models/Perfume";
 import { IProcessingService } from "../Domain/services/IProcessingService";
 import { StartProcessingDTO } from "../Domain/DTOs/StartProcessingDTO";
 import { GetPerfumesDTO } from "../Domain/DTOs/GetPerfumesDTO";
+import { GatewayClient } from "../Services/GatewayClient";
 
 export class ProcessingService implements IProcessingService {
+  private readonly gateway = new GatewayClient();
+
   constructor(private readonly perfumeRepo: Repository<Perfume>) {}
 
   async startProcessing(dto: StartProcessingDTO): Promise<Perfume[]> {
-    // 1 biljka = 50ml
+    // 1 biljka = 50ml (iz specifikacije/vašeg dogovora)
     const totalMlNeeded = dto.bottleCount * dto.bottleVolume;
     const plantsNeeded = Math.ceil(totalMlNeeded / 50);
 
-    if (!dto.plantIds || dto.plantIds.length < plantsNeeded) {
-      throw new Error(
-        `Not enough plants for processing. Needed ${plantsNeeded}, got ${dto.plantIds?.length ?? 0}`
-      );
+    const plantName = dto.perfumeName.trim(); // biljka = isto ime kao parfem (Lavanda -> Lavanda)
+
+    // 1) provjeri koliko ima u production (preko gateway internal)
+    const available = await this.gateway.getAvailableCount(plantName);
+
+    // 2) ako fali -> zatraži sadnju (preko gateway internal)
+    const missing = plantsNeeded - available;
+    if (missing > 0) {
+      for (let i = 0; i < missing; i++) {
+        await this.gateway.plantOne({
+          name: plantName,
+          latinName: plantName,
+          originCountry: "BiH",
+        });
+      }
     }
 
-    // pravimo onoliko parfema koliko ima bocica
-    // i mapiramo plantId ciklično kroz prvih plantsNeeded biljaka
+    // 3) uzmi konkretne biljke (harvest/allocate) i dobiješ ID-jeve
+    const harvestedIds = await this.gateway.harvest(plantName, plantsNeeded);
+
+    // 4) napravi parfeme (kao u tvom kodu)
     const perfumesToCreate: Perfume[] = [];
 
     const expiry = new Date();
-    expiry.setFullYear(expiry.getFullYear() + 2); // npr. +2 godine (možemo podesiti)
+    expiry.setFullYear(expiry.getFullYear() + 2);
 
     for (let i = 0; i < dto.bottleCount; i++) {
       const p = new Perfume();
@@ -32,12 +48,9 @@ export class ProcessingService implements IProcessingService {
       p.netoMl = dto.bottleVolume;
 
       const plantIndex = i % plantsNeeded;
-      p.plantId = dto.plantIds[plantIndex];
+      p.plantId = harvestedIds[plantIndex];
 
-      // serijski broj se formira tek kad dobijemo ID,
-      // pa prvo snimimo bez serialNumber, pa update
       p.serialNumber = `TMP-${Date.now()}-${i}-${Math.floor(Math.random() * 1e9)}`;
-
       p.expiryDate = expiry;
 
       perfumesToCreate.push(p);
@@ -45,8 +58,6 @@ export class ProcessingService implements IProcessingService {
 
     const saved = await this.perfumeRepo.save(perfumesToCreate);
 
-    // sada popuni serialNumber: PP-2025-ID_PARFEMA
-    // (ako želiš da godina bude dinamična, reci)
     for (const perfume of saved) {
       perfume.serialNumber = `PP-2025-${perfume.id}`;
     }

@@ -21,7 +21,8 @@ import { KreirajRacunDTO } from "../Domain/DTOs/analytics/KreirajRacunDTO";
 
 //
 import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../Domain/DTOs/production/PlantDTOs";
-import { PlantResponse, HarvestResponse } from "../Domain/DTOs/production/PlantTypes";
+import { PlantResponse, HarvestResponse, AvailableCountResponse } from "../Domain/DTOs/production/PlantTypes";
+
 
 import { StartProcessingDTO, GetPerfumesDTO } from "../Domain/DTOs/processing/ProcessingDTOs";
 import { PerfumeResponse } from "../Domain/DTOs/processing/PerfumeTypes";
@@ -206,6 +207,11 @@ export class GatewayService implements IGatewayService {
   }
 
   //processing
+
+  async getAvailablePlantCount(name: string): Promise<AvailableCountResponse> {
+    const response = await this.productionClient.get<AvailableCountResponse>("/plants/available-count", { params: { name } });
+    return response.data;
+  }
 
   async startProcessing(dto: StartProcessingDTO): Promise<PerfumeResponse[]> {
     const response = await this.processingClient.post<PerfumeResponse[]>("/processing/start", dto);

@@ -14,3 +14,9 @@ export interface PlantResponse {
 export interface HarvestResponse {
   harvestedIds: number[];
 }
+
+export interface AvailableCountResponse {
+  name: string;
+  available: number;
+}
+

@@ -9,26 +9,15 @@ export function validateStartProcessingData(
   }
 
   if (![PerfumeType.PARFUM, PerfumeType.COLOGNE].includes(data.perfumeType)) {
-    return { success: false, message: "perfumeType must be 'parfum' or 'cologne'" };
+    return { success: false, message: "perfumeType must be 'PARFUM' or 'COLOGNE'" };
   }
 
-  const bottleCount = Number((data as any).bottleCount);
-  if (!Number.isInteger(bottleCount) || bottleCount < 1) {
+  if (!Number.isInteger(data.bottleCount) || data.bottleCount < 1) {
     return { success: false, message: "bottleCount must be integer >= 1" };
   }
 
-  const volume = Number((data as any).bottleVolume);
-  if (volume !== 150 && volume !== 250) {
+  if (data.bottleVolume !== 150 && data.bottleVolume !== 250) {
     return { success: false, message: "bottleVolume must be 150 or 250" };
-  }
-
-  if (!Array.isArray(data.plantIds) || data.plantIds.length < 1) {
-    return { success: false, message: "plantIds must be a non-empty array" };
-  }
-
-  const allInts = data.plantIds.every((x) => Number.isInteger(Number(x)) && Number(x) > 0);
-  if (!allInts) {
-    return { success: false, message: "plantIds must be positive integers" };
   }
 
   return { success: true };

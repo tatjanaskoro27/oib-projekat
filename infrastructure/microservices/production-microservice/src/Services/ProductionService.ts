@@ -6,7 +6,7 @@ import { HarvestPlantsDTO } from "../Domain/DTOs/HarvestPlantsDTO";
 import { IProductionService } from "../Domain/services/IProductionService";
 
 export class ProductionService implements IProductionService {
-  constructor(private readonly plantRepo: Repository<Plant>) {}
+  constructor(private readonly plantRepo: Repository<Plant>) { }
 
   async plant(dto: CreatePlantDTO): Promise<Plant> {
     const plant = new Plant();
@@ -15,9 +15,7 @@ export class ProductionService implements IProductionService {
     plant.latinName = dto.latinName;
     plant.originCountry = dto.originCountry;
 
-    // ako ne dodje jacina -> random 1.00–5.00
-    plant.oilStrength =
-      dto.oilStrength ?? Number((Math.random() * 4 + 1).toFixed(2));
+    plant.oilStrength = dto.oilStrength ?? Number((Math.random() * 4 + 1).toFixed(2));
 
     plant.status = PlantStatus.PLANTED;
 
@@ -49,9 +47,15 @@ export class ProductionService implements IProductionService {
     const harvestedIds = plants.map((p) => p.id);
 
     for (const p of plants) p.status = PlantStatus.HARVESTED;
-
     await this.plantRepo.save(plants);
 
     return { harvestedIds };
   }
+
+  async getAvailableCount(name: string): Promise<number> {
+    return await this.plantRepo.count({
+      where: { name, status: PlantStatus.PLANTED },
+    });
+  }
+
 }

@@ -27,64 +27,17 @@ export class GatewayController {
 
     //analytics
     // racuni
-    this.router.get(
-      "/analytics/racuni",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getRacuni.bind(this)
-    );
-
-    this.router.post(
-      "/analytics/racuni",
-      authenticate,
-      authorize("admin", "seller"),
-      this.createRacun.bind(this)
-    );
-
+    this.router.get("/analytics/racuni", authenticate, authorize("admin", "seller"), this.getRacuni.bind(this));
+    this.router.post("/analytics/racuni", authenticate, authorize("admin", "seller"), this.createRacun.bind(this));
     // prodaja - novac
-    this.router.get(
-      "/analytics/prodaja/ukupno",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getUkupnaProdaja.bind(this)
-    );
-
-    this.router.get(
-      "/analytics/prodaja/nedeljna",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getProdajaNedeljna.bind(this)
-    );
-
-    this.router.get(
-      "/analytics/prodaja/trend",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getTrendProdaje.bind(this)
-    );
-
+    this.router.get("/analytics/prodaja/ukupno", authenticate, authorize("admin", "seller"), this.getUkupnaProdaja.bind(this));
+    this.router.get("/analytics/prodaja/nedeljna", authenticate, authorize("admin", "seller"), this.getProdajaNedeljna.bind(this));
+    this.router.get("/analytics/prodaja/trend", authenticate, authorize("admin", "seller"), this.getTrendProdaje.bind(this));
     // prodaja - kolicina
-    this.router.get(
-      "/analytics/prodaja/kolicina/ukupno",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getUkupnoKomada.bind(this)
-    );
-
+    this.router.get("/analytics/prodaja/kolicina/ukupno", authenticate, authorize("admin", "seller"), this.getUkupnoKomada.bind(this));
     // top 10 prihod
-    this.router.get(
-      "/analytics/prodaja/top10-prihod",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getTop10Prihod.bind(this)
-    );
-
-    this.router.get(
-      "/analytics/prodaja/top10-prihod/ukupno",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getTop10PrihodUkupno.bind(this)
-    );
+    this.router.get("/analytics/prodaja/top10-prihod", authenticate, authorize("admin", "seller"), this.getTop10Prihod.bind(this));
+    this.router.get("/analytics/prodaja/top10-prihod/ukupno", authenticate, authorize("admin", "seller"), this.getTop10PrihodUkupno.bind(this));
 
     //Production
     this.router.post("/plants", authenticate, authorize("admin", "seller"), this.plant.bind(this));
@@ -94,6 +47,12 @@ export class GatewayController {
     //Processing
     this.router.post("/processing/start", authenticate, authorize("admin", "seller"), this.startProcessing.bind(this));
     this.router.post("/processing/get", authenticate, authorize("admin", "seller"), this.getPerfumes.bind(this));
+
+    // INTERNAL (server-to-server) proxy za Processing -> Production preko Gateway-a
+    this.router.get("/internal/plants/available-count", this.internalAvailableCount.bind(this));
+    this.router.post("/internal/plants", this.internalPlant.bind(this));
+    this.router.post("/internal/plants/harvest", this.internalHarvest.bind(this));
+
 
   }
 
@@ -303,7 +262,37 @@ export class GatewayController {
     }
   }
 
+  private async internalAvailableCount(req: Request, res: Response): Promise<void> {
+    try {
+      const name = String(req.query.name ?? "").trim();
+      if (!name) {
+        res.status(400).json({ message: "Query param 'name' is required" });
+        return;
+      }
+      const data = await this.gatewayService.getAvailablePlantCount(name);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
 
+  private async internalPlant(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.plant(req.body);
+      res.status(201).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async internalHarvest(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.harvestPlants(req.body);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
 
   public getRouter(): Router {
     return this.router;

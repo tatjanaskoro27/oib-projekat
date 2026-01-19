@@ -17,6 +17,7 @@ export class PlantsController {
   }
 
   private initializeRoutes(): void {
+    this.router.get("/plants/available-count", this.getAvailableCount.bind(this));
     this.router.post("/plants", this.plant.bind(this));
     this.router.patch("/plants/:id/oil-strength", this.updateOilStrength.bind(this));
     this.router.post("/plants/harvest", this.harvest.bind(this));
@@ -78,6 +79,23 @@ export class PlantsController {
       res.status(400).json({ message: (err as Error).message });
     }
   }
+
+  private async getAvailableCount(req: Request, res: Response): Promise<void> {
+    try {
+      const name = String(req.query.name ?? "").trim();
+      if (!name) {
+        res.status(400).json({ message: "Query param 'name' is required" });
+        return;
+      }
+
+      const available = await this.productionService.getAvailableCount(name);
+      res.status(200).json({ name, available });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+
 
   public getRouter(): Router {
     return this.router;

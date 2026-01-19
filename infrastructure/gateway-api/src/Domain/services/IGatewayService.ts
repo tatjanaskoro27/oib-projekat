@@ -17,7 +17,7 @@ import { KreirajRacunDTO } from "../DTOs/analytics/KreirajRacunDTO";
 
 //
 import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../DTOs/production/PlantDTOs";
-import { PlantResponse, HarvestResponse } from "../DTOs/production/PlantTypes";
+import { PlantResponse, HarvestResponse, AvailableCountResponse } from "../DTOs/production/PlantTypes";
 
 import { StartProcessingDTO, GetPerfumesDTO } from "../DTOs/processing/ProcessingDTOs";
 import { PerfumeResponse } from "../DTOs/processing/PerfumeTypes";
@@ -53,6 +53,7 @@ export interface IGatewayService {
   plant(dto: CreatePlantDTO): Promise<PlantResponse>;
   updatePlantOilStrength(id: number, dto: UpdateOilStrengthDTO): Promise<PlantResponse>;
   harvestPlants(dto: HarvestPlantsDTO): Promise<HarvestResponse>;
+  getAvailablePlantCount(name: string): Promise<AvailableCountResponse>;
 
   // Processing
   startProcessing(dto: StartProcessingDTO): Promise<PerfumeResponse[]>;
