@@ -15,6 +15,15 @@ import { UkupanPrihodTop10DTO } from "../DTOs/analytics/UkupanPrihodTop10DTO";
 import { RacunDTO } from "../DTOs/analytics/RacunDTO";
 import { KreirajRacunDTO } from "../DTOs/analytics/KreirajRacunDTO";
 
+import { MesecnaProdajaDTO } from "../DTOs/analytics/MesecnaProdajaDTO";
+import { GodisnjaProdajaDTO } from "../DTOs/analytics/GodisnjaProdajaDTO";
+import { TopKolicinaDTO } from "../DTOs/analytics/TopKolicinaDTO";
+import { KolicinaNedeljnaDTO } from "../DTOs/analytics/KolicinaNedeljnoDTO";
+import { KolicinaMesecnaDTO } from "../DTOs/analytics/KolicinaMesecnoDTO";
+import { KolicinaGodisnjaDTO } from "../DTOs/analytics/KolicinaGodisnjaDTO";
+
+
+
 //
 import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../DTOs/production/PlantDTOs";
 import { PlantResponse, HarvestResponse, AvailableCountResponse } from "../DTOs/production/PlantTypes";
@@ -43,7 +52,12 @@ export interface IGatewayService {
   getUkupnaProdaja(): Promise<UkupnaProdajaDTO>;
   getProdajaNedeljna(start: string, end: string): Promise<NedeljnaProdajaDTO>;
   getTrendProdaje(start: string, end: string): Promise<TrendProdajeDTO[]>;
-
+  getProdajaMesecna(godina: number): Promise<MesecnaProdajaDTO[]>;
+getProdajaGodisnja(godina: number): Promise<GodisnjaProdajaDTO>;
+getTop10Kolicina(): Promise<TopKolicinaDTO[]>;
+getKolicinaNedeljna(start: string, end: string): Promise<KolicinaNedeljnaDTO>;
+  getKolicinaMesecna(godina: number): Promise<KolicinaMesecnaDTO[]>;
+  getKolicinaGodisnja(godina: number): Promise<KolicinaGodisnjaDTO>;
   getUkupnoKomada(): Promise<UkupnoKomadaDTO>;
 
   getTop10Prihod(): Promise<TopPrihodDTO[]>;

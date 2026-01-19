@@ -39,6 +39,27 @@ export class GatewayController {
     this.router.get("/analytics/prodaja/top10-prihod", authenticate, authorize("admin", "seller"), this.getTop10Prihod.bind(this));
     this.router.get("/analytics/prodaja/top10-prihod/ukupno", authenticate, authorize("admin", "seller"), this.getTop10PrihodUkupno.bind(this));
 
+    this.router.get(
+  "/analytics/prodaja/mesecna/:godina",
+  authenticate,
+  authorize("admin", "seller"),
+  this.getProdajaMesecna.bind(this)
+);
+
+this.router.get(
+  "/analytics/prodaja/godisnja/:godina",
+  authenticate,
+  authorize("admin", "seller"),
+  this.getProdajaGodisnja.bind(this)
+);
+this.router.get(
+  "/analytics/prodaja/top10",
+  authenticate,
+  authorize("admin", "seller"),
+  this.getTop10Kolicina.bind(this)
+);
+
+
     //Production
     this.router.post("/plants", authenticate, authorize("admin", "seller"), this.plant.bind(this));
     this.router.patch("/plants/:id/oil-strength", authenticate, authorize("admin", "seller"), this.updateOilStrength.bind(this));
@@ -52,6 +73,28 @@ export class GatewayController {
     this.router.get("/internal/plants/available-count", this.internalAvailableCount.bind(this));
     this.router.post("/internal/plants", this.internalPlant.bind(this));
     this.router.post("/internal/plants/harvest", this.internalHarvest.bind(this));
+
+        this.router.get(
+      "/analytics/prodaja/kolicina/nedeljna",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getKolicinaNedeljna.bind(this)
+    );
+
+    this.router.get(
+      "/analytics/prodaja/kolicina/mesecna/:godina",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getKolicinaMesecna.bind(this)
+    );
+
+    this.router.get(
+      "/analytics/prodaja/kolicina/godisnja/:godina",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getKolicinaGodisnja.bind(this)
+    );
+
 
 
   }
@@ -215,6 +258,90 @@ export class GatewayController {
       res.status(500).json({ message: (err as Error).message });
     }
   }
+
+  private async getProdajaMesecna(req: Request, res: Response): Promise<void> {
+  try {
+    const godina = Number(req.params.godina);
+    if (Number.isNaN(godina)) {
+      res.status(400).json({ message: "Godina mora biti broj." });
+      return;
+    }
+    const data = await this.gatewayService.getProdajaMesecna(godina);
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+}
+
+private async getProdajaGodisnja(req: Request, res: Response): Promise<void> {
+  try {
+    const godina = Number(req.params.godina);
+    if (Number.isNaN(godina)) {
+      res.status(400).json({ message: "Godina mora biti broj." });
+      return;
+    }
+    const data = await this.gatewayService.getProdajaGodisnja(godina);
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+}
+private async getTop10Kolicina(req: Request, res: Response): Promise<void> {
+  try {
+    const data = await this.gatewayService.getTop10Kolicina();
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+}
+  private async getKolicinaNedeljna(req: Request, res: Response): Promise<void> {
+    try {
+      const start = String(req.query.start ?? "");
+      const end = String(req.query.end ?? "");
+
+      if (!start || !end) {
+        res.status(400).json({ message: "Query parametri start i end su obavezni." });
+        return;
+      }
+
+      const data = await this.gatewayService.getKolicinaNedeljna(start, end);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getKolicinaMesecna(req: Request, res: Response): Promise<void> {
+    try {
+      const godina = Number(req.params.godina);
+      if (Number.isNaN(godina)) {
+        res.status(400).json({ message: "Godina mora biti broj." });
+        return;
+      }
+
+      const data = await this.gatewayService.getKolicinaMesecna(godina);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getKolicinaGodisnja(req: Request, res: Response): Promise<void> {
+    try {
+      const godina = Number(req.params.godina);
+      if (Number.isNaN(godina)) {
+        res.status(400).json({ message: "Godina mora biti broj." });
+        return;
+      }
+
+      const data = await this.gatewayService.getKolicinaGodisnja(godina);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+
 
   private async plant(req: Request, res: Response): Promise<void> {
     try {

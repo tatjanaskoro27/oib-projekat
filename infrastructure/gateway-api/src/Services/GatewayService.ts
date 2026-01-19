@@ -18,6 +18,15 @@ import { TopPrihodDTO } from "../Domain/DTOs/analytics/TopPrihodDTO";
 import { UkupanPrihodTop10DTO } from "../Domain/DTOs/analytics/UkupanPrihodTop10DTO";
 import { RacunDTO } from "../Domain/DTOs/analytics/RacunDTO";
 import { KreirajRacunDTO } from "../Domain/DTOs/analytics/KreirajRacunDTO";
+import { MesecnaProdajaDTO } from "../Domain/DTOs/analytics/MesecnaProdajaDTO";
+import { GodisnjaProdajaDTO } from "../Domain/DTOs/analytics/GodisnjaProdajaDTO";
+import { TopKolicinaDTO } from "../Domain/DTOs/analytics/TopKolicinaDTO";
+import { KolicinaNedeljnaDTO } from "../Domain/DTOs/analytics/KolicinaNedeljnoDTO";
+import { KolicinaMesecnaDTO } from "../Domain/DTOs/analytics/KolicinaMesecnoDTO";
+import { KolicinaGodisnjaDTO } from "../Domain/DTOs/analytics/KolicinaGodisnjaDTO";
+
+
+
 
 //
 import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../Domain/DTOs/production/PlantDTOs";
@@ -188,6 +197,48 @@ export class GatewayService implements IGatewayService {
     );
     return response.data;
   }
+
+  async getProdajaMesecna(godina: number): Promise<MesecnaProdajaDTO[]> {
+  const response = await this.analyticsClient.get<MesecnaProdajaDTO[]>(
+    `/analytics/prodaja/mesecna/${godina}`
+  );
+  return response.data;
+}
+
+async getProdajaGodisnja(godina: number): Promise<GodisnjaProdajaDTO> {
+  const response = await this.analyticsClient.get<GodisnjaProdajaDTO>(
+    `/analytics/prodaja/godisnja/${godina}`
+  );
+  return response.data;
+}
+async getTop10Kolicina(): Promise<TopKolicinaDTO[]> {
+  const response = await this.analyticsClient.get<TopKolicinaDTO[]>(
+    "/analytics/prodaja/top10"
+  );
+  return response.data;
+}
+  async getKolicinaNedeljna(start: string, end: string): Promise<KolicinaNedeljnaDTO> {
+    const response = await this.analyticsClient.get<KolicinaNedeljnaDTO>(
+      "/analytics/prodaja/kolicina/nedeljna",
+      { params: { start, end } }
+    );
+    return response.data;
+  }
+
+  async getKolicinaMesecna(godina: number): Promise<KolicinaMesecnaDTO[]> {
+    const response = await this.analyticsClient.get<KolicinaMesecnaDTO[]>(
+      `/analytics/prodaja/kolicina/mesecna/${godina}`
+    );
+    return response.data;
+  }
+
+  async getKolicinaGodisnja(godina: number): Promise<KolicinaGodisnjaDTO> {
+    const response = await this.analyticsClient.get<KolicinaGodisnjaDTO>(
+      `/analytics/prodaja/kolicina/godisnja/${godina}`
+    );
+    return response.data;
+  }
+
 
   //production
 
