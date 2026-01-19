@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
 import { IGatewayService } from "../Domain/services/IGatewayService";
-import { LoginUserDTO } from "../Domain/DTOs/LoginUserDTO";
-import { RegistrationUserDTO } from "../Domain/DTOs/RegistrationUserDTO";
+import { LoginUserDTO } from "../Domain/DTOs/user/LoginUserDTO";
+import { RegistrationUserDTO } from "../Domain/DTOs/user/RegistrationUserDTO";
 import { authenticate } from "../Middlewares/authentification/AuthMiddleware";
 import { authorize } from "../Middlewares/authorization/AuthorizeMiddleware";
 
@@ -21,71 +21,82 @@ export class GatewayController {
     // Users
     this.router.get("/users", authenticate, authorize("admin"), this.getAllUsers.bind(this));
     this.router.get("/users/:id", authenticate, authorize("admin", "seller"), this.getUserById.bind(this));
-    this.router.delete("/users/:id", authenticate,authorize("admin"), this.deleteUser.bind(this));
-    this.router.post("/users",authenticate,authorize("admin"),this.createUser.bind(this));
-    this.router.put("/users/:id",authenticate,authorize("admin"),this.updateUser.bind(this));
+    this.router.delete("/users/:id", authenticate, authorize("admin"), this.deleteUser.bind(this));
+    this.router.post("/users", authenticate, authorize("admin"), this.createUser.bind(this));
+    this.router.put("/users/:id", authenticate, authorize("admin"), this.updateUser.bind(this));
 
     //analytics
-     // racuni
-    this.router.get(
-      "/analytics/racuni",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getRacuni.bind(this)
-    );
-
-    this.router.post(
-      "/analytics/racuni",
-      authenticate,
-      authorize("admin", "seller"),
-      this.createRacun.bind(this)
-    );
-
+    // racuni
+    this.router.get("/analytics/racuni", authenticate, authorize("admin", "seller"), this.getRacuni.bind(this));
+    this.router.post("/analytics/racuni", authenticate, authorize("admin", "seller"), this.createRacun.bind(this));
     // prodaja - novac
-    this.router.get(
-      "/analytics/prodaja/ukupno",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getUkupnaProdaja.bind(this)
-    );
-
-    this.router.get(
-      "/analytics/prodaja/nedeljna",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getProdajaNedeljna.bind(this)
-    );
-
-    this.router.get(
-      "/analytics/prodaja/trend",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getTrendProdaje.bind(this)
-    );
-
+    this.router.get("/analytics/prodaja/ukupno", authenticate, authorize("admin", "seller"), this.getUkupnaProdaja.bind(this));
+    this.router.get("/analytics/prodaja/nedeljna", authenticate, authorize("admin", "seller"), this.getProdajaNedeljna.bind(this));
+    this.router.get("/analytics/prodaja/trend", authenticate, authorize("admin", "seller"), this.getTrendProdaje.bind(this));
     // prodaja - kolicina
-    this.router.get(
-      "/analytics/prodaja/kolicina/ukupno",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getUkupnoKomada.bind(this)
-    );
-
+    this.router.get("/analytics/prodaja/kolicina/ukupno", authenticate, authorize("admin", "seller"), this.getUkupnoKomada.bind(this));
     // top 10 prihod
+    this.router.get("/analytics/prodaja/top10-prihod", authenticate, authorize("admin", "seller"), this.getTop10Prihod.bind(this));
+    this.router.get("/analytics/prodaja/top10-prihod/ukupno", authenticate, authorize("admin", "seller"), this.getTop10PrihodUkupno.bind(this));
+
     this.router.get(
-      "/analytics/prodaja/top10-prihod",
+  "/analytics/prodaja/mesecna/:godina",
+  authenticate,
+  authorize("admin", "seller"),
+  this.getProdajaMesecna.bind(this)
+);
+
+this.router.get(
+  "/analytics/prodaja/godisnja/:godina",
+  authenticate,
+  authorize("admin", "seller"),
+  this.getProdajaGodisnja.bind(this)
+);
+this.router.get(
+  "/analytics/prodaja/top10",
+  authenticate,
+  authorize("admin", "seller"),
+  this.getTop10Kolicina.bind(this)
+);
+
+
+    //Production
+    this.router.post("/plants", authenticate, authorize("admin", "seller"), this.plant.bind(this));
+    this.router.patch("/plants/:id/oil-strength", authenticate, authorize("admin", "seller"), this.updateOilStrength.bind(this));
+    this.router.post("/plants/harvest", authenticate, authorize("admin", "seller"), this.harvest.bind(this));
+
+    //Processing
+    this.router.post("/processing/start", authenticate, authorize("admin", "seller"), this.startProcessing.bind(this));
+    this.router.post("/processing/get", authenticate, authorize("admin", "seller"), this.getPerfumes.bind(this));
+
+    // INTERNAL (server-to-server) proxy za Processing -> Production preko Gateway-a
+    this.router.get("/internal/plants/available-count", this.internalAvailableCount.bind(this));
+    this.router.post("/internal/plants", this.internalPlant.bind(this));
+    this.router.post("/internal/plants/harvest", this.internalHarvest.bind(this));
+
+        this.router.get(
+      "/analytics/prodaja/kolicina/nedeljna",
       authenticate,
       authorize("admin", "seller"),
-      this.getTop10Prihod.bind(this)
+      this.getKolicinaNedeljna.bind(this)
     );
 
     this.router.get(
-      "/analytics/prodaja/top10-prihod/ukupno",
+      "/analytics/prodaja/kolicina/mesecna/:godina",
       authenticate,
       authorize("admin", "seller"),
-      this.getTop10PrihodUkupno.bind(this)
+      this.getKolicinaMesecna.bind(this)
     );
-  
+
+    this.router.get(
+      "/analytics/prodaja/kolicina/godisnja/:godina",
+      authenticate,
+      authorize("admin", "seller"),
+      this.getKolicinaGodisnja.bind(this)
+    );
+
+
+
   }
 
   // Auth
@@ -248,6 +259,167 @@ export class GatewayController {
     }
   }
 
+  private async getProdajaMesecna(req: Request, res: Response): Promise<void> {
+  try {
+    const godina = Number(req.params.godina);
+    if (Number.isNaN(godina)) {
+      res.status(400).json({ message: "Godina mora biti broj." });
+      return;
+    }
+    const data = await this.gatewayService.getProdajaMesecna(godina);
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+}
+
+private async getProdajaGodisnja(req: Request, res: Response): Promise<void> {
+  try {
+    const godina = Number(req.params.godina);
+    if (Number.isNaN(godina)) {
+      res.status(400).json({ message: "Godina mora biti broj." });
+      return;
+    }
+    const data = await this.gatewayService.getProdajaGodisnja(godina);
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+}
+private async getTop10Kolicina(req: Request, res: Response): Promise<void> {
+  try {
+    const data = await this.gatewayService.getTop10Kolicina();
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+}
+  private async getKolicinaNedeljna(req: Request, res: Response): Promise<void> {
+    try {
+      const start = String(req.query.start ?? "");
+      const end = String(req.query.end ?? "");
+
+      if (!start || !end) {
+        res.status(400).json({ message: "Query parametri start i end su obavezni." });
+        return;
+      }
+
+      const data = await this.gatewayService.getKolicinaNedeljna(start, end);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getKolicinaMesecna(req: Request, res: Response): Promise<void> {
+    try {
+      const godina = Number(req.params.godina);
+      if (Number.isNaN(godina)) {
+        res.status(400).json({ message: "Godina mora biti broj." });
+        return;
+      }
+
+      const data = await this.gatewayService.getKolicinaMesecna(godina);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getKolicinaGodisnja(req: Request, res: Response): Promise<void> {
+    try {
+      const godina = Number(req.params.godina);
+      if (Number.isNaN(godina)) {
+        res.status(400).json({ message: "Godina mora biti broj." });
+        return;
+      }
+
+      const data = await this.gatewayService.getKolicinaGodisnja(godina);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+
+
+  private async plant(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.plant(req.body);
+      res.status(201).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async updateOilStrength(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const data = await this.gatewayService.updatePlantOilStrength(id, req.body);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async harvest(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.harvestPlants(req.body);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async startProcessing(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.startProcessing(req.body);
+      res.status(201).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getPerfumes(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.getPerfumes(req.body);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async internalAvailableCount(req: Request, res: Response): Promise<void> {
+    try {
+      const name = String(req.query.name ?? "").trim();
+      if (!name) {
+        res.status(400).json({ message: "Query param 'name' is required" });
+        return;
+      }
+      const data = await this.gatewayService.getAvailablePlantCount(name);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async internalPlant(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.plant(req.body);
+      res.status(201).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async internalHarvest(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.harvestPlants(req.body);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
 
   public getRouter(): Router {
     return this.router;
