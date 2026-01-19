@@ -10,7 +10,8 @@ export class Sale {
     userId!: string;
 
     @Column('simple-json')
-    items!: Array<{ perfumeId: string; quantity: number; price: number }>;
+    items!: Array<{ perfumeId: string; quantity: number }>;
+
 
     @Column('decimal', { precision: 10, scale: 2 })
     totalAmount!: number;
