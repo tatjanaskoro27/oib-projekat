@@ -1,7 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 import { AvailableCountResponseDTO } from "../Domain/DTOs/AvailableCountResponseDTO";
-import { HarvestResponseDTO } from "../Domain/DTOs/HarvestResponseDTO";
-import { PlantOneRequestDTO } from "../Domain/DTOs/PlantOneRequestDTO";
+import { HarvestPlantsResponseDTO } from "../Domain/DTOs/HarvestPlantsResponseDTO";
 
 export class GatewayClient {
   private readonly client: AxiosInstance;
@@ -9,32 +8,35 @@ export class GatewayClient {
   constructor() {
     const baseURL = process.env.GATEWAY_INTERNAL_API;
     if (!baseURL) throw new Error("GATEWAY_INTERNAL_API nije podešen u .env");
+    const internalKey = process.env.INTERNAL_API_KEY;
+    if (!internalKey) throw new Error("INTERNAL_API_KEY nije podešen u .env");
 
     this.client = axios.create({
       baseURL,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-key": internalKey
+      },
       timeout: 5000,
     });
   }
 
   async getAvailableCount(name: string): Promise<number> {
-    const res = await this.client.get<AvailableCountResponseDTO>(
-      "/internal/plants/available-count",
-      { params: { name } }
-    );
+    const res = await this.client.get<AvailableCountResponseDTO>("/internal/plants/available-count", { params: { name } });
     return res.data.available;
   }
 
-  async plantOne(body: PlantOneRequestDTO): Promise<void> {
-    // zadržavamo tvoju rutu koja već radi
-    await this.client.post("/internal/plants", body);
+  async plantOne(body: { name: string; latinName: string; originCountry: string }): Promise<{ id: number; oilStrength: number }> {
+    const res = await this.client.post("/internal/plants", body);
+    return { id: res.data.id, oilStrength: Number(res.data.oilStrength) };
   }
 
-  async harvest(name: string, count: number): Promise<number[]> {
-    const res = await this.client.post<HarvestResponseDTO>(
-      "/internal/plants/harvest",
-      { name, count }
-    );
-    return res.data.harvestedIds;
+  async harvest(name: string, count: number): Promise<HarvestPlantsResponseDTO> {
+    const res = await this.client.post<HarvestPlantsResponseDTO>("/internal/plants/harvest", { name, count });
+    return res.data;
+  }
+
+  async updateOilStrength(plantId: number, percent: number): Promise<void> {
+    await this.client.patch(`/internal/plants/${plantId}/oil-strength`, { percent });
   }
 }

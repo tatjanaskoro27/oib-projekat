@@ -25,9 +25,6 @@ import { KolicinaNedeljnaDTO } from "../Domain/DTOs/analytics/KolicinaNedeljnoDT
 import { KolicinaMesecnaDTO } from "../Domain/DTOs/analytics/KolicinaMesecnoDTO";
 import { KolicinaGodisnjaDTO } from "../Domain/DTOs/analytics/KolicinaGodisnjaDTO";
 
-
-
-
 //
 import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../Domain/DTOs/production/PlantDTOs";
 import { PlantResponse, HarvestResponse, AvailableCountResponse } from "../Domain/DTOs/production/PlantTypes";
@@ -257,13 +254,12 @@ async getTop10Kolicina(): Promise<TopKolicinaDTO[]> {
     return response.data;
   }
 
-  //processing
-
   async getAvailablePlantCount(name: string): Promise<AvailableCountResponse> {
     const response = await this.productionClient.get<AvailableCountResponse>("/plants/available-count", { params: { name } });
     return response.data;
   }
 
+  //processing
   async startProcessing(dto: StartProcessingDTO): Promise<PerfumeResponse[]> {
     const response = await this.processingClient.post<PerfumeResponse[]>("/processing/start", dto);
     return response.data;

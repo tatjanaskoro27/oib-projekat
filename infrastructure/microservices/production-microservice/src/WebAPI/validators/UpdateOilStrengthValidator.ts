@@ -10,9 +10,9 @@ export function validateUpdateOilStrengthData(
   if (Number.isNaN(percent)) {
     return { success: false, message: "Percent must be a number" };
   }
-  // random sam ovo -100 do +300
-  if (percent < -100 || percent > 300) {
-    return { success: false, message: "Percent must be between -100 and 300" };
+
+  if (percent <= 100 || percent > 0) {
+    return { success: false, message: "Percent must be between 0 and 100" };
   }
 
   return { success: true };

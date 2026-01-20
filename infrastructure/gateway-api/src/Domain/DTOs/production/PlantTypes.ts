@@ -11,9 +11,15 @@ export interface PlantResponse {
   updatedAt: string;
 }
 
-export interface HarvestResponse {
-  harvestedIds: number[];
+export interface HarvestedPlantDTO {
+  id: number;
+  oilStrength: number;
 }
+
+export interface HarvestResponse {
+  harvestedPlants: HarvestedPlantDTO[];
+}
+
 
 export interface AvailableCountResponse {
   name: string;

@@ -4,6 +4,7 @@ import { PlantStatus } from "../Domain/enums/PlantStatus";
 import { CreatePlantDTO } from "../Domain/DTOs/CreatePlantDTO";
 import { HarvestPlantsDTO } from "../Domain/DTOs/HarvestPlantsDTO";
 import { IProductionService } from "../Domain/services/IProductionService";
+import { HarvestPlantsResponseDTO } from "../Domain/DTOs/HarvestPlantsResponseDTO";
 
 export class ProductionService implements IProductionService {
   constructor(private readonly plantRepo: Repository<Plant>) { }
@@ -26,14 +27,14 @@ export class ProductionService implements IProductionService {
     const plant = await this.plantRepo.findOneBy({ id: plantId });
     if (!plant) throw new Error("Plant not found");
 
-    plant.oilStrength = Number(
-      (Number(plant.oilStrength) * (1 + percent / 100)).toFixed(2)
-    );
+    // percent = 65 -> 65% od trenutne vrijednosti
+    plant.oilStrength = Number((Number(plant.oilStrength) * (percent / 100)).toFixed(2));
 
     return await this.plantRepo.save(plant);
   }
 
-  async harvest(dto: HarvestPlantsDTO): Promise<{ harvestedIds: number[] }> {
+
+  async harvest(dto: HarvestPlantsDTO): Promise<HarvestPlantsResponseDTO> {
     const plants = await this.plantRepo.find({
       where: { name: dto.name, status: PlantStatus.PLANTED },
       order: { createdAt: "ASC" },
@@ -44,12 +45,17 @@ export class ProductionService implements IProductionService {
       throw new Error("Not enough planted plants");
     }
 
-    const harvestedIds = plants.map((p) => p.id);
-
-    for (const p of plants) p.status = PlantStatus.HARVESTED;
+    for (const p of plants) {
+      p.status = PlantStatus.HARVESTED;
+    }
     await this.plantRepo.save(plants);
 
-    return { harvestedIds };
+    return {
+      harvestedPlants: plants.map(p => ({
+        id: p.id,
+        oilStrength: Number(p.oilStrength),
+      })),
+    };
   }
 
   async getAvailableCount(name: string): Promise<number> {

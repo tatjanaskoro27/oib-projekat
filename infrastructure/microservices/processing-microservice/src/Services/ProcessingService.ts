@@ -11,17 +11,14 @@ export class ProcessingService implements IProcessingService {
   constructor(private readonly perfumeRepo: Repository<Perfume>) {}
 
   async startProcessing(dto: StartProcessingDTO): Promise<Perfume[]> {
-    // 1 biljka = 50ml (iz specifikacije/vašeg dogovora)
     const totalMlNeeded = dto.bottleCount * dto.bottleVolume;
     const plantsNeeded = Math.ceil(totalMlNeeded / 50);
+    const plantName = dto.perfumeName.trim();
 
-    const plantName = dto.perfumeName.trim(); // biljka = isto ime kao parfem (Lavanda -> Lavanda)
-
-    // 1) provjeri koliko ima u production (preko gateway internal)
     const available = await this.gateway.getAvailableCount(plantName);
-
-    // 2) ako fali -> zatraži sadnju (preko gateway internal)
     const missing = plantsNeeded - available;
+
+    //provjeriti
     if (missing > 0) {
       for (let i = 0; i < missing; i++) {
         await this.gateway.plantOne({
@@ -32,23 +29,32 @@ export class ProcessingService implements IProcessingService {
       }
     }
 
-    // 3) uzmi konkretne biljke (harvest/allocate) i dobiješ ID-jeve
-    const harvestedIds = await this.gateway.harvest(plantName, plantsNeeded);
+    const harvestRes = await this.gateway.harvest(plantName, plantsNeeded);
+    const harvestedPlants = harvestRes.harvestedPlants;
 
-    // 4) napravi parfeme (kao u tvom kodu)
+    for (const hp of harvestedPlants) {
+      if (hp.oilStrength > 4.0) {
+        const percent = Number(((hp.oilStrength - 4.0) * 100).toFixed(0)); // 4.65 -> 65
+
+        //provjeriti
+        // smanji joj oilStrength 
+        await this.gateway.updateOilStrength(hp.id, percent);
+      }
+    }
+
     const perfumesToCreate: Perfume[] = [];
-
     const expiry = new Date();
     expiry.setFullYear(expiry.getFullYear() + 2);
 
+    //pravi parfeme
     for (let i = 0; i < dto.bottleCount; i++) {
       const p = new Perfume();
       p.name = dto.perfumeName;
       p.type = dto.perfumeType;
       p.netoMl = dto.bottleVolume;
 
-      const plantIndex = i % plantsNeeded;
-      p.plantId = harvestedIds[plantIndex];
+      const plantIndex = i % harvestedPlants.length;
+      p.plantId = harvestedPlants[plantIndex].id;
 
       p.serialNumber = `TMP-${Date.now()}-${i}-${Math.floor(Math.random() * 1e9)}`;
       p.expiryDate = expiry;
