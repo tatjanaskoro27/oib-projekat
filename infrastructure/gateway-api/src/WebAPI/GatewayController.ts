@@ -78,6 +78,12 @@ export class GatewayController {
     this.router.post("/internal/plants/harvest", internalAuth, this.internalHarvest.bind(this));
     this.router.patch("/internal/plants/:id/oil-strength", internalAuth, this.internalUpdateOilStrength.bind(this));
 
+    // Dogadjaji
+    this.router.get("/dogadjaji", authenticate, authorize("admin", "seller"), this.getDogadjaji.bind(this));
+    this.router.get("/dogadjaji/tip/:tip", authenticate, authorize("admin", "seller"), this.getDogadjajiByTip.bind(this));
+    this.router.post("/dogadjaji", authenticate, authorize("admin", "seller"), this.createDogadjaj.bind(this));
+    this.router.put("/dogadjaji/:id", authenticate, authorize("admin", "seller"), this.updateDogadjaj.bind(this));
+    this.router.delete("/dogadjaji/:id", authenticate, authorize("admin", "seller"), this.deleteDogadjaj.bind(this));
 
 
     this.router.get(
@@ -431,6 +437,54 @@ export class GatewayController {
     try {
       const id = parseInt(req.params.id, 10);
       const data = await this.gatewayService.updatePlantOilStrength(id, req.body);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getDogadjaji(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.getDogadjaji();
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getDogadjajiByTip(req: Request, res: Response): Promise<void> {
+    try {
+      const tip = String(req.params.tip).toUpperCase() as any;
+      const data = await this.gatewayService.getDogadjajiByTip(tip);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async createDogadjaj(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.createDogadjaj(req.body);
+      res.status(201).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async updateDogadjaj(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const data = await this.gatewayService.updateDogadjaj(id, req.body);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async deleteDogadjaj(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const data = await this.gatewayService.deleteDogadjaj(id);
       res.status(200).json(data);
     } catch (err) {
       res.status(400).json({ message: (err as Error).message });

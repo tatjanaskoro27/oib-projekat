@@ -29,10 +29,14 @@ import { KolicinaGodisnjaDTO } from "../Domain/DTOs/analytics/KolicinaGodisnjaDT
 import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../Domain/DTOs/production/PlantDTOs";
 import { PlantResponse, HarvestResponse, AvailableCountResponse } from "../Domain/DTOs/production/PlantTypes";
 
-
 import { StartProcessingDTO, GetPerfumesDTO } from "../Domain/DTOs/processing/ProcessingDTOs";
 import { PerfumeResponse } from "../Domain/DTOs/processing/PerfumeTypes";
 
+//dogadjaji
+import { DogadjajDTO } from "../Domain/DTOs/dogadjaji/DogadjajDTO";
+import { CreateDogadjajDTO } from "../Domain/DTOs/dogadjaji/CreateDogadjajDTO";
+import { UpdateDogadjajDTO } from "../Domain/DTOs/dogadjaji/UpdateDogadjajDTO";
+import { TipDogadjaja } from "../Domain/DTOs/dogadjaji/TipDogadjaja";
 
 export class GatewayService implements IGatewayService {
   private readonly authClient: AxiosInstance;
@@ -40,7 +44,7 @@ export class GatewayService implements IGatewayService {
   private readonly analyticsClient: AxiosInstance;
   private readonly productionClient: AxiosInstance;
   private readonly processingClient: AxiosInstance;
-
+  private readonly dogadjajiClient: AxiosInstance;
 
   constructor() {
     const authBaseURL = process.env.AUTH_SERVICE_API;
@@ -48,12 +52,15 @@ export class GatewayService implements IGatewayService {
     const analyticsBaseURL = process.env.ANALYTICS_SERVICE_API;
     const productionBaseURL = process.env.PRODUCTION_SERVICE_API;
     const processingBaseURL = process.env.PROCESSING_SERVICE_API;
+    const dogadjajiBaseURL = process.env.DOGADJAJI_SERVICE_API;
+
 
     if (!authBaseURL) throw new Error("AUTH_SERVICE_API nije podešen u .env");
     if (!userBaseURL) throw new Error("USER_SERVICE_API nije podešen u .env");
     if (!analyticsBaseURL) throw new Error("ANALYTICS_SERVICE_API nije podešen u .env");
     if (!productionBaseURL) throw new Error("PRODUCTION_SERVICE_API nije podešen u .env");
     if (!processingBaseURL) throw new Error("PROCESSING_SERVICE_API nije podešen u .env");
+    if (!dogadjajiBaseURL) throw new Error("DOGADJAJI_SERVICE_API nije podešen u .env");
 
     this.authClient = axios.create({
       baseURL: authBaseURL,
@@ -84,10 +91,13 @@ export class GatewayService implements IGatewayService {
       headers: { "Content-Type": "application/json" },
       timeout: 5000,
     });
+
+    this.dogadjajiClient = axios.create({
+      baseURL: dogadjajiBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000,
+    });
   }
-
-
-
   // Auth microservice
 
   async login(data: LoginUserDTO): Promise<AuthResponseType> {
@@ -109,7 +119,6 @@ export class GatewayService implements IGatewayService {
   }
 
   // User microservice
-
 
   async getAllUsers(): Promise<UserDTO[]> {
     const response = await this.userClient.get<UserDTO[]>("/users");
@@ -196,24 +205,24 @@ export class GatewayService implements IGatewayService {
   }
 
   async getProdajaMesecna(godina: number): Promise<MesecnaProdajaDTO[]> {
-  const response = await this.analyticsClient.get<MesecnaProdajaDTO[]>(
-    `/analytics/prodaja/mesecna/${godina}`
-  );
-  return response.data;
-}
+    const response = await this.analyticsClient.get<MesecnaProdajaDTO[]>(
+      `/analytics/prodaja/mesecna/${godina}`
+    );
+    return response.data;
+  }
 
-async getProdajaGodisnja(godina: number): Promise<GodisnjaProdajaDTO> {
-  const response = await this.analyticsClient.get<GodisnjaProdajaDTO>(
-    `/analytics/prodaja/godisnja/${godina}`
-  );
-  return response.data;
-}
-async getTop10Kolicina(): Promise<TopKolicinaDTO[]> {
-  const response = await this.analyticsClient.get<TopKolicinaDTO[]>(
-    "/analytics/prodaja/top10"
-  );
-  return response.data;
-}
+  async getProdajaGodisnja(godina: number): Promise<GodisnjaProdajaDTO> {
+    const response = await this.analyticsClient.get<GodisnjaProdajaDTO>(
+      `/analytics/prodaja/godisnja/${godina}`
+    );
+    return response.data;
+  }
+  async getTop10Kolicina(): Promise<TopKolicinaDTO[]> {
+    const response = await this.analyticsClient.get<TopKolicinaDTO[]>(
+      "/analytics/prodaja/top10"
+    );
+    return response.data;
+  }
   async getKolicinaNedeljna(start: string, end: string): Promise<KolicinaNedeljnaDTO> {
     const response = await this.analyticsClient.get<KolicinaNedeljnaDTO>(
       "/analytics/prodaja/kolicina/nedeljna",
@@ -235,7 +244,6 @@ async getTop10Kolicina(): Promise<TopKolicinaDTO[]> {
     );
     return response.data;
   }
-
 
   //production
 
@@ -269,5 +277,33 @@ async getTop10Kolicina(): Promise<TopKolicinaDTO[]> {
     const response = await this.processingClient.post<PerfumeResponse[]>("/processing/get", dto);
     return response.data;
   }
+
+  // dogadjaji
+
+  async getDogadjaji(): Promise<DogadjajDTO[]> {
+    const res = await this.dogadjajiClient.get<DogadjajDTO[]>("/dogadjaji");
+    return res.data;
+  }
+
+  async getDogadjajiByTip(tip: TipDogadjaja): Promise<DogadjajDTO[]> {
+    const res = await this.dogadjajiClient.get<DogadjajDTO[]>(`/dogadjaji/tip/${tip}`);
+    return res.data;
+  }
+
+  async createDogadjaj(dto: CreateDogadjajDTO): Promise<DogadjajDTO> {
+    const res = await this.dogadjajiClient.post<DogadjajDTO>("/dogadjaji", dto);
+    return res.data;
+  }
+
+  async updateDogadjaj(id: number, dto: UpdateDogadjajDTO): Promise<DogadjajDTO> {
+    const res = await this.dogadjajiClient.put<DogadjajDTO>(`/dogadjaji/${id}`, dto);
+    return res.data;
+  }
+
+  async deleteDogadjaj(id: number): Promise<{ deleted: true }> {
+    const res = await this.dogadjajiClient.delete<{ deleted: true }>(`/dogadjaji/${id}`);
+    return res.data;
+  }
+
 
 }

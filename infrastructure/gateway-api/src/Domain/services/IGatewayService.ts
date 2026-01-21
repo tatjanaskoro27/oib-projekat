@@ -22,8 +22,6 @@ import { KolicinaNedeljnaDTO } from "../DTOs/analytics/KolicinaNedeljnoDTO";
 import { KolicinaMesecnaDTO } from "../DTOs/analytics/KolicinaMesecnoDTO";
 import { KolicinaGodisnjaDTO } from "../DTOs/analytics/KolicinaGodisnjaDTO";
 
-
-
 //
 import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../DTOs/production/PlantDTOs";
 import { PlantResponse, HarvestResponse, AvailableCountResponse } from "../DTOs/production/PlantTypes";
@@ -31,6 +29,11 @@ import { PlantResponse, HarvestResponse, AvailableCountResponse } from "../DTOs/
 import { StartProcessingDTO, GetPerfumesDTO } from "../DTOs/processing/ProcessingDTOs";
 import { PerfumeResponse } from "../DTOs/processing/PerfumeTypes";
 
+//dogadjaji
+import { DogadjajDTO } from "../DTOs/dogadjaji/DogadjajDTO";
+import { CreateDogadjajDTO } from "../DTOs/dogadjaji/CreateDogadjajDTO";
+import { UpdateDogadjajDTO } from "../DTOs/dogadjaji/UpdateDogadjajDTO";
+import { TipDogadjaja } from "../DTOs/dogadjaji/TipDogadjaja";
 
 
 export interface IGatewayService {
@@ -53,9 +56,9 @@ export interface IGatewayService {
   getProdajaNedeljna(start: string, end: string): Promise<NedeljnaProdajaDTO>;
   getTrendProdaje(start: string, end: string): Promise<TrendProdajeDTO[]>;
   getProdajaMesecna(godina: number): Promise<MesecnaProdajaDTO[]>;
-getProdajaGodisnja(godina: number): Promise<GodisnjaProdajaDTO>;
-getTop10Kolicina(): Promise<TopKolicinaDTO[]>;
-getKolicinaNedeljna(start: string, end: string): Promise<KolicinaNedeljnaDTO>;
+  getProdajaGodisnja(godina: number): Promise<GodisnjaProdajaDTO>;
+  getTop10Kolicina(): Promise<TopKolicinaDTO[]>;
+  getKolicinaNedeljna(start: string, end: string): Promise<KolicinaNedeljnaDTO>;
   getKolicinaMesecna(godina: number): Promise<KolicinaMesecnaDTO[]>;
   getKolicinaGodisnja(godina: number): Promise<KolicinaGodisnjaDTO>;
   getUkupnoKomada(): Promise<UkupnoKomadaDTO>;
@@ -72,6 +75,13 @@ getKolicinaNedeljna(start: string, end: string): Promise<KolicinaNedeljnaDTO>;
   // Processing
   startProcessing(dto: StartProcessingDTO): Promise<PerfumeResponse[]>;
   getPerfumes(dto: GetPerfumesDTO): Promise<PerfumeResponse[]>;
+
+  //Dogadjaji
+  getDogadjaji(): Promise<DogadjajDTO[]>;
+  getDogadjajiByTip(tip: TipDogadjaja): Promise<DogadjajDTO[]>;
+  createDogadjaj(dto: CreateDogadjajDTO): Promise<DogadjajDTO>;
+  updateDogadjaj(id: number, dto: UpdateDogadjajDTO): Promise<DogadjajDTO>;
+  deleteDogadjaj(id: number): Promise<{ deleted: true }>;
 
 
 }
