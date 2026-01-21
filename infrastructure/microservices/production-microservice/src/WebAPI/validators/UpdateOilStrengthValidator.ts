@@ -11,7 +11,7 @@ export function validateUpdateOilStrengthData(
     return { success: false, message: "Percent must be a number" };
   }
 
-  if (percent <= 100 || percent > 0) {
+  if (percent < 0 || percent > 100) {
     return { success: false, message: "Percent must be between 0 and 100" };
   }
 
