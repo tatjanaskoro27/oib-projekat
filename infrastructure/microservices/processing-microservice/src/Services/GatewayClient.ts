@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { AvailableCountResponseDTO } from "../Domain/DTOs/AvailableCountResponseDTO";
 import { HarvestPlantsResponseDTO } from "../Domain/DTOs/HarvestPlantsResponseDTO";
+import { CreateDogadjajDTO } from "../Domain/DTOs/EventDTO";
 
 export class GatewayClient {
   private readonly client: AxiosInstance;
@@ -38,5 +39,9 @@ export class GatewayClient {
 
   async updateOilStrength(plantId: number, percent: number): Promise<void> {
     await this.client.patch(`/internal/plants/${plantId}/oil-strength`, { percent });
+  }
+
+  async logEvent(dto: CreateDogadjajDTO): Promise<void> {
+    await this.client.post("/internal/dogadjaji", dto);
   }
 }

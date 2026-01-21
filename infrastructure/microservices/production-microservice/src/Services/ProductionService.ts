@@ -85,7 +85,7 @@ export class ProductionService implements IProductionService {
 
     await this.events.logEvent({
       tip: "INFO",
-      opis: `Ubrano ${plants.length} biljaka tipa ${dto.name}`,
+      opis: `Ubrane biljke pod nazivom "${dto.name}" (ukupno ${plants.length})`,
     });
 
     return {
