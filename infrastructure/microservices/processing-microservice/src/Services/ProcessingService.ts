@@ -8,7 +8,7 @@ import { GatewayClient } from "../Services/GatewayClient";
 export class ProcessingService implements IProcessingService {
   private readonly gateway = new GatewayClient();
 
-  constructor(private readonly perfumeRepo: Repository<Perfume>) {}
+  constructor(private readonly perfumeRepo: Repository<Perfume>) { }
 
   async startProcessing(dto: StartProcessingDTO): Promise<Perfume[]> {
     const totalMlNeeded = dto.bottleCount * dto.bottleVolume;
@@ -18,7 +18,6 @@ export class ProcessingService implements IProcessingService {
     const available = await this.gateway.getAvailableCount(plantName);
     const missing = plantsNeeded - available;
 
-    //provjeriti
     if (missing > 0) {
       for (let i = 0; i < missing; i++) {
         await this.gateway.plantOne({
@@ -34,11 +33,17 @@ export class ProcessingService implements IProcessingService {
 
     for (const hp of harvestedPlants) {
       if (hp.oilStrength > 4.0) {
-        const percent = Number(((hp.oilStrength - 4.0) * 100).toFixed(0)); // 4.65 -> 65
+        const percent = Math.round((hp.oilStrength - 4.0) * 100); // 4.65 -> 65
 
-        //provjeriti
-        // smanji joj oilStrength 
-        await this.gateway.updateOilStrength(hp.id, percent);
+        // 1) zasadi DODATNU biljku za balans
+        const newPlant = await this.gateway.plantOne({
+          name: plantName,
+          latinName: plantName,
+          originCountry: "BiH",
+        });
+
+        // 2) smanji joj oilStrength na % trenutne vrijednosti
+        await this.gateway.updateOilStrength(newPlant.id, percent);
       }
     }
 
@@ -46,7 +51,6 @@ export class ProcessingService implements IProcessingService {
     const expiry = new Date();
     expiry.setFullYear(expiry.getFullYear() + 2);
 
-    //pravi parfeme
     for (let i = 0; i < dto.bottleCount; i++) {
       const p = new Perfume();
       p.name = dto.perfumeName;
