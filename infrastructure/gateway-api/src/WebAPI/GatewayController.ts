@@ -41,32 +41,18 @@ export class GatewayController {
     this.router.get("/analytics/prodaja/top10-prihod", authenticate, authorize("admin", "seller"), this.getTop10Prihod.bind(this));
     this.router.get("/analytics/prodaja/top10-prihod/ukupno", authenticate, authorize("admin", "seller"), this.getTop10PrihodUkupno.bind(this));
 
-    this.router.get(
-      "/analytics/prodaja/mesecna/:godina",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getProdajaMesecna.bind(this)
-    );
+    this.router.get("/analytics/prodaja/mesecna/:godina", authenticate, authorize("admin", "seller"), this.getProdajaMesecna.bind(this));
+    this.router.get("/analytics/prodaja/godisnja/:godina", authenticate, authorize("admin", "seller"), this.getProdajaGodisnja.bind(this));
+    this.router.get("/analytics/prodaja/top10", authenticate, authorize("admin", "seller"), this.getTop10Kolicina.bind(this));
 
-    this.router.get(
-      "/analytics/prodaja/godisnja/:godina",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getProdajaGodisnja.bind(this)
-    );
-    this.router.get(
-      "/analytics/prodaja/top10",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getTop10Kolicina.bind(this)
-    );
-
+    this.router.get("/analytics/prodaja/kolicina/nedeljna", authenticate, authorize("admin", "seller"), this.getKolicinaNedeljna.bind(this));
+    this.router.get("/analytics/prodaja/kolicina/mesecna/:godina", authenticate, authorize("admin", "seller"), this.getKolicinaMesecna.bind(this));
+    this.router.get("/analytics/prodaja/kolicina/godisnja/:godina", authenticate, authorize("admin", "seller"), this.getKolicinaGodisnja.bind(this));
 
     //Production
     this.router.post("/plants", authenticate, authorize("admin", "seller"), this.plant.bind(this));
     this.router.patch("/plants/:id/oil-strength", authenticate, authorize("admin", "seller"), this.updateOilStrength.bind(this));
     this.router.post("/plants/harvest", authenticate, authorize("admin", "seller"), this.harvest.bind(this));
-
 
     //Processing
     this.router.post("/processing/start", authenticate, authorize("admin", "seller"), this.startProcessing.bind(this));
@@ -85,29 +71,8 @@ export class GatewayController {
     this.router.put("/dogadjaji/:id", authenticate, authorize("admin", "seller"), this.updateDogadjaj.bind(this));
     this.router.delete("/dogadjaji/:id", authenticate, authorize("admin", "seller"), this.deleteDogadjaj.bind(this));
 
-
-    this.router.get(
-      "/analytics/prodaja/kolicina/nedeljna",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getKolicinaNedeljna.bind(this)
-    );
-
-    this.router.get(
-      "/analytics/prodaja/kolicina/mesecna/:godina",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getKolicinaMesecna.bind(this)
-    );
-
-    this.router.get(
-      "/analytics/prodaja/kolicina/godisnja/:godina",
-      authenticate,
-      authorize("admin", "seller"),
-      this.getKolicinaGodisnja.bind(this)
-    );
-
-
+    // INTERNAL dogadjaji (server-to-server)
+    this.router.post("/internal/dogadjaji", internalAuth, this.internalCreateDogadjaj.bind(this));
 
   }
 
@@ -491,6 +456,14 @@ export class GatewayController {
     }
   }
 
+  private async internalCreateDogadjaj(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.createDogadjaj(req.body);
+      res.status(201).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
 
   public getRouter(): Router {
     return this.router;

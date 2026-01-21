@@ -5,8 +5,10 @@ import { CreatePlantDTO } from "../Domain/DTOs/CreatePlantDTO";
 import { HarvestPlantsDTO } from "../Domain/DTOs/HarvestPlantsDTO";
 import { IProductionService } from "../Domain/services/IProductionService";
 import { HarvestPlantsResponseDTO } from "../Domain/DTOs/HarvestPlantsResponseDTO";
+import { EventClient } from "../Services/EventClient";
 
 export class ProductionService implements IProductionService {
+  private readonly events = new EventClient();
   constructor(private readonly plantRepo: Repository<Plant>) { }
 
   async plant(dto: CreatePlantDTO): Promise<Plant> {
@@ -20,17 +22,44 @@ export class ProductionService implements IProductionService {
 
     plant.status = PlantStatus.PLANTED;
 
-    return await this.plantRepo.save(plant);
+    const saved = await this.plantRepo.save(plant);
+
+    await this.events.logEvent({
+      tip: "INFO",
+      opis: `Zasadjena nova biljka: ${saved.name}`,
+    });
+
+    if (Number(saved.oilStrength) > 4.0) {
+      await this.events.logEvent({
+        tip: "WARNING",
+        opis: `Upozorenje: jacina ulja za zasađenu biljku prelazi 4.0 (oilStrength=${saved.oilStrength})`,
+      });
+    }
+
+    return saved;
   }
 
   async updateOilStrength(plantId: number, percent: number): Promise<Plant> {
     const plant = await this.plantRepo.findOneBy({ id: plantId });
-    if (!plant) throw new Error("Plant not found");
-
+    if (!plant) {
+      await this.events.logEvent({
+        tip: "ERROR",
+        opis: `Pokusaj promjene jacine ulja za nepostojecu biljku`,
+      });
+      throw new Error("Plant not found");
+    }
     // percent = 65 -> 65% od trenutne vrijednosti
     plant.oilStrength = Number((Number(plant.oilStrength) * (percent / 100)).toFixed(2));
 
-    return await this.plantRepo.save(plant);
+    const saved = await this.plantRepo.save(plant);
+
+    await this.events.logEvent({
+      tip: "INFO",
+      opis: `Promjenjena jacina ulja za biljku ${plantId} na ${saved.oilStrength} (percent=${percent})`,
+    });
+
+    return saved;
+
   }
 
 
@@ -42,6 +71,10 @@ export class ProductionService implements IProductionService {
     });
 
     if (plants.length < dto.count) {
+      await this.events.logEvent({
+        tip: "ERROR",
+        opis: `Neuspjesno ubiranje – nema dovoljno biljaka tipa ${dto.name} za ubiranje`,
+      });
       throw new Error("Not enough planted plants");
     }
 
@@ -49,6 +82,11 @@ export class ProductionService implements IProductionService {
       p.status = PlantStatus.HARVESTED;
     }
     await this.plantRepo.save(plants);
+
+    await this.events.logEvent({
+      tip: "INFO",
+      opis: `Ubrano ${plants.length} biljaka tipa ${dto.name}`,
+    });
 
     return {
       harvestedPlants: plants.map(p => ({
