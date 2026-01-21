@@ -1,0 +1,6 @@
+export enum StatusAmbalaze {
+  SPAKOVANA = "SPAKOVANA",
+  POSLATA = "POSLATA",
+  USKLADISTENA = "USKLADISTENA",
+  ISPORUCENA = "ISPORUCENA",
+}
