@@ -12,6 +12,8 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { IAnalyticsAPI } from "./api/analytics/IAnalyticsAPI";
 import { AnalyticsAPI } from "./api/analytics/AnalyticsAPI";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
+import { ProductionPage } from "./pages/ProductionPage";
+
 
 const auth_api: IAuthAPI = new AuthAPI();
 const user_api: IUserAPI = new UserAPI();
@@ -42,6 +44,17 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* PRODUCTION */}
+      <Route
+        path="/production"
+        element={
+          <ProtectedRoute requiredRole="admin,seller">
+            <ProductionPage />
+          </ProtectedRoute>
+        }
+      />
+
 
       {/* (opciono) fallback */}
       {/* <Route path="*" element={<Navigate to="/" replace />} /> */}

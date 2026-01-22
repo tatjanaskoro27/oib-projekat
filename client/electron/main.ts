@@ -21,6 +21,7 @@ function createWindow() {
     frame: false,
     backgroundColor: '#202020',
     titleBarStyle: 'hiddenInset',
+    show: false, //dodala
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -37,9 +38,14 @@ function createWindow() {
   }
 
   //win?.maximize()
+  //dodala
+  win.once('ready-to-show', () => {
+    win?.maximize()
+    win?.show()
+  })
 
   win?.webContents.openDevTools();
-  
+
   // IPC handlers
   ipcMain.on('window:minimize', () => win?.minimize())
   ipcMain.on('window:maximize', () => {
