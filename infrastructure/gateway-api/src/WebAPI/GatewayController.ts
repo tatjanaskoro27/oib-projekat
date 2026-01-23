@@ -5,6 +5,17 @@ import { RegistrationUserDTO } from "../Domain/DTOs/user/RegistrationUserDTO";
 import { authenticate } from "../Middlewares/authentification/AuthMiddleware";
 import { authorize } from "../Middlewares/authorization/AuthorizeMiddleware";
 import { internalAuth } from "../Middlewares/internal/InternalAuth";
+import { PlantStatus } from "../Domain/DTOs/production/PlantTypes";
+import { SortBy, SortDir } from "../Domain/DTOs/production/GetPlantsParams";
+
+const isPlantStatus = (v: string): v is PlantStatus =>
+  v === "planted" || v === "harvested" || v === "processed";
+
+const isSortBy = (v: string): v is SortBy =>
+  v === "createdAt" || v === "oilStrength" || v === "name";
+
+const isSortDir = (v: string): v is SortDir =>
+  v === "ASC" || v === "DESC";
 
 
 export class GatewayController {
@@ -53,6 +64,8 @@ export class GatewayController {
     this.router.post("/plants", authenticate, authorize("admin", "seller"), this.plant.bind(this));
     this.router.patch("/plants/:id/oil-strength", authenticate, authorize("admin", "seller"), this.updateOilStrength.bind(this));
     this.router.post("/plants/harvest", authenticate, authorize("admin", "seller"), this.harvest.bind(this));
+    this.router.get("/plants", authenticate, authorize("admin", "seller"), this.getPlants.bind(this));
+    this.router.get("/plants/:id", authenticate, authorize("admin", "seller"), this.getPlantById.bind(this));
 
     //Processing
     this.router.post("/processing/start", authenticate, authorize("admin", "seller"), this.startProcessing.bind(this));
@@ -347,6 +360,57 @@ export class GatewayController {
       res.status(400).json({ message: (err as Error).message });
     }
   }
+
+  private async getPlants(req: Request, res: Response): Promise<void> {
+    try {
+      const search =
+        typeof req.query.search === "string" ? req.query.search.trim() : undefined;
+
+      const status =
+        typeof req.query.status === "string" && isPlantStatus(req.query.status)
+          ? req.query.status
+          : undefined;
+
+      const sortBy =
+        typeof req.query.sortBy === "string" && isSortBy(req.query.sortBy)
+          ? req.query.sortBy
+          : undefined;
+
+      const sortDir =
+        typeof req.query.sortDir === "string" && isSortDir(req.query.sortDir)
+          ? req.query.sortDir
+          : undefined;
+
+      const data = await this.gatewayService.getPlants({
+        search,
+        status,
+        sortBy,
+        sortDir,
+      });
+
+      res.status(200).json(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Gateway error";
+      res.status(400).json({ message });
+    }
+  }
+
+
+  private async getPlantById(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        res.status(400).json({ message: "Invalid id" });
+        return;
+      }
+
+      const data = await this.gatewayService.getPlantById(id);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(404).json({ message: (err as Error).message });
+    }
+  }
+
 
   private async startProcessing(req: Request, res: Response): Promise<void> {
     try {

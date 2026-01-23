@@ -267,6 +267,17 @@ export class GatewayService implements IGatewayService {
     return response.data;
   }
 
+  async getPlants(params?: { search?: string; status?: string; sortBy?: string; sortDir?: string; }): Promise<PlantResponse[]> {
+    const response = await this.productionClient.get<PlantResponse[]>("/plants", { params });
+    return response.data;
+  }
+
+  async getPlantById(id: number): Promise<PlantResponse> {
+    const response = await this.productionClient.get<PlantResponse>(`/plants/${id}`);
+    return response.data;
+  }
+
+
   //processing
   async startProcessing(dto: StartProcessingDTO): Promise<PerfumeResponse[]> {
     const response = await this.processingClient.post<PerfumeResponse[]>("/processing/start", dto);

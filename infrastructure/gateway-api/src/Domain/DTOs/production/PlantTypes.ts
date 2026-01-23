@@ -1,4 +1,4 @@
-export type PlantStatus = "planted" | "harvested";
+export type PlantStatus = "planted" | "harvested" | "processed";
 
 export interface PlantResponse {
   id: number;

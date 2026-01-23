@@ -25,6 +25,7 @@ import { KolicinaGodisnjaDTO } from "../DTOs/analytics/KolicinaGodisnjaDTO";
 //
 import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../DTOs/production/PlantDTOs";
 import { PlantResponse, HarvestResponse, AvailableCountResponse } from "../DTOs/production/PlantTypes";
+import { GetPlantsParams } from "../DTOs/production/GetPlantsParams";
 
 import { StartProcessingDTO, GetPerfumesDTO } from "../DTOs/processing/ProcessingDTOs";
 import { PerfumeResponse } from "../DTOs/processing/PerfumeTypes";
@@ -71,6 +72,9 @@ export interface IGatewayService {
   updatePlantOilStrength(id: number, dto: UpdateOilStrengthDTO): Promise<PlantResponse>;
   harvestPlants(dto: HarvestPlantsDTO): Promise<HarvestResponse>;
   getAvailablePlantCount(name: string): Promise<AvailableCountResponse>;
+  getPlants(params?: GetPlantsParams): Promise<PlantResponse[]>;
+  getPlantById(id: number): Promise<PlantResponse>;
+
 
   // Processing
   startProcessing(dto: StartProcessingDTO): Promise<PerfumeResponse[]>;

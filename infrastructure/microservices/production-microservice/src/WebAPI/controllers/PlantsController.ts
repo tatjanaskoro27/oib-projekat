@@ -4,6 +4,18 @@ import { IProductionService } from "../../Domain/services/IProductionService";
 import { validateCreatePlantData } from "../validators/CreatePlantValidator";
 import { validateUpdateOilStrengthData } from "../validators/UpdateOilStrengthValidator";
 import { validateHarvestPlantsData } from "../validators/HarvestPlantsValidator";
+import { PlantStatus } from "../../Domain/enums/PlantStatus";
+import { SortBy, SortDir } from "../../Domain/DTOs/GetPlantsQueryDTO";
+
+const isPlantStatus = (value: string): value is PlantStatus =>
+  Object.values(PlantStatus).includes(value as PlantStatus);
+
+const isSortBy = (value: string): value is SortBy =>
+  value === "createdAt" || value === "oilStrength" || value === "name";
+
+const isSortDir = (value: string): value is SortDir =>
+  value === "ASC" || value === "DESC";
+
 
 export class PlantsController {
   private readonly router: Router;
@@ -21,6 +33,8 @@ export class PlantsController {
     this.router.post("/plants", this.plant.bind(this));
     this.router.patch("/plants/:id/oil-strength", this.updateOilStrength.bind(this));
     this.router.post("/plants/harvest", this.harvest.bind(this));
+    this.router.get("/plants", this.getAll.bind(this));
+    this.router.get("/plants/:id", this.getById.bind(this));
   }
 
   private async plant(req: Request, res: Response): Promise<void> {
@@ -92,6 +106,39 @@ export class PlantsController {
       res.status(200).json({ name, available });
     } catch (err) {
       res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  private async getAll(req: Request, res: Response): Promise<void> {
+    try {
+      const search = typeof req.query.search === "string" ? req.query.search.trim() : undefined;
+      const status = typeof req.query.status === "string" && isPlantStatus(req.query.status) ? req.query.status : undefined;
+      const sortBy = typeof req.query.sortBy === "string" && isSortBy(req.query.sortBy) ? req.query.sortBy : undefined;
+      const sortDir = typeof req.query.sortDir === "string" && isSortDir(req.query.sortDir) ? req.query.sortDir : undefined;
+
+      const plants = await this.productionService.getPlants({ search, status, sortBy, sortDir, });
+      res.status(200).json(plants);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      this.logger.log(message);
+      res.status(400).json({ message });
+    }
+  }
+
+  private async getById(req: Request, res: Response): Promise<void> {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ message: "Invalid id" });
+      return;
+    }
+
+    try {
+      const plant = await this.productionService.getPlantById(id);
+      res.status(200).json(plant);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Plant not found";
+      res.status(404).json({ message });
     }
   }
 

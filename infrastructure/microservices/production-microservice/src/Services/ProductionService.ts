@@ -6,6 +6,8 @@ import { HarvestPlantsDTO } from "../Domain/DTOs/HarvestPlantsDTO";
 import { IProductionService } from "../Domain/services/IProductionService";
 import { HarvestPlantsResponseDTO } from "../Domain/DTOs/HarvestPlantsResponseDTO";
 import { EventClient } from "../Services/EventClient";
+import { GetPlantsQueryDTO } from "../Domain/DTOs/GetPlantsQueryDTO";
+
 
 export class ProductionService implements IProductionService {
   private readonly events = new EventClient();
@@ -101,5 +103,41 @@ export class ProductionService implements IProductionService {
       where: { name, status: PlantStatus.PLANTED },
     });
   }
+
+  async getPlants(query: GetPlantsQueryDTO): Promise<Plant[]> {
+    const search = (query.search ?? "").trim();
+    const status = query.status;
+    const sortBy = query.sortBy ?? "createdAt";
+    const sortDir = query.sortDir ?? "DESC";
+
+    const qb = this.plantRepo.createQueryBuilder("p");
+
+    if (status) { qb.andWhere("p.status = :status", { status });}
+    if (search) { qb.andWhere("(p.name LIKE :s OR p.latinName LIKE :s OR p.originCountry LIKE :s)",{ s: `%${search}%` });}
+    
+    const sortColumn =
+      sortBy === "oilStrength" ? "p.oilStrength" :
+        sortBy === "name" ? "p.name" :
+          "p.createdAt";
+
+    qb.orderBy(sortColumn, sortDir);
+
+    const plants = await qb.getMany();
+    return plants;
+  }
+
+  async getPlantById(id: number): Promise<Plant> {
+    const plant = await this.plantRepo.findOneBy({ id });
+
+    if (!plant) {
+      await this.events.logEvent({
+        tip: "ERROR",
+        opis: `Pokusaj pregleda nepostojece biljke`,
+      });
+      throw new Error("Plant not found");
+    }
+    return plant;
+  }
+
 
 }
