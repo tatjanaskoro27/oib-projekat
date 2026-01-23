@@ -1,47 +1,55 @@
-// src/app.ts
-import express from 'express';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import { Db } from './Database/DbConnectionPool';
+import express from "express";
+import cors from "cors";
+import "reflect-metadata";
+import dotenv from "dotenv";
+import { Repository } from "typeorm";
+
+import { initialize_database } from "./Database/InitializeConnection";
+import { Db } from "./Database/DbConnectionPool";
+
+import { Perfume } from "./Domain/Entities/Perfume";
+import { Sale } from "./Domain/Entities/Sale";
+
+//import { ISalesService } from "./Domain/services/ISalesService";
+import { SalesService } from "./Services/SalesService";
 import { SalesController } from "./WebAPI/SalesController";
 
-
-// Prvo učitaj environment varijable
-dotenv.config();
-
+dotenv.config({ quiet: true });
 
 const app = express();
-const port = process.env.PORT || 3002;
 
-// CORS - samo gateway može pristupiti
-app.use(cors({
-  origin: process.env.CORS_ORIGIN,
-  methods: process.env.CORS_METHODS?.split(",").map(m => m.trim()),
-  credentials: true
-}));
+// Read CORS settings from environment (isto kao šablon)
+const corsOrigin = process.env.CORS_ORIGIN ?? "*";
+const corsMethods =
+  process.env.CORS_METHODS?.split(",").map((m) => m.trim()) ?? ["GET", "POST", "PATCH", "PUT", "DELETE"];
 
+app.use(
+  cors({
+    origin: corsOrigin,
+    methods: corsMethods,
+  })
+);
 
 app.use(express.json());
 
-const salesController = new SalesController();
-app.use("/api/sales", salesController.router);
+// DB init (kao šablon – u app.ts)
+initialize_database();
+
+// ORM repositories
+const perfumeRepository = Db.getRepository(Perfume);
+const saleRepository = Db.getRepository(Sale);
+
+// Services
+const salesService = new SalesService(perfumeRepository, saleRepository);
+
+// Controller
+const salesController = new SalesController(salesService);
+
+// Register routes
+app.use("/api/v1", salesController.getRouter());
 
 
-// Health check endpoint (bez zaštite)
-app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
-        service: 'sales-microservice',
-        port: port,
-        database: Db.isInitialized ? 'connected' : 'disconnected', // ← PROMIJENJENO
-        timestamp: new Date().toISOString()
-    });
-});
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({ error: 'Endpoint not found' });
-});
-
+// Health
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 export default app;
