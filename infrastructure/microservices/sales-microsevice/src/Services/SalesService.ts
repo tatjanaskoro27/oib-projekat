@@ -1,18 +1,20 @@
-import { Db } from "../Database/DbConnectionPool";
+import { Repository } from "typeorm";
 import { Perfume } from "../Domain/Entities/Perfume";
 import { Sale } from "../Domain/Entities/Sale";
 import { PurchaseRequestDTO } from "../Domain/DTOs/PurchaseRequestDTO";
 
 export class SalesService {
+  constructor(
+    private readonly perfumeRepo: Repository<Perfume>,
+    private readonly saleRepo: Repository<Sale>
+  ) {}
+
   async getAllPerfumes(): Promise<Perfume[]> {
-    const perfumeRepo = Db.getRepository(Perfume);
-    return perfumeRepo.find();
+    return this.perfumeRepo.find();
   }
 
   async seedPerfumes(): Promise<{ message: string }> {
-    const perfumeRepo = Db.getRepository(Perfume);
-
-    const existing = await perfumeRepo.count();
+    const existing = await this.perfumeRepo.count();
     if (existing > 0) return { message: "Data already exists" };
 
     const perfumes = [
@@ -24,7 +26,7 @@ export class SalesService {
     for (const p of perfumes) {
       const perfume = new Perfume();
       Object.assign(perfume, p);
-      await perfumeRepo.save(perfume);
+      await this.perfumeRepo.save(perfume);
     }
 
     return { message: "Test data seeded successfully" };
@@ -34,47 +36,40 @@ export class SalesService {
     if (!dto.userId) throw new Error("Missing userId");
     if (!Array.isArray(dto.items) || dto.items.length === 0) throw new Error("Missing items");
 
-    const perfumeRepo = Db.getRepository(Perfume);
-    const saleRepo = Db.getRepository(Sale);
+    const ids = dto.items.map((i) => i.perfumeId);
 
-    // 1) Učitaj sve parfeme iz baze
-    const ids = dto.items.map(i => i.perfumeId);
-    const perfumes = await perfumeRepo.findByIds(ids as any); // TypeORM verzije se razlikuju
+    // TypeORM 0.3+ nema findByIds, pa koristimo ovaj "siguran" način:
+    const perfumes = await this.perfumeRepo.find();
+    const filtered = perfumes.filter(p => ids.includes(String(p.id)));
 
-    if (perfumes.length !== ids.length) {
-      throw new Error("Some perfumes do not exist");
-    }
+    if (filtered.length !== ids.length) throw new Error("Some perfumes do not exist");
 
-    // 2) Validacija + total iz baze + stock check
     let total = 0;
 
     for (const item of dto.items) {
       if (item.quantity <= 0) throw new Error("Invalid quantity");
 
-      const p = perfumes.find(x => String(x.id) === String(item.perfumeId));
+      const p = filtered.find((x) => String(x.id) === String(item.perfumeId));
       if (!p) throw new Error("Perfume not found");
 
-      if (p.stock < item.quantity) {
-        throw new Error(`Not enough stock for perfume ${p.name}`);
-      }
+      if (p.stock < item.quantity) throw new Error(`Not enough stock for perfume ${p.name}`);
 
       total += Number(p.price) * item.quantity;
     }
 
-    // 3) Smanji stock
+    // stock update
     for (const item of dto.items) {
-      const p = perfumes.find(x => String(x.id) === String(item.perfumeId))!;
+      const p = filtered.find((x) => String(x.id) === String(item.perfumeId))!;
       p.stock -= item.quantity;
-      await perfumeRepo.save(p);
+      await this.perfumeRepo.save(p);
     }
 
-    // 4) Upisi prodaju
     const sale = new Sale();
     sale.userId = dto.userId;
-    sale.items = dto.items.map(i => ({ perfumeId: i.perfumeId, quantity: i.quantity }));
+    sale.items = dto.items.map((i) => ({ perfumeId: i.perfumeId, quantity: i.quantity }));
     sale.totalAmount = Number(total.toFixed(2));
     sale.status = "completed";
 
-    return await saleRepo.save(sale);
+    return await this.saleRepo.save(sale);
   }
 }

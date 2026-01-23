@@ -1,27 +1,27 @@
 import { Router, Request, Response } from "express";
-import { SalesService } from "../Services/SalesService";
 import { PurchaseRequestDTO } from "../Domain/DTOs/PurchaseRequestDTO";
+import { SalesService } from "../Services/SalesService";
 
 export class SalesController {
-  public router: Router;
-  private salesService: SalesService;
+  private readonly router: Router;
 
-  constructor() {
+  constructor(private readonly salesService: SalesService) {
     this.router = Router();
-    this.salesService = new SalesService();
     this.initializeRoutes();
   }
 
   private initializeRoutes() {
-    this.router.get("/perfumes", this.getPerfumes.bind(this));
-    this.router.post("/seed", this.seed.bind(this));
-    this.router.post("/purchase", this.purchase.bind(this));
+    // BITNO: ove rute će biti pod /api/v1 (iz app.ts)
+    // a najčešće i pod /sales, ako ga dodaš u app.ts (vidi ispod)
+    this.router.get("/sales/perfumes", this.getPerfumes.bind(this));
+    this.router.post("/sales/seed", this.seed.bind(this));
+    this.router.post("/sales/purchase", this.purchase.bind(this));
   }
 
   private async getPerfumes(req: Request, res: Response) {
     try {
       const perfumes = await this.salesService.getAllPerfumes();
-      res.json(perfumes);
+      res.status(200).json(perfumes);
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
     }
@@ -30,7 +30,7 @@ export class SalesController {
   private async seed(req: Request, res: Response) {
     try {
       const result = await this.salesService.seedPerfumes();
-      res.json(result);
+      res.status(200).json(result);
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
     }
@@ -44,5 +44,9 @@ export class SalesController {
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
     }
+  }
+
+  public getRouter(): Router {
+    return this.router;
   }
 }
