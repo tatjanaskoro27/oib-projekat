@@ -45,6 +45,8 @@ export class GatewayService implements IGatewayService {
   private readonly productionClient: AxiosInstance;
   private readonly processingClient: AxiosInstance;
   private readonly dogadjajiClient: AxiosInstance;
+  private readonly salesClient: AxiosInstance;
+
 
   constructor() {
     const authBaseURL = process.env.AUTH_SERVICE_API;
@@ -53,6 +55,7 @@ export class GatewayService implements IGatewayService {
     const productionBaseURL = process.env.PRODUCTION_SERVICE_API;
     const processingBaseURL = process.env.PROCESSING_SERVICE_API;
     const dogadjajiBaseURL = process.env.DOGADJAJI_SERVICE_API;
+    const salesBaseURL = process.env.SALES_SERVICE_API;
 
 
     if (!authBaseURL) throw new Error("AUTH_SERVICE_API nije podešen u .env");
@@ -61,6 +64,8 @@ export class GatewayService implements IGatewayService {
     if (!productionBaseURL) throw new Error("PRODUCTION_SERVICE_API nije podešen u .env");
     if (!processingBaseURL) throw new Error("PROCESSING_SERVICE_API nije podešen u .env");
     if (!dogadjajiBaseURL) throw new Error("DOGADJAJI_SERVICE_API nije podešen u .env");
+    if (!salesBaseURL) throw new Error("SALES_SERVICE_API nije podešen u .env");
+
 
     this.authClient = axios.create({
       baseURL: authBaseURL,
@@ -97,6 +102,15 @@ export class GatewayService implements IGatewayService {
       headers: { "Content-Type": "application/json" },
       timeout: 5000,
     });
+
+    this.salesClient = axios.create({
+      baseURL: salesBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000,
+    });
+
+
+
   }
   // Auth microservice
 
@@ -315,6 +329,21 @@ export class GatewayService implements IGatewayService {
     const res = await this.dogadjajiClient.delete<{ deleted: true }>(`/dogadjaji/${id}`);
     return res.data;
   }
+
+
+    // -------------------
+  // SALES
+  // -------------------
+  async getSalesPerfumes(): Promise<any> {
+  const res = await this.salesClient.get("/sales/perfumes");
+  return res.data;
+}
+
+  async salesPurchase(dto: any): Promise<any> {
+  const res = await this.salesClient.post("/sales/purchase", dto);
+  return res.data;
+}
+
 
 
 }

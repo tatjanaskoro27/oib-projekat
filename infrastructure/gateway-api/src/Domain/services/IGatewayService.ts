@@ -37,6 +37,7 @@ import { UpdateDogadjajDTO } from "../DTOs/dogadjaji/UpdateDogadjajDTO";
 import { TipDogadjaja } from "../DTOs/dogadjaji/TipDogadjaja";
 
 
+
 export interface IGatewayService {
   // Auth
   login(data: LoginUserDTO): Promise<AuthResponseType>;
@@ -87,5 +88,8 @@ export interface IGatewayService {
   updateDogadjaj(id: number, dto: UpdateDogadjajDTO): Promise<DogadjajDTO>;
   deleteDogadjaj(id: number): Promise<{ deleted: true }>;
 
+    // Sales
+  getSalesPerfumes(): Promise<any>;
+  salesPurchase(dto: any): Promise<any>;
 
 }

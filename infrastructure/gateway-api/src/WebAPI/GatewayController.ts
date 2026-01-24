@@ -87,6 +87,11 @@ export class GatewayController {
     // INTERNAL dogadjaji (server-to-server)
     this.router.post("/internal/dogadjaji", internalAuth, this.internalCreateDogadjaj.bind(this));
 
+     // Sales
+    this.router.get("/sales/perfumes", authenticate, authorize("admin", "seller"), this.getSalesPerfumes.bind(this));
+    this.router.post("/sales/purchase", authenticate, authorize("admin", "seller"), this.salesPurchase.bind(this));
+
+    
   }
 
   // Auth
@@ -532,4 +537,28 @@ export class GatewayController {
   public getRouter(): Router {
     return this.router;
   }
+
+    // -------------------
+  // SALES (public)
+  // -------------------
+  private async getSalesPerfumes(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.getSalesPerfumes();
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  }
+
+  private async salesPurchase(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.salesPurchase(req.body);
+      res.status(201).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+  
+
 }
