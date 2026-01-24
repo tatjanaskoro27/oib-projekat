@@ -14,6 +14,10 @@ import { Sale } from "./Domain/Entities/Sale";
 import { SalesService } from "./Services/SalesService";
 import { SalesController } from "./WebAPI/SalesController";
 
+import { GatewayClient } from "./Services/GatewayClient";
+
+
+
 dotenv.config({ quiet: true });
 
 const app = express();
@@ -39,8 +43,11 @@ initialize_database();
 const perfumeRepository = Db.getRepository(Perfume);
 const saleRepository = Db.getRepository(Sale);
 
+//  Gateway client
+const gatewayClient = new GatewayClient();
+
 // Services
-const salesService = new SalesService(perfumeRepository, saleRepository);
+const salesService = new SalesService(perfumeRepository, saleRepository, gatewayClient);
 
 // Controller
 const salesController = new SalesController(salesService);

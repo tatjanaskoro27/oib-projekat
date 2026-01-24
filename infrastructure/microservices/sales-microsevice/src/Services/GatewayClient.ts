@@ -35,10 +35,17 @@ export class GatewayClient {
   // ---- storage -> sales
   // očekivani format odgovora zavisi od implementacije skladista.
   // Predlog: skladiste vrati listu parfema koji su raspakovani iz poslatih ambalaza.
-  async requestPerfumesFromStorage(packagesCount: number): Promise<any> {
-    const res = await this.client.post(this.storageSendPath, { packagesCount });
-    return res.data;
-  }
+  // ---- storage -> sales
+ async requestPerfumesFromStorage(packagesCount: number, uloga: "MENADZER_PRODAJE" | "PRODAVAC"): Promise<any> {
+  const res = await this.client.post(
+    this.storageSendPath,
+    { trazenaKolicina: packagesCount },
+    { headers: { "x-uloga": uloga } }
+  );
+  return res.data;
+}
+
+
 
   // ---- analytics
   async createFiscalReceipt(dto: CreateFiscalReceiptDTO): Promise<any> {

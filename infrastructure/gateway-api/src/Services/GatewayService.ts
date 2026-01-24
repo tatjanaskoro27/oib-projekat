@@ -46,6 +46,7 @@ export class GatewayService implements IGatewayService {
   private readonly processingClient: AxiosInstance;
   private readonly dogadjajiClient: AxiosInstance;
   private readonly salesClient: AxiosInstance;
+  private readonly skladisteClient: AxiosInstance;
 
 
   constructor() {
@@ -56,6 +57,7 @@ export class GatewayService implements IGatewayService {
     const processingBaseURL = process.env.PROCESSING_SERVICE_API;
     const dogadjajiBaseURL = process.env.DOGADJAJI_SERVICE_API;
     const salesBaseURL = process.env.SALES_SERVICE_API;
+    const skladisteBaseURL = process.env.SKLADISTE_SERVICE_API;
 
 
     if (!authBaseURL) throw new Error("AUTH_SERVICE_API nije podešen u .env");
@@ -65,6 +67,7 @@ export class GatewayService implements IGatewayService {
     if (!processingBaseURL) throw new Error("PROCESSING_SERVICE_API nije podešen u .env");
     if (!dogadjajiBaseURL) throw new Error("DOGADJAJI_SERVICE_API nije podešen u .env");
     if (!salesBaseURL) throw new Error("SALES_SERVICE_API nije podešen u .env");
+    if (!skladisteBaseURL) throw new Error("SKLADISTE_SERVICE_API nije podešen u .env");
 
 
     this.authClient = axios.create({
@@ -109,7 +112,12 @@ export class GatewayService implements IGatewayService {
       timeout: 5000,
     });
 
-
+    
+  this.skladisteClient = axios.create({
+  baseURL: skladisteBaseURL,
+  headers: { "Content-Type": "application/json" },
+  timeout: 10000,
+});
 
   }
   // Auth microservice
@@ -349,6 +357,16 @@ export class GatewayService implements IGatewayService {
     const res = await this.salesClient.post("/sales/purchase", dto);
     return res.data;
   }
+
+  async internalSendAmbalaze(trazenaKolicina: number, uloga: string): Promise<any> {
+    const res = await this.skladisteClient.post(
+      "/slanje",
+      { trazenaKolicina },
+      { headers: { "x-uloga": uloga } }
+    );
+    return res.data;
+  }
+
 
 
 

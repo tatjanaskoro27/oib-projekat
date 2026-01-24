@@ -37,14 +37,21 @@ export class SalesController {
   }
 
   private async purchase(req: Request, res: Response) {
-    try {
-      const dto: PurchaseRequestDTO = req.body;
-      const sale = await this.salesService.purchase(dto);
-      res.status(201).json({ message: "Purchase successful", sale });
-    } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
-    }
+  try {
+    const dto: PurchaseRequestDTO = req.body;
+
+    // uloga dolazi od gateway-a kao header (x-uloga)
+    const h = (req.header("x-uloga") || "").toUpperCase();
+    const uloga: "MENADZER_PRODAJE" | "PRODAVAC" = h === "MENADZER_PRODAJE" ? "MENADZER_PRODAJE" : "PRODAVAC";
+    const sale = await this.salesService.purchase(dto, uloga);
+
+
+    res.status(201).json({ message: "Purchase successful", sale });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
   }
+}
+
 
   public getRouter(): Router {
     return this.router;

@@ -92,6 +92,12 @@ export class GatewayController {
     this.router.get("/sales/perfumes", authenticate, authorize("admin", "seller"), this.getSalesPerfumes.bind(this));
     this.router.post("/sales/purchase", authenticate, authorize("admin", "seller"), this.salesPurchase.bind(this));
 
+    this.router.post(
+  "/internal/skladiste/poslji-ambalaze",
+  internalAuth,
+  this.internalSendAmbalaze.bind(this)
+);
+
 
   }
 
@@ -568,6 +574,22 @@ export class GatewayController {
     }
   }
 
+
+  private async internalSendAmbalaze(req: Request, res: Response) {
+  try {
+    const uloga = req.header("x-uloga") || "PRODAVAC";
+    const trazenaKolicina = Number(req.body?.trazenaKolicina);
+
+    if (!trazenaKolicina || trazenaKolicina <= 0) {
+      return res.status(400).json({ message: "trazenaKolicina mora biti > 0" });
+    }
+
+    const data = await this.gatewayService.internalSendAmbalaze(trazenaKolicina, uloga);
+    return res.json(data);
+  } catch (err) {
+    return res.status(400).json({ message: (err as Error).message });
+  }
+}
 
 
 }

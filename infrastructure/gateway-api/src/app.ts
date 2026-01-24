@@ -23,10 +23,12 @@ app.use(cors({
 app.use(express.json());
 
 // Services
-const gatewayService: IGatewayService = new GatewayService();
+const gatewayService = new GatewayService();
+
 
 // WebAPI routes
-const gatewayController = new GatewayController(gatewayService);
+const gatewayController = new GatewayController(gatewayService as unknown as IGatewayService);
+
 
 // Registering routes
 app.use('/api/v1', gatewayController.getRouter());

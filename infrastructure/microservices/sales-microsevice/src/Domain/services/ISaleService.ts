@@ -7,5 +7,7 @@ export interface ISalesService {
   seedPerfumes(): Promise<{ message: string }>;
 
   // vraća lokalni zapis + rezultat iz analytics-a (fiskalni račun)
-  purchase(dto: PurchaseRequestDTO): Promise<{ sale: Sale; fiscalReceipt: any }>;
+ purchase(dto: PurchaseRequestDTO, uloga: "MENADZER_PRODAJE" | "PRODAVAC"): Promise<any>;
+
+
 }

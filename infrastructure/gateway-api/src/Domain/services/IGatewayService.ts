@@ -92,4 +92,7 @@ export interface IGatewayService {
   getSalesPerfumes(): Promise<any>;
   salesPurchase(dto: any): Promise<any>;
 
+  internalSendAmbalaze(trazenaKolicina: number, uloga: string): Promise<any>;
+
+
 }
