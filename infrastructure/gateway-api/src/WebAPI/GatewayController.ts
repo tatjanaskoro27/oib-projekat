@@ -76,6 +76,7 @@ export class GatewayController {
     this.router.post("/internal/plants", internalAuth, this.internalPlant.bind(this));
     this.router.post("/internal/plants/harvest", internalAuth, this.internalHarvest.bind(this));
     this.router.patch("/internal/plants/:id/oil-strength", internalAuth, this.internalUpdateOilStrength.bind(this));
+    this.router.post("/internal/plants/process", internalAuth, this.internalProcessPlants.bind(this));
 
     // Dogadjaji
     this.router.get("/dogadjaji", authenticate, authorize("admin", "seller"), this.getDogadjaji.bind(this));
@@ -87,11 +88,11 @@ export class GatewayController {
     // INTERNAL dogadjaji (server-to-server)
     this.router.post("/internal/dogadjaji", internalAuth, this.internalCreateDogadjaj.bind(this));
 
-     // Sales
+    // Sales
     this.router.get("/sales/perfumes", authenticate, authorize("admin", "seller"), this.getSalesPerfumes.bind(this));
     this.router.post("/sales/purchase", authenticate, authorize("admin", "seller"), this.salesPurchase.bind(this));
 
-    
+
   }
 
   // Auth
@@ -416,6 +417,14 @@ export class GatewayController {
     }
   }
 
+  private async internalProcessPlants(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.processPlants(req.body);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
 
   private async startProcessing(req: Request, res: Response): Promise<void> {
     try {
@@ -538,7 +547,7 @@ export class GatewayController {
     return this.router;
   }
 
-    // -------------------
+  // -------------------
   // SALES (public)
   // -------------------
   private async getSalesPerfumes(req: Request, res: Response): Promise<void> {
@@ -559,6 +568,6 @@ export class GatewayController {
     }
   }
 
-  
+
 
 }

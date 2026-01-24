@@ -26,3 +26,7 @@ export interface AvailableCountResponse {
   available: number;
 }
 
+export interface ProcessPlantsResponse {
+  processedIds: number[];
+  processedCount: number;
+}

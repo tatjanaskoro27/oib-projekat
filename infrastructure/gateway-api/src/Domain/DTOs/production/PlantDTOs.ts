@@ -12,3 +12,8 @@ export interface HarvestPlantsDTO {
   name: string;
   count: number;
 }
+
+export interface ProcessPlantsDTO {
+  plantIds: number[];
+}
+

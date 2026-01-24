@@ -88,6 +88,8 @@ export class ProcessingService implements IProcessingService {
 
     const finalPerfumes = await this.perfumeRepo.save(saved);
 
+    const harvestedIds = Array.from(new Set(harvestedPlants.map((p) => p.id)));
+    await this.gateway.markPlantsProcessed(harvestedIds);
 
     await this.gateway.logEvent({
       tip: "INFO",

@@ -6,6 +6,7 @@ import { validateUpdateOilStrengthData } from "../validators/UpdateOilStrengthVa
 import { validateHarvestPlantsData } from "../validators/HarvestPlantsValidator";
 import { PlantStatus } from "../../Domain/enums/PlantStatus";
 import { SortBy, SortDir } from "../../Domain/DTOs/GetPlantsQueryDTO";
+import { validateProcessPlantsData } from "../validators/ProcessPlantsValidator";
 
 const isPlantStatus = (value: string): value is PlantStatus =>
   Object.values(PlantStatus).includes(value as PlantStatus);
@@ -35,6 +36,7 @@ export class PlantsController {
     this.router.post("/plants/harvest", this.harvest.bind(this));
     this.router.get("/plants", this.getAll.bind(this));
     this.router.get("/plants/:id", this.getById.bind(this));
+    this.router.post("/plants/process", this.processPlants.bind(this));
   }
 
   private async plant(req: Request, res: Response): Promise<void> {
@@ -142,6 +144,20 @@ export class PlantsController {
     }
   }
 
+  private async processPlants(req: Request, res: Response): Promise<void> {
+    try {
+      const validation = validateProcessPlantsData(req.body);
+      if (!validation.success) {
+        res.status(400).json({ success: false, message: validation.message });
+        return;
+      }
+      const result = await this.productionService.processPlants(req.body);
+      res.status(200).json(result);
+    } catch (err) {
+      this.logger.log((err as Error).message);
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
 
 
   public getRouter(): Router {

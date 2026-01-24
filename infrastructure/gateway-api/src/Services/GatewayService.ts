@@ -26,8 +26,8 @@ import { KolicinaMesecnaDTO } from "../Domain/DTOs/analytics/KolicinaMesecnoDTO"
 import { KolicinaGodisnjaDTO } from "../Domain/DTOs/analytics/KolicinaGodisnjaDTO";
 
 //
-import { CreatePlantDTO, HarvestPlantsDTO, UpdateOilStrengthDTO } from "../Domain/DTOs/production/PlantDTOs";
-import { PlantResponse, HarvestResponse, AvailableCountResponse } from "../Domain/DTOs/production/PlantTypes";
+import { CreatePlantDTO, HarvestPlantsDTO, ProcessPlantsDTO, UpdateOilStrengthDTO } from "../Domain/DTOs/production/PlantDTOs";
+import { PlantResponse, HarvestResponse, AvailableCountResponse, ProcessPlantsResponse } from "../Domain/DTOs/production/PlantTypes";
 
 import { StartProcessingDTO, GetPerfumesDTO } from "../Domain/DTOs/processing/ProcessingDTOs";
 import { PerfumeResponse } from "../Domain/DTOs/processing/PerfumeTypes";
@@ -291,6 +291,12 @@ export class GatewayService implements IGatewayService {
     return response.data;
   }
 
+  async processPlants(dto: ProcessPlantsDTO): Promise<ProcessPlantsResponse> {
+    const response = await this.productionClient.post<ProcessPlantsResponse>("/plants/process", dto);
+    return response.data;
+  }
+
+
 
   //processing
   async startProcessing(dto: StartProcessingDTO): Promise<PerfumeResponse[]> {
@@ -331,18 +337,18 @@ export class GatewayService implements IGatewayService {
   }
 
 
-    // -------------------
+  // -------------------
   // SALES
   // -------------------
   async getSalesPerfumes(): Promise<any> {
-  const res = await this.salesClient.get("/sales/perfumes");
-  return res.data;
-}
+    const res = await this.salesClient.get("/sales/perfumes");
+    return res.data;
+  }
 
   async salesPurchase(dto: any): Promise<any> {
-  const res = await this.salesClient.post("/sales/purchase", dto);
-  return res.data;
-}
+    const res = await this.salesClient.post("/sales/purchase", dto);
+    return res.data;
+  }
 
 
 

@@ -41,6 +41,11 @@ export class GatewayClient {
     await this.client.patch(`/internal/plants/${plantId}/oil-strength`, { percent });
   }
 
+  async markPlantsProcessed(plantIds: number[]): Promise<{ processedCount: number; processedIds: number[] }> {
+    const res = await this.client.post<{ processedIds: number[]; processedCount: number }>("/internal/plants/process", { plantIds });
+    return res.data;
+  }
+
   async logEvent(dto: CreateDogadjajDTO): Promise<void> {
     await this.client.post("/internal/dogadjaji", dto);
   }

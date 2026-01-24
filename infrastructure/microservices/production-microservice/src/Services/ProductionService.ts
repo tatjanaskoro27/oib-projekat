@@ -1,4 +1,4 @@
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { Plant } from "../Domain/models/Plant";
 import { PlantStatus } from "../Domain/enums/PlantStatus";
 import { CreatePlantDTO } from "../Domain/DTOs/CreatePlantDTO";
@@ -7,6 +7,7 @@ import { IProductionService } from "../Domain/services/IProductionService";
 import { HarvestPlantsResponseDTO } from "../Domain/DTOs/HarvestPlantsResponseDTO";
 import { EventClient } from "../Services/EventClient";
 import { GetPlantsQueryDTO } from "../Domain/DTOs/GetPlantsQueryDTO";
+import { ProcessPlantsDTO, ProcessPlantsResponseDTO } from "../Domain/DTOs/ProcessPlantsDTO";
 
 
 export class ProductionService implements IProductionService {
@@ -139,5 +140,35 @@ export class ProductionService implements IProductionService {
     return plant;
   }
 
+  async processPlants(dto: ProcessPlantsDTO): Promise<ProcessPlantsResponseDTO> {
+    const ids = Array.from(new Set(dto.plantIds)).filter((n) => Number.isInteger(n) && n > 0);
+
+    if (ids.length === 0) {
+      throw new Error("plantIds are required");
+    }
+
+    const plants = await this.plantRepo.find({ where: { id: In(ids) } });
+
+    if (plants.length !== ids.length) {
+      throw new Error("Some plants were not found");
+    }
+
+    const invalid = plants.filter((p) => p.status !== PlantStatus.HARVESTED);
+    if (invalid.length > 0) {
+      throw new Error("All plants must be harvested before processing");
+    }
+
+    for (const p of plants) p.status = PlantStatus.PROCESSED;
+    await this.plantRepo.save(plants);
+
+    await this.events.logEvent({
+      tip: "INFO",
+      opis: `Biljke oznacene kao preradjene (PROCESSED). Count=${plants.length}, IDs: ${plants
+        .map((p) => p.id)
+        .join(", ")}`,
+    });
+
+    return { processedIds: plants.map((p) => p.id), processedCount: plants.length };
+  }
 
 }
