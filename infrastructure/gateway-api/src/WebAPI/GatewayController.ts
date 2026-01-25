@@ -92,11 +92,9 @@ export class GatewayController {
     this.router.get("/sales/perfumes", authenticate, authorize("admin", "seller"), this.getSalesPerfumes.bind(this));
     this.router.post("/sales/purchase", authenticate, authorize("admin", "seller"), this.salesPurchase.bind(this));
 
-    this.router.post(
-  "/internal/skladiste/poslji-ambalaze",
-  internalAuth,
-  this.internalSendAmbalaze.bind(this)
-);
+    this.router.post("/internal/skladiste/poslji-ambalaze", internalAuth, this.internalSendAmbalaze.bind(this));
+    // INTERNAL analytics racuni (server-to-server)
+    this.router.post("/internal/analytics/racuni", internalAuth, this.internalCreateRacun.bind(this));
 
 
   }
@@ -586,10 +584,22 @@ export class GatewayController {
 
     const data = await this.gatewayService.internalSendAmbalaze(trazenaKolicina, uloga);
     return res.json(data);
-  } catch (err) {
+    } catch (err) {
     return res.status(400).json({ message: (err as Error).message });
+   }
   }
-}
+
+  private async internalCreateRacun(req: Request, res: Response) {
+  try {
+    const created = await this.gatewayService.createRacun(req.body);
+    return res.status(201).json(created);
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err?.message ?? "Internal error while creating racun",
+    });
+  }
+  }
+
 
 
 }

@@ -1,8 +1,12 @@
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { Perfume } from "../Domain/Entities/Perfume";
 import { Sale } from "../Domain/Entities/Sale";
 import { PurchaseRequestDTO } from "../Domain/DTOs/PurchaseRequestDTO";
-import { GatewayClient } from "./GatewayClient"; // proveri putanju (isti folder Services)
+import { GatewayClient } from "./GatewayClient";
+import { CreateFiscalReceiptDTO } from "../Domain/DTOs/CreateFiscalReceiptDTO";
+import { CreateDogadjajDTO } from "../Domain/DTOs/EventDTO";
+
+type Uloga = "MENADZER_PRODAJE" | "PRODAVAC";
 
 export class SalesService {
   constructor(
@@ -10,7 +14,6 @@ export class SalesService {
     private readonly saleRepo: Repository<Sale>,
     private readonly gatewayClient: GatewayClient
   ) {}
-
 
   async getAllPerfumes(): Promise<Perfume[]> {
     return this.perfumeRepo.find();
@@ -35,52 +38,99 @@ export class SalesService {
     return { message: "Test data seeded successfully" };
   }
 
-    async purchase(dto: PurchaseRequestDTO, uloga: "MENADZER_PRODAJE" | "PRODAVAC"): Promise<any>  {
-    if (!dto.userId) throw new Error("Missing userId");
-    if (!Array.isArray(dto.items) || dto.items.length === 0) throw new Error("Missing items");
+  async purchase(dto: PurchaseRequestDTO, uloga: Uloga): Promise<any> {
+    try {
+      if (!dto.userId) throw new Error("Missing userId");
+      if (!Array.isArray(dto.items) || dto.items.length === 0) throw new Error("Missing items");
+
+      // 1) Parse perfumeId once -> NUMBER (rešava sve string/number compare greške)
+      const parsedItems = dto.items.map((i) => {
+     const qty = Number(i.quantity);
+      if (!Number.isFinite(qty) || qty <= 0) throw new Error("Invalid quantity");
+      return { perfumeId: String(i.perfumeId), quantity: qty };
+      });
 
 
-    const totalBottles = dto.items.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
-    const capacity = Number(process.env.PACKAGE_CAPACITY ?? 3);
-    const packagesCount = Math.ceil(totalBottles / capacity);
+      const trazenaKolicina = parsedItems.reduce((sum, it) => sum + it.quantity, 0);
+      if (trazenaKolicina <= 0) throw new Error("Invalid quantity");
 
-    const ids = dto.items.map((i) => i.perfumeId);
+      // 2) Load perfumes by IDs
+      const ids = parsedItems.map((i) => i.perfumeId);
+      const perfumes = await this.perfumeRepo.findBy({ id: In(ids) }); // ako ti findBy pravi problem, reci pa menjamo
+      if (perfumes.length !== ids.length) throw new Error("Some perfumes do not exist");
 
-    // TypeORM 0.3+ nema findByIds, pa koristimo ovaj "siguran" način:
-    const perfumes = await this.perfumeRepo.find();
-    const filtered = perfumes.filter(p => ids.includes(String(p.id)));
-    const storageResponse = await this.gatewayClient.requestPerfumesFromStorage(packagesCount, uloga);
-    void storageResponse;
+      // Helper: brzo nalazenje
+      const byId = new Map<string, Perfume>(perfumes.map((p) => [String(p.id), p]));
 
+      // 3) Validate stock + total
+      let total = 0;
+      for (const it of parsedItems) {
+        const p = byId.get(it.perfumeId);
+        if (!p) throw new Error("Perfume not found");
 
-    if (filtered.length !== ids.length) throw new Error("Some perfumes do not exist");
+        if (p.stock < it.quantity) throw new Error(`Not enough stock for perfume ${p.name}`);
 
-    let total = 0;
+        total += Number(p.price) * it.quantity;
+      }
 
-    for (const item of dto.items) {
-      if (item.quantity <= 0) throw new Error("Invalid quantity");
+      // 4) Skladište preko GW internal
+      const storageResponse = await this.gatewayClient.requestPerfumesFromStorage(trazenaKolicina, uloga);
 
-      const p = filtered.find((x) => String(x.id) === String(item.perfumeId));
-      if (!p) throw new Error("Perfume not found");
+      // 5) Kreiranje fiskalnog računa preko GW internal (analytics shape)
+      const receiptDto: CreateFiscalReceiptDTO = {
+        tipProdaje: (dto.saleType as any) ?? "MALOPRODAJA",
+        nacinPlacanja: (dto.paymentType as any) ?? "GOTOVINA",
+        stavke: parsedItems.map((it) => {
+          const p = byId.get(it.perfumeId)!;
+          return {
+            parfemNaziv: p.name,
+            kolicina: it.quantity,
+            cenaPoKomadu: Number(p.price),
+          };
+        }),
+      };
 
-      if (p.stock < item.quantity) throw new Error(`Not enough stock for perfume ${p.name}`);
+      const racun = await this.gatewayClient.createFiscalReceipt(receiptDto);
 
-      total += Number(p.price) * item.quantity;
+      // 6) Stock update
+      for (const it of parsedItems) {
+        const p = byId.get(it.perfumeId)!;
+        p.stock -= it.quantity;
+        await this.perfumeRepo.save(p);
+      }
+
+      // 7) Save sale
+      const sale = new Sale();
+      sale.userId = dto.userId;
+
+      // ostavi originalan shape (string id), da ti ne pukne entity schema
+      sale.items = dto.items as any;
+
+      sale.totalAmount = Number(total.toFixed(2));
+      sale.status = "completed";
+
+      const saved = await this.saleRepo.save(sale);
+
+      // 8) Log event (success)
+      const okEvent: CreateDogadjajDTO = {
+        tip: "INFO",
+        opis: `Uspesna kupovina. SaleId=${saved.id}. RacunId=${racun?.id ?? "?"}`,
+      };
+      await this.gatewayClient.logEvent(okEvent);
+
+      return { sale: saved, racun, storageResponse };
+    } catch (err: any) {
+      // Log event (fail)
+      try {
+        const failEvent: CreateDogadjajDTO = {
+          tip: "ERROR",
+          opis: `Neuspesna kupovina: ${err?.message ?? "greska"}`,
+        };
+        await this.gatewayClient.logEvent(failEvent);
+      } catch {
+        // ignore logging failure
+      }
+      throw err;
     }
-
-    // stock update
-    for (const item of dto.items) {
-      const p = filtered.find((x) => String(x.id) === String(item.perfumeId))!;
-      p.stock -= item.quantity;
-      await this.perfumeRepo.save(p);
-    }
-
-    const sale = new Sale();
-    sale.userId = dto.userId;
-    sale.items = dto.items.map((i) => ({ perfumeId: i.perfumeId, quantity: i.quantity }));
-    sale.totalAmount = Number(total.toFixed(2));
-    sale.status = "completed";
-
-    return await this.saleRepo.save(sale);
   }
 }
