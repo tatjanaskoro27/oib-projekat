@@ -13,7 +13,7 @@ import { IAnalyticsAPI } from "./api/analytics/IAnalyticsAPI";
 import { AnalyticsAPI } from "./api/analytics/AnalyticsAPI";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { ProductionPage } from "./pages/ProductionPage";
-
+import { ProcessingPage } from "./pages/ProcessingPage";
 
 const auth_api: IAuthAPI = new AuthAPI();
 const user_api: IUserAPI = new UserAPI();
@@ -54,7 +54,14 @@ function App() {
           </ProtectedRoute>
         }
       />
-
+      <Route
+        path="/processing"
+        element={
+          <ProtectedRoute requiredRole="admin,seller">
+            <ProcessingPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* (opciono) fallback */}
       {/* <Route path="*" element={<Navigate to="/" replace />} /> */}

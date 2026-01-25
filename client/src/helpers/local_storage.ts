@@ -1,6 +1,6 @@
 function saveValueByKey(key: string, value: string): boolean {
   try {
-    localStorage.setItem(key, value);
+    sessionStorage.setItem(key, value);
     return true;
   } catch {
     return false;
@@ -9,7 +9,7 @@ function saveValueByKey(key: string, value: string): boolean {
 
 function readValueByKey(key: string): string | null {
   try {
-    return localStorage.getItem(key);
+    return sessionStorage.getItem(key);
   } catch {
     return null;
   }
@@ -17,7 +17,7 @@ function readValueByKey(key: string): string | null {
 
 function removeValueByKey(key: string): boolean {
   try {
-    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
     return true;
   } catch {
     return false;
