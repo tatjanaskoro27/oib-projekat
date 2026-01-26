@@ -353,10 +353,13 @@ export class GatewayService implements IGatewayService {
     return res.data;
   }
 
-  async salesPurchase(dto: any): Promise<any> {
-    const res = await this.salesClient.post("/sales/purchase", dto);
-    return res.data;
-  }
+  async salesPurchase(dto: any, role: string): Promise<any> {
+  const res = await this.salesClient.post("/sales/purchase", dto, {
+    headers: { "x-uloga": String(role || "") },
+  });
+  return res.data;
+}
+
 
   async internalSendAmbalaze(trazenaKolicina: number, uloga: string): Promise<any> {
     const res = await this.skladisteClient.post(

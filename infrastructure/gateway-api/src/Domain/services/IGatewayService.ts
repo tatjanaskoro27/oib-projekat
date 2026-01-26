@@ -89,8 +89,8 @@ export interface IGatewayService {
   deleteDogadjaj(id: number): Promise<{ deleted: true }>;
 
     // Sales
-  getSalesPerfumes(): Promise<any>;
-  salesPurchase(dto: any): Promise<any>;
+   getSalesPerfumes(): Promise<any>;
+    salesPurchase(dto: any, role: string): Promise<any>; 
 
   internalSendAmbalaze(trazenaKolicina: number, uloga: string): Promise<any>;
 

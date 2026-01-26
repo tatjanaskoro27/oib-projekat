@@ -563,14 +563,30 @@ export class GatewayController {
     }
   }
 
-  private async salesPurchase(req: Request, res: Response): Promise<void> {
-    try {
-      const data = await this.gatewayService.salesPurchase(req.body);
-      res.status(201).json(data);
-    } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
-    }
-  }
+private async salesPurchase(req: Request, res: Response): Promise<void> {
+  try {
+    const jwtRole = String((req.user as any)?.role || "").toLowerCase(); // "admin" | "seller"
+    const xUloga = jwtRole === "admin" ? "MENADZER_PRODAJE" : "PRODAVAC";
+
+    const data = await this.gatewayService.salesPurchase(req.body, xUloga);
+
+    res.status(201).json(data);
+    return;
+  } catch (err: any) {
+  const status = err?.response?.status ?? 400;
+
+  // ✅ prosledi pravi response iz sales-a
+  const data =
+    err?.response?.data !== undefined
+      ? err.response.data
+      : { message: err?.message || "Bad request" };
+
+    res.status(status).json(data);
+    return;
+
+}
+
+}
 
 
   private async internalSendAmbalaze(req: Request, res: Response) {
