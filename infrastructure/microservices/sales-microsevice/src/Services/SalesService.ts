@@ -44,55 +44,78 @@ export class SalesService {
     return { message: "Test data seeded successfully" };
   }
 
-  async purchase(dto: PurchaseRequestDTO, uloga: Uloga): Promise<any> {
+  async purchase(dto: PurchaseRequestDTO, uloga: Uloga): Promise<{
+    sale: Sale;
+    racun: any;
+    storageResponse: any;
+  }> {
+    // helper: audit log ne sme da obori kupovinu
+    const safeLog = async (event: CreateDogadjajDTO) => {
+      try {
+        await this.gatewayClient.logEvent(event);
+      } catch (e: any) {
+        console.warn("⚠️ Audit log failed (ignored):", e?.message ?? e);
+      }
+    };
+
     try {
-      if (!dto.userId) throw new Error("Missing userId");
-      if (!Array.isArray(dto.items) || dto.items.length === 0) throw new Error("Missing items");
+      // 0) Basic validation
+      const userId = String((dto as any)?.userId ?? "").trim();
+      if (!userId) throw new Error("Missing userId");
+
+      if (!Array.isArray((dto as any)?.items) || (dto as any).items.length === 0) {
+        throw new Error("Missing items");
+      }
 
       // 1) Parse items: očekujemo name + quantity
-      const parsedItems: ParsedItem[] = (dto.items as any[]).map((i: any) => {
-        const qty = Number(i?.quantity);
-        if (!Number.isFinite(qty) || qty <= 0) throw new Error("Invalid quantity");
-
+      const parsedItems: ParsedItem[] = ((dto as any).items as any[]).map((i: any) => {
         const name = String(i?.name ?? "").trim();
         if (!name) throw new Error("Missing perfume name");
+
+        const qty = Number(i?.quantity ?? i?.kolicina ?? i?.qty);
+        if (!Number.isFinite(qty) || qty <= 0) throw new Error("Invalid quantity");
 
         return { name, quantity: qty };
       });
 
+      // 2) Sum quantity
       const trazenaKolicina = parsedItems.reduce((sum, it) => sum + it.quantity, 0);
       if (!Number.isFinite(trazenaKolicina) || trazenaKolicina <= 0) {
         throw new Error("Invalid quantity");
       }
 
-      // 2) Load perfumes by NAME (jer front ima UUID id, a DB ima numeric id)
-      const names = parsedItems.map((i) => i.name);
-      const perfumes = await this.perfumeRepo.findBy({ name: In(names) });
+      // 3) Load perfumes by UNIQUE names (da duplikati ne ubiju check)
+      const uniqueNames = Array.from(new Set(parsedItems.map((i) => i.name)));
+      const perfumes = await this.perfumeRepo.findBy({ name: In(uniqueNames) });
 
-      if (perfumes.length !== names.length) {
-        throw new Error("Some perfumes do not exist");
+      if (perfumes.length !== uniqueNames.length) {
+        const found = new Set(perfumes.map((p) => p.name));
+        const missing = uniqueNames.filter((n) => !found.has(n));
+        throw new Error(`Some perfumes do not exist: ${missing.join(", ")}`);
       }
 
       const byName = new Map<string, Perfume>(perfumes.map((p) => [p.name, p]));
 
-      // 3) Validate stock + total
+      // 4) Validate stock + total
       let total = 0;
       for (const it of parsedItems) {
-        const p = byName.get(it.name);
-        if (!p) throw new Error("Perfume not found");
+        const p = byName.get(it.name)!;
 
-        if (p.stock < it.quantity) throw new Error(`Not enough stock for perfume ${p.name}`);
-
+        if (p.stock < it.quantity) {
+          throw new Error(`Not enough stock for perfume ${p.name}`);
+        }
         total += Number(p.price) * it.quantity;
       }
+      total = Number(total.toFixed(2));
 
-      // 4) Skladište preko GW internal
+      // 5) Storage preko GW internal (ambalaže -> raspakivanje)
+      // Napomena: ako skladiste vraća detalje, mi ih samo prosledimo nazad.
       const storageResponse = await this.gatewayClient.requestPerfumesFromStorage(trazenaKolicina, uloga);
 
-      // 5) Fiskalni račun preko GW internal
+      // 6) Fiskalni račun preko GW internal (analytics)
       const receiptDto: CreateFiscalReceiptDTO = {
-        tipProdaje: (dto.saleType as any) ?? "MALOPRODAJA",
-        nacinPlacanja: (dto.paymentType as any) ?? "GOTOVINA",
+        tipProdaje: ((dto as any).saleType as any) ?? "MALOPRODAJA",
+        nacinPlacanja: ((dto as any).paymentType as any) ?? "GOTOVINA",
         stavke: parsedItems.map((it) => {
           const p = byName.get(it.name)!;
           return {
@@ -105,45 +128,41 @@ export class SalesService {
 
       const racun = await this.gatewayClient.createFiscalReceipt(receiptDto);
 
-      // 6) Stock update
-      for (const it of parsedItems) {
-        const p = byName.get(it.name)!;
-        p.stock -= it.quantity;
-        await this.perfumeRepo.save(p);
-      }
+      // 7) Transaction: update stock + save sale (da bude atomic)
+      const savedSale = await this.saleRepo.manager.transaction(async (trx) => {
+        // smanji stock
+        for (const it of parsedItems) {
+          const p = byName.get(it.name)!;
+          p.stock -= it.quantity;
+          await trx.getRepository(Perfume).save(p);
+        }
 
-      // 7) Save sale
-      const sale = new Sale();
-      sale.userId = dto.userId;
+        // upiši sale
+        const sale = new Sale();
+        sale.userId = userId;
+        sale.items = (dto as any).items as any; // čuvamo original što je došlo
+        sale.totalAmount = total;
+        sale.status = "completed";
 
-      // čuvamo originalni request items (sa name/quantity + šta god još dođe)
-      sale.items = dto.items as any;
+        return await trx.getRepository(Sale).save(sale);
+      });
 
-      sale.totalAmount = Number(total.toFixed(2));
-      sale.status = "completed";
-
-      const saved = await this.saleRepo.save(sale);
-
-      // 8) Log event (success)
-      const okEvent: CreateDogadjajDTO = {
+      // 8) Log success event (NE SME da obori response)
+      await safeLog({
         tip: "INFO",
-        opis: `Uspesna kupovina. SaleId=${saved.id}. RacunId=${racun?.id ?? "?"}`,
-      };
-      await this.gatewayClient.logEvent(okEvent);
+        opis: `Uspesna kupovina. SaleId=${savedSale.id}. RacunId=${racun?.id ?? "?"}`,
+      });
 
-      return { sale: saved, racun, storageResponse };
+      return { sale: savedSale, racun, storageResponse };
     } catch (err: any) {
-      // Log event (fail)
-      try {
-        const failEvent: CreateDogadjajDTO = {
-          tip: "ERROR",
-          opis: `Neuspesna kupovina: ${err?.message ?? "greska"}`,
-        };
-        await this.gatewayClient.logEvent(failEvent);
-      } catch {
-        // ignore logging failure
-      }
+      // Log fail event (ignore errors)
+      await safeLog({
+        tip: "ERROR",
+        opis: `Neuspesna kupovina: ${err?.message ?? "greska"}`,
+      });
+
       throw err;
     }
   }
 }
+

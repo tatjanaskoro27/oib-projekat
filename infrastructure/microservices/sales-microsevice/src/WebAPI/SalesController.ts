@@ -46,41 +46,37 @@ export class SalesController {
       quantity: Number(it?.quantity ?? it?.kolicina ?? it?.qty ?? 1),
     }));
 
-    if (!items.length) {
-      return res.status(400).json({ message: "Items array is empty" });
-    }
-
+    if (!items.length) return res.status(400).json({ message: "Items array is empty" });
     if (items.some((i: any) => !i.name || !Number.isFinite(i.quantity) || i.quantity <= 0)) {
-      return res.status(400).json({
-        message: "Each item must have name and quantity > 0",
-        items,
-      });
+      return res.status(400).json({ message: "Each item must have name and quantity > 0", items });
     }
 
-    // userId šalji kao string (da ne puca TS ako DTO traži string)
     const dto: any = {
-      userId: String(body.userId),
+      userId: String(body.userId ?? "").trim(),
       saleType: body.saleType,
       paymentType: body.paymentType,
       items,
     };
-
-    if (!dto.userId || dto.userId.trim() === "") {
-      return res.status(400).json({ message: "userId is required" });
-    }
+    if (!dto.userId) return res.status(400).json({ message: "userId is required" });
 
     const raw = String(req.header("x-uloga") || "").toUpperCase();
     const uloga: "MENADZER_PRODAJE" | "PRODAVAC" =
       raw === "MENADZER_PRODAJE" ? "MENADZER_PRODAJE" : "PRODAVAC";
 
-    const sale = await this.salesService.purchase(dto, uloga);
+    const result = await this.salesService.purchase(dto, uloga);
 
-    return res.status(201).json({ message: "Purchase successful", sale });
+    return res.status(201).json({
+      message: "Purchase successful",
+      sale: result.sale,
+      racun: result.racun,
+      storageResponse: result.storageResponse,
+    });
   } catch (err: any) {
     console.log("🔥 SALES PURCHASE ERROR:", err);
     return res.status(400).json({ message: err?.message ?? "Error" });
   }
 }
+
 
 
 
