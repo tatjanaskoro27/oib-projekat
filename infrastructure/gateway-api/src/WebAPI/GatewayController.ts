@@ -1,4 +1,5 @@
 import { Request, Response, Router } from "express";
+import axios from "axios"; // ✅ DODATO
 import { IGatewayService } from "../Domain/services/IGatewayService";
 import { LoginUserDTO } from "../Domain/DTOs/user/LoginUserDTO";
 import { RegistrationUserDTO } from "../Domain/DTOs/user/RegistrationUserDTO";
@@ -16,7 +17,6 @@ const isSortBy = (v: string): v is SortBy =>
 
 const isSortDir = (v: string): v is SortDir =>
   v === "ASC" || v === "DESC";
-
 
 export class GatewayController {
   private readonly router: Router;
@@ -96,7 +96,20 @@ export class GatewayController {
     // INTERNAL analytics racuni (server-to-server)
     this.router.post("/internal/analytics/racuni", internalAuth, this.internalCreateRacun.bind(this));
 
-
+    // ✅ DODATO: Performance (proxy -> performance-microservice)
+    // Mora i "/performance" i "/performance/*"
+    this.router.all(
+      "/performance",
+      authenticate,
+      authorize("admin", "seller"),
+      this.proxyPerformance.bind(this)
+    );
+    this.router.all(
+      "/performance/*",
+      authenticate,
+      authorize("admin", "seller"),
+      this.proxyPerformance.bind(this)
+    );
   }
 
   // Auth
@@ -286,6 +299,7 @@ export class GatewayController {
       res.status(400).json({ message: (err as Error).message });
     }
   }
+
   private async getTop10Kolicina(req: Request, res: Response): Promise<void> {
     try {
       const data = await this.gatewayService.getTop10Kolicina();
@@ -294,6 +308,7 @@ export class GatewayController {
       res.status(500).json({ message: (err as Error).message });
     }
   }
+
   private async getKolicinaNedeljna(req: Request, res: Response): Promise<void> {
     try {
       const start = String(req.query.start ?? "");
@@ -340,8 +355,6 @@ export class GatewayController {
       res.status(400).json({ message: (err as Error).message });
     }
   }
-
-
 
   private async plant(req: Request, res: Response): Promise<void> {
     try {
@@ -404,7 +417,6 @@ export class GatewayController {
       res.status(400).json({ message });
     }
   }
-
 
   private async getPlantById(req: Request, res: Response): Promise<void> {
     try {
@@ -563,59 +575,96 @@ export class GatewayController {
     }
   }
 
-private async salesPurchase(req: Request, res: Response): Promise<void> {
-  try {
-    const jwtRole = String((req.user as any)?.role || "").toLowerCase(); // "admin" | "seller"
-    const xUloga = jwtRole === "admin" ? "MENADZER_PRODAJE" : "PRODAVAC";
+  private async salesPurchase(req: Request, res: Response): Promise<void> {
+    try {
+      const jwtRole = String((req.user as any)?.role || "").toLowerCase(); // "admin" | "seller"
+      const xUloga = jwtRole === "admin" ? "MENADZER_PRODAJE" : "PRODAVAC";
 
-    const data = await this.gatewayService.salesPurchase(req.body, xUloga);
+      const data = await this.gatewayService.salesPurchase(req.body, xUloga);
 
-    res.status(201).json(data);
-    return;
-  } catch (err: any) {
-  const status = err?.response?.status ?? 400;
+      res.status(201).json(data);
+      return;
+    } catch (err: any) {
+      const status = err?.response?.status ?? 400;
 
-  // ✅ prosledi pravi response iz sales-a
-  const data =
-    err?.response?.data !== undefined
-      ? err.response.data
-      : { message: err?.message || "Bad request" };
+      const data =
+        err?.response?.data !== undefined
+          ? err.response.data
+          : { message: err?.message || "Bad request" };
 
-    res.status(status).json(data);
-    return;
-
-}
-
-}
-
+      res.status(status).json(data);
+      return;
+    }
+  }
 
   private async internalSendAmbalaze(req: Request, res: Response) {
-  try {
-    const uloga = req.header("x-uloga") || "PRODAVAC";
-    const trazenaKolicina = Number(req.body?.trazenaKolicina);
+    try {
+      const uloga = req.header("x-uloga") || "PRODAVAC";
+      const trazenaKolicina = Number(req.body?.trazenaKolicina);
 
-    if (!trazenaKolicina || trazenaKolicina <= 0) {
-      return res.status(400).json({ message: "trazenaKolicina mora biti > 0" });
-    }
+      if (!trazenaKolicina || trazenaKolicina <= 0) {
+        return res.status(400).json({ message: "trazenaKolicina mora biti > 0" });
+      }
 
-    const data = await this.gatewayService.internalSendAmbalaze(trazenaKolicina, uloga);
-    return res.json(data);
+      const data = await this.gatewayService.internalSendAmbalaze(trazenaKolicina, uloga);
+      return res.json(data);
     } catch (err) {
-    return res.status(400).json({ message: (err as Error).message });
-   }
+      return res.status(400).json({ message: (err as Error).message });
+    }
   }
 
   private async internalCreateRacun(req: Request, res: Response) {
-  try {
-    const created = await this.gatewayService.createRacun(req.body);
-    return res.status(201).json(created);
-  } catch (err: any) {
-    return res.status(500).json({
-      message: err?.message ?? "Internal error while creating racun",
-    });
+    try {
+      const created = await this.gatewayService.createRacun(req.body);
+      return res.status(201).json(created);
+    } catch (err: any) {
+      return res.status(500).json({
+        message: err?.message ?? "Internal error while creating racun",
+      });
+    }
   }
+
+  // ✅ DODATO: generički proxy za performance mikroservis
+  // Gateway ruta:  /api/v1/performance/...
+  // Mikroservis:   ${PERFORMANCE_SERVICE_API}/...
+  private async proxyPerformance(req: Request, res: Response): Promise<void> {
+    try {
+      const PERFORMANCE_API = process.env.PERFORMANCE_SERVICE_API!;
+      // skini gateway prefix: "/api/v1/performance"
+      const forwardPath =
+        req.originalUrl.replace(/^\/api\/v1\/performance/, "") || "/";
+
+      const url = `${PERFORMANCE_API}${forwardPath}`;
+
+      const response = await axios.request({
+        method: req.method as any,
+        url,
+        data: req.body,
+        params: req.query,
+        headers: {
+          authorization: req.headers.authorization || "",
+          "content-type": req.headers["content-type"] || "application/json",
+        },
+        validateStatus: () => true,
+        responseType: "arraybuffer", // ✅ da PDF radi (a i JSON ostaje OK)
+      });
+
+      // ✅ Ako je PDF, vrati PDF (ne JSON)
+      const contentType = String(response.headers["content-type"] || "");
+      if (contentType.includes("application/pdf")) {
+        res.setHeader("Content-Type", "application/pdf");
+        const dispo = response.headers["content-disposition"];
+        if (dispo) res.setHeader("Content-Disposition", dispo);
+        res.status(response.status).send(Buffer.from(response.data));
+        return;
+      }
+
+      // JSON/ostalo
+      res.status(response.status).send(response.data);
+    } catch (err: any) {
+      res.status(500).json({
+        message: err?.message || "Performance proxy error",
+      });
+    }
   }
-
-
-
 }
