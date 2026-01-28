@@ -16,6 +16,9 @@ import { ProductionPage } from "./pages/ProductionPage";
 import { ProcessingPage } from "./pages/ProcessingPage";
 
 import { SalesPage } from "./pages/SalesPage";
+import { PerformancePage } from "./pages/PerformancePage";
+
+
 
 
 const auth_api: IAuthAPI = new AuthAPI();
@@ -71,6 +74,15 @@ function App() {
   element={
     <ProtectedRoute requiredRole="admin,seller">
       <SalesPage />
+    </ProtectedRoute>
+  }
+/>
+
+     <Route
+  path="/performance"
+  element={
+    <ProtectedRoute requiredRole="admin,seller">
+      <PerformancePage />
     </ProtectedRoute>
   }
 />

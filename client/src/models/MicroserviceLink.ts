@@ -6,7 +6,8 @@ export type MicroserviceLink = {
     | "processing"
     | "production"
     | "sales"
-    | "user";
+    | "user"
+    | "performance";
   title: string;
   description: string;
   path: string;

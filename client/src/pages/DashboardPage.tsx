@@ -58,6 +58,13 @@ const SERVICES: MicroserviceLink[] = [
     path: "/sales",
     badge: "CORE",
   },
+  {
+    key: "performance",
+    title: "Performance microservice",
+    description: "Analiza performansi logističkih algoritama",
+    path: "/performance",
+    badge: "DATA",
+  },
 ];
 
 export const DashboardPage: React.FC<Props> = ({ userAPI }) => {
