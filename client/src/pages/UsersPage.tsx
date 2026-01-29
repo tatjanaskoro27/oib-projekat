@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AuthContext from "../contexts/AuthContext";
 import { UserAPI } from "../api/users/UserAPI";
 import type { UserDTO } from "../models/users/UserDTO";
@@ -19,6 +20,8 @@ const emptyCreate: CreateUserDTO = {
 export const UsersPage: React.FC = () => {
   const auth = useContext(AuthContext);
   const token = auth?.token;
+
+  const navigate = useNavigate(); // ✅ DODATO (minimalno)
 
   const api = useMemo(() => new UserAPI(), []);
 
@@ -256,6 +259,16 @@ export const UsersPage: React.FC = () => {
             </div>
 
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              {/* ✅ DODATO: NAZAD NA MENI */}
+              <button
+                className="btn"
+                onClick={() => navigate("/dashboard")}
+                disabled={loading || busy}
+                title="Nazad na meni"
+              >
+                ⬅ Nazad na meni
+              </button>
+
               <button
                 className="btn btn-accent"
                 onClick={() => setCreateOpen((v) => !v)}
