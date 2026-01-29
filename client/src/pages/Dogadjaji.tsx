@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuthHook";
 import type { DogadjajDTO } from "../models/dogadjaji/DogadjajDTO";
 import type { TipDogadjaja } from "../models/dogadjaji/TipDogadjaja";
@@ -16,6 +17,7 @@ const TIPOVI: Array<{ label: string; value: TipDogadjaja | "ALL" }> = [
 ];
 
 export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
+  const navigate = useNavigate();
   const { token } = useAuth();
 
   const [tip, setTip] = useState<TipDogadjaja | "ALL">("ALL");
@@ -25,9 +27,9 @@ export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
 
   const badgeClass = useMemo(() => {
     return (t: TipDogadjaja) => {
-      if (t === "ERROR") return "ms-badge ops";      // crveno/narandzasto u tvom css-u
-      if (t === "WARNING") return "ms-badge data";   // zuto/plavo kako vec
-      return "ms-badge core";                        // sivo/plavo
+      if (t === "ERROR") return "ms-badge ops";
+      if (t === "WARNING") return "ms-badge data";
+      return "ms-badge core";
     };
   }, []);
 
@@ -58,9 +60,19 @@ export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
 
   return (
     <div className="overlay-blur-none" style={{ minHeight: "100vh" }}>
-      <div className="window" style={{ width: "1100px", maxWidth: "95%", margin: "30px auto" }}>
+      <div
+        className="window"
+        style={{ width: "1100px", maxWidth: "95%", margin: "30px auto" }}
+      >
         <div className="window-content" style={{ padding: 24 }}>
-          <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "end",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
             <div>
               <h2 style={{ margin: 0, fontSize: 22 }}>Događaji / Audit log</h2>
               <div style={{ opacity: 0.8, marginTop: 6 }}>
@@ -68,17 +80,63 @@ export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
               </div>
             </div>
 
-            <button className="ms-pill" type="button" onClick={load} disabled={loading}>
-              {loading ? "Učitavam..." : "Osveži"}
-            </button>
+            {/* DESNO: dugmad */}
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <button
+                type="button"
+                className="ms-pill"
+                onClick={() => navigate(-1)}
+                disabled={loading}
+                style={{
+                  background: "transparent",
+                  border: "1px solid rgba(255,255,255,0.25)",
+                  color: "white",
+                  padding: "10px 14px",
+                  borderRadius: 999,
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
+              >
+                Nazad na meni
+              </button>
+
+              <button
+                type="button"
+                className="ms-pill"
+                onClick={load}
+                disabled={loading}
+                style={{
+                  background: "white",
+                  border: "1px solid white",
+                  color: "#111",
+                  padding: "10px 14px",
+                  borderRadius: 999,
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
+              >
+                {loading ? "Učitavam..." : "Osveži"}
+              </button>
+            </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12, marginTop: 16, alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              marginTop: 16,
+              alignItems: "center",
+            }}
+          >
             <div style={{ opacity: 0.8 }}>Filter:</div>
+
             <select
               value={tip}
               onChange={(e) => setTip(e.target.value as any)}
-              style={{ padding: "8px 10px", borderRadius: 10 }}
+              style={{
+                padding: "10px 12px",
+                borderRadius: 10,
+                width: "100%",
+                maxWidth: 820,
+              }}
             >
               {TIPOVI.map((x) => (
                 <option key={x.value} value={x.value}>
@@ -87,13 +145,20 @@ export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
               ))}
             </select>
 
-            <div style={{ marginLeft: "auto", opacity: 0.8 }}>
+            <div style={{ marginLeft: "auto", opacity: 0.8, whiteSpace: "nowrap" }}>
               Ukupno: <b>{data.length}</b>
             </div>
           </div>
 
           {err && (
-            <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(255,0,0,0.08)" }}>
+            <div
+              style={{
+                marginTop: 12,
+                padding: 12,
+                borderRadius: 12,
+                background: "rgba(255,0,0,0.08)",
+              }}
+            >
               ❌ {err}
             </div>
           )}
@@ -110,7 +175,10 @@ export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
 
               <tbody>
                 {data.map((d) => (
-                  <tr key={d.id} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                  <tr
+                    key={d.id}
+                    style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
+                  >
                     <td style={{ padding: "10px 8px", whiteSpace: "nowrap" }}>
                       {new Date(d.datumVreme).toLocaleString()}
                     </td>
@@ -131,7 +199,6 @@ export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
               </tbody>
             </table>
           </div>
-
         </div>
       </div>
     </div>
