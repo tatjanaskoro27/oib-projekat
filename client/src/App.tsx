@@ -18,12 +18,17 @@ import { ProcessingPage } from "./pages/ProcessingPage";
 import { SalesPage } from "./pages/SalesPage";
 import { PerformancePage } from "./pages/PerformancePage";
 
+import { DogadjajiPage } from "./pages/Dogadjaji";
+import { DogadjajiAPI } from "./api/dogadjaji/DogadjajiAPI";
+import { IDogadjajiAPI } from "./api/dogadjaji/IDogadjajiAPI";
 
 
 
 const auth_api: IAuthAPI = new AuthAPI();
 const user_api: IUserAPI = new UserAPI();
 const analytics_api: IAnalyticsAPI = new AnalyticsAPI();
+const dogadjaji_api: IDogadjajiAPI = new DogadjajiAPI();
+
 
 function App() {
   return (
@@ -86,6 +91,16 @@ function App() {
     </ProtectedRoute>
   }
 />
+
+    <Route
+    path="/dogadjaji"
+    element={
+     <ProtectedRoute requiredRole="admin,seller">
+      <DogadjajiPage dogadjajiAPI={dogadjaji_api} />
+     </ProtectedRoute>
+   }
+/>
+
 
 
       {/* (opciono) fallback */}
