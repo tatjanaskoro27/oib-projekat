@@ -4,24 +4,44 @@ import { IzvestajPerformanse } from "../Domain/models/IzvestajPerformanse";
 
 export class PdfService {
   /**
-   * STREAM varijanta (preporučeno): direktno piše PDF u response.
-   * Nema Buffer-a, nema 0B fajlova.
+   * Fallback: PDFKit default fontovi ne podržavaju latin-ext,
+   * pa normalizujemo čćšđž -> ccsdjz da se ne pojavljuju čudni simboli.
+   */
+  private static normalizeText(input: string): string {
+    if (!input) return "";
+
+    return input
+      .replace(/č/g, "c")
+      .replace(/ć/g, "c")
+      .replace(/š/g, "s")
+      .replace(/đ/g, "dj")
+      .replace(/ž/g, "z")
+      .replace(/Č/g, "C")
+      .replace(/Ć/g, "C")
+      .replace(/Š/g, "S")
+      .replace(/Đ/g, "Dj")
+      .replace(/Ž/g, "Z");
+  }
+
+  /**
+   * STREAM varijanta: direktno piše PDF u response.
    */
   static streamIzvestajPdf(res: Response, izvestaj: IzvestajPerformanse) {
     const doc = new PDFDocument({ size: "A4", margin: 50 });
-    doc.font("src/Assets/fonts/DejaVuSans.ttf");
 
     // Bitno: prvo pipe, pa onda sadržaj
     doc.pipe(res);
 
+    // Koristimo samo ugrađeni font
+    doc.font("Helvetica");
+
     PdfService.fillPdf(doc, izvestaj);
 
-    // Završava stream
     doc.end();
   }
 
   /**
-   * BUFFER varijanta: vraća Promise<Buffer> (ako ti treba res.send(buffer)).
+   * BUFFER varijanta: vraća Promise<Buffer>
    */
   static generateIzvestajPdf(izvestaj: IzvestajPerformanse): Promise<Buffer> {
     return new Promise((resolve, reject) => {
@@ -32,6 +52,9 @@ export class PdfService {
         doc.on("data", (chunk: Buffer) => chunks.push(chunk));
         doc.on("end", () => resolve(Buffer.concat(chunks)));
         doc.on("error", (err) => reject(err));
+
+        // Koristimo samo ugrađeni font i OVDE
+        doc.font("Helvetica");
 
         PdfService.fillPdf(doc, izvestaj);
 
@@ -47,20 +70,22 @@ export class PdfService {
    */
   private static fillPdf(doc: PDFKit.PDFDocument, izvestaj: IzvestajPerformanse) {
     // NASLOV
-    doc.fontSize(18).text("Izveštaj performansi", { align: "center" });
+    doc.font("Helvetica").fontSize(18).text(PdfService.normalizeText("Izveštaj performansi"), {
+      align: "center",
+    });
     doc.moveDown();
 
     // OSNOVNI PODACI
     doc.fontSize(12);
-    doc.text(`Naziv izveštaja: ${izvestaj.nazivIzvestaja}`);
-    doc.text(`Algoritam: ${izvestaj.algoritam}`);
+    doc.text(`Naziv izveštaja: ${PdfService.normalizeText(izvestaj.nazivIzvestaja)}`);
+    doc.text(`Algoritam: ${PdfService.normalizeText(izvestaj.algoritam)}`);
     doc.text(
       `Datum kreiranja: ${new Date(izvestaj.datumKreiranja).toLocaleString()}`
     );
     doc.moveDown();
 
     // REZULTATI
-    doc.fontSize(14).text("Rezultati", { underline: true });
+    doc.fontSize(14).text(PdfService.normalizeText("Rezultati"), { underline: true });
     doc.moveDown(0.5);
 
     let rezultatiTekst = izvestaj.rezultatiJson;
@@ -71,13 +96,20 @@ export class PdfService {
       // ostaje string
     }
 
-    doc.font("Courier").fontSize(10).text(rezultatiTekst, { width: 500 });
-    doc.font("Helvetica");
+    // JSON normalizujemo da ne puknu slova
+    doc.fontSize(10).text(PdfService.normalizeText(rezultatiTekst), {
+      width: 500,
+      lineGap: 2,
+    });
+
     doc.moveDown();
 
-    // ZAKLJUČAK
-    doc.fontSize(14).text("Zaključak", { underline: true });
+    // ZAKLJUCAK (bez kvačica da ne bude "Zaklju Ö")
+    doc.fontSize(14).text(PdfService.normalizeText("Zaključak"), { underline: true });
     doc.moveDown(0.5);
-    doc.fontSize(12).text(izvestaj.zakljucak);
+    doc.fontSize(12).text(PdfService.normalizeText(izvestaj.zakljucak), {
+      width: 500,
+      lineGap: 2,
+    });
   }
 }
