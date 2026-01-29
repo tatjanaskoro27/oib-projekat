@@ -14,6 +14,7 @@ import { AnalyticsAPI } from "./api/analytics/AnalyticsAPI";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { ProductionPage } from "./pages/ProductionPage";
 import { ProcessingPage } from "./pages/ProcessingPage";
+import { UsersPage } from "./pages/UsersPage";
 
 import { SalesPage } from "./pages/SalesPage";
 import { PerformancePage } from "./pages/PerformancePage";
@@ -22,13 +23,10 @@ import { DogadjajiPage } from "./pages/Dogadjaji";
 import { DogadjajiAPI } from "./api/dogadjaji/DogadjajiAPI";
 import { IDogadjajiAPI } from "./api/dogadjaji/IDogadjajiAPI";
 
-
-
 const auth_api: IAuthAPI = new AuthAPI();
 const user_api: IUserAPI = new UserAPI();
 const analytics_api: IAnalyticsAPI = new AnalyticsAPI();
 const dogadjaji_api: IDogadjajiAPI = new DogadjajiAPI();
-
 
 function App() {
   return (
@@ -56,6 +54,15 @@ function App() {
         }
       />
 
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* PRODUCTION */}
       <Route
         path="/production"
@@ -75,33 +82,31 @@ function App() {
       />
 
       <Route
-  path="/sales"
-  element={
-    <ProtectedRoute requiredRole="admin,seller">
-      <SalesPage />
-    </ProtectedRoute>
-  }
-/>
+        path="/sales"
+        element={
+          <ProtectedRoute requiredRole="admin,seller">
+            <SalesPage />
+          </ProtectedRoute>
+        }
+      />
 
-     <Route
-  path="/performance"
-  element={
-    <ProtectedRoute requiredRole="admin,seller">
-      <PerformancePage />
-    </ProtectedRoute>
-  }
-/>
+      <Route
+        path="/performance"
+        element={
+          <ProtectedRoute requiredRole="admin,seller">
+            <PerformancePage />
+          </ProtectedRoute>
+        }
+      />
 
-    <Route
-    path="/dogadjaji"
-    element={
-     <ProtectedRoute requiredRole="admin,seller">
-      <DogadjajiPage dogadjajiAPI={dogadjaji_api} />
-     </ProtectedRoute>
-   }
-/>
-
-
+      <Route
+        path="/dogadjaji"
+        element={
+          <ProtectedRoute requiredRole="admin,seller">
+            <DogadjajiPage dogadjajiAPI={dogadjaji_api} />
+          </ProtectedRoute>
+        }
+      />
 
       {/* (opciono) fallback */}
       {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
