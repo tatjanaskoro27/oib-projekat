@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { AnalyticsService } from "../../Services/AnalyticsService";
+import { AnalyticsPdfService } from "../../Services/AnalyticsPdfService";
 import { Db } from "../../Database/DbConnectionPool";
 import { FiskalniRacun } from "../../Domain/models/FiskalniRacun";
 import { FiskalnaStavka } from "../../Domain/models/FiskalnaStavka";
@@ -225,16 +226,18 @@ export class AnalyticsController {
         res.status(500).json({ error: "Greška pri dobijanju top 10 parfema" });
       }
     });
-        // ukupan prihod top 10 (jedan broj)
+
+    // ukupan prihod top 10 (jedan broj)
     this.router.get("/prodaja/top10-prihod/ukupno", async (req, res) => {
       try {
         const ukupno = await this.service.ukupanPrihodTop10();
         res.json({ ukupno });
       } catch (err) {
-        res.status(500).json({ error: "Greška pri izračunu ukupnog prihoda top 10" });
+        res.status(500).json({
+          error: "Greška pri izračunu ukupnog prihoda top 10",
+        });
       }
     });
-
 
     // top 10 po prihodu
     this.router.get("/prodaja/top10-prihod", async (req, res) => {
@@ -243,6 +246,80 @@ export class AnalyticsController {
         res.json(data);
       } catch (err) {
         res.status(500).json({ error: "Greška pri dobijanju top 10 prihoda" });
+      }
+    });
+
+    // =========================
+    // PDF IZVESTAJ (NOVO)
+    // =========================
+    // Primeri:
+    // /izvestaj/pdf
+    // /izvestaj/pdf?godina=2026
+    // /izvestaj/pdf?start=2026-01-01&end=2026-01-31
+    // /izvestaj/pdf?godina=2026&start=2026-01-01&end=2026-01-31
+    this.router.get("/izvestaj/pdf", async (req, res) => {
+      try {
+        const start = req.query.start ? String(req.query.start) : undefined;
+        const end = req.query.end ? String(req.query.end) : undefined;
+        const godina = req.query.godina ? Number(req.query.godina) : undefined;
+
+        const ukupnaProdaja = await this.service.ukupnaProdaja();
+        const ukupnoKomada = await this.service.ukupnoProdatihKomada();
+
+        const top10Kolicina = await this.service.top10NajprodavanijihParfema();
+        const top10Prihod = await this.service.prihodTop10Parfema();
+        const ukupanPrihodTop10 = await this.service.ukupanPrihodTop10();
+
+        const izvestaj: any = {
+          datumKreiranja: new Date().toLocaleString(),
+          ukupnaProdaja,
+          ukupnoKomada,
+          top10Kolicina,
+          top10Prihod,
+          ukupanPrihodTop10,
+        };
+
+        // period + trend (ako imamo start/end)
+        if (start && end) {
+          const p = await this.service.nedeljnaProdaja(start, end);
+          const k = await this.service.prodatihKomadaUPeriodu(start, end);
+          const trend = await this.service.trendProdaje(start, end);
+
+          izvestaj.period = {
+            start: p.start,
+            end: p.end,
+            ukupnaProdaja: p.ukupno,
+            ukupnoKomada: k.ukupnoKomada,
+          };
+          izvestaj.trend = trend;
+        }
+
+        // godisnja + mesecna (ako imamo godinu)
+        if (godina && !Number.isNaN(godina)) {
+          const god = await this.service.godisnjaProdaja(godina);
+          const godKom = await this.service.godisnjeProdatihKomada(godina);
+
+          const mesProdaja = await this.service.mesecnaProdajaZaGodinu(godina);
+          const mesKom = await this.service.mesecnoProdatihKomadaZaGodinu(godina);
+
+          izvestaj.godisnja = {
+            godina: god.godina,
+            ukupno: god.ukupno,
+            ukupnoKomada: godKom.ukupnoKomada,
+          };
+
+          izvestaj.mesecna = {
+            godina,
+            prodaja: mesProdaja,
+            komadi: mesKom,
+          };
+        }
+
+        return AnalyticsPdfService.streamIzvestajPdf(res, izvestaj);
+      } catch (err: any) {
+        return res.status(500).json({
+          error: err?.message ?? "Greška pri generisanju PDF izveštaja analize",
+        });
       }
     });
   }
