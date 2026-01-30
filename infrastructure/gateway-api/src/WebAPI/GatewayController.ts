@@ -103,13 +103,13 @@ export class GatewayController {
       authenticate,
       authorize("admin", "seller"),
       this.proxyPerformance.bind(this)
-    );
+    );/*
     this.router.all(
       "/performance/*",
       authenticate,
       authorize("admin", "seller"),
       this.proxyPerformance.bind(this)
-    );
+    );*/
   }
 
   // Auth
