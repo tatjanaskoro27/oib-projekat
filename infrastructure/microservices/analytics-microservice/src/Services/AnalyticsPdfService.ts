@@ -1,4 +1,6 @@
-import PDFDocument = require("pdfkit");
+import PDFDocument from "pdfkit";
+//staro import PDFDocument = require("pdfkit");
+
 import { Response } from "express";
 
 export type IzvestajAnalizePdf = {
