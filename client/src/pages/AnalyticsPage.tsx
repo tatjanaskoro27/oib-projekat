@@ -56,6 +56,39 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
   const [ukupnoKomada, setUkupnoKomada] = useState<number | null>(null);
 
   // =====================================================
+  // PDF (NOVO)
+  // =====================================================
+  const downloadPdf = () => {
+  try {
+    setMessage("");
+
+    const baseUrl = "http://localhost:6756";
+    const endpoint = "/api/v1/analytics/izvestaj/pdf";
+
+    const qs = new URLSearchParams();
+
+    if (start && end) {
+      qs.set("start", start);
+      qs.set("end", end);
+    }
+
+    if (godina) {
+      qs.set("godina", String(godina));
+    }
+
+    const url = qs.toString()
+      ? `${baseUrl}${endpoint}?${qs.toString()}`
+      : `${baseUrl}${endpoint}`;
+
+    window.open(url, "_blank");
+  } catch (e: any) {
+    console.error(e);
+    setMessage(e?.message ?? "Greška pri preuzimanju PDF-a.");
+  }
+};
+
+
+  // =====================================================
   // 1) PRIHOD UKUPNO
   // =====================================================
   const testPrihodUkupno = async () => {
@@ -252,6 +285,12 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
             <button className="btn btn-ghost" onClick={loadUkupnoKomada}>
               Ukupno komada
             </button>
+
+            {/* PDF BUTTONS (NOVO) */}
+           <button className="btn btn-accent" onClick={downloadPdf}>
+            Preuzmi PDF izveštaj
+           </button>
+
           </div>
 
           {/* PRIHOD UKUPNO */}
