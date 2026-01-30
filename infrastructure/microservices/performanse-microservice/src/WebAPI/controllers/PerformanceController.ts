@@ -39,11 +39,16 @@ export class PerformanseController {
 
     this.router.get("/izvestaji", async (req: Request, res: Response) => {
       try {
-        const algoritam =
-          typeof req.query.algoritam === "string" ? req.query.algoritam : undefined;
+        // ✅ helper: uzmi prvi element ako je query dupliran (string[])
+        const pickFirst = (v: any): string | undefined => {
+          if (typeof v === "string") return v;
+          if (Array.isArray(v) && typeof v[0] === "string") return v[0];
+          return undefined;
+        };
 
-        const od = typeof req.query.od === "string" ? req.query.od : undefined;
-        const doDat = typeof req.query.do === "string" ? req.query.do : undefined;
+        const algoritam = pickFirst(req.query.algoritam);
+        const od = pickFirst(req.query.od);
+        const doDat = pickFirst(req.query.do);
 
         const data = await this.service.filtrirajIzvestaje({
           algoritam,
