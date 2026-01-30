@@ -733,3 +733,104 @@ hr {
   padding: 8px 12px;
   font-size: 13px;
 }
+
+.ms-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--win11-divider);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+}
+
+.ms-tab {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--win11-text-primary);
+  font-weight: 700;
+}
+
+.ms-tab:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ms-tab.active {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--win11-divider);
+}
+
+.section-header-purple {
+  background: #7b3ff2;
+  color: #ffffff;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+.section-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.section-header-icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+
+.ms-pill {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--win11-divider);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Table */
+.win-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--win11-divider);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.win-table th,
+.win-table td {
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.win-table th {
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.win-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Status pill */
+.status-pill {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.status-stored {
+  background: rgba(123, 63, 242, 0.20);
+}
