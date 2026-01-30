@@ -13,6 +13,9 @@ import { GetPlantsQueryDTO } from "../models/production/GetPlantsQueryDTO";
 import { DogadjajDTO } from "../models/dogadjaji/DogadjajDTO";
 import { TipDogadjaja } from "../models/dogadjaji/TipDogadjaja";
 
+import { CreatePlantDTO } from "../models/production/CreatePlantDTO";
+import { UpdateOilStrengthDTO } from "../models/production/UpdateOilStrengthDTO";
+
 /* ---------------- Types ---------------- */
 
 type PlantRowGrouped = {
@@ -166,6 +169,9 @@ export const ProductionPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [plantsError, setPlantsError] = useState<string | null>(null);
 
+  // toast poruka (3s)
+  const [toast, setToast] = useState<string | null>(null);
+
   // Filter state
   const [search, setSearch] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<"all" | PlantStatus>("all");
@@ -174,6 +180,23 @@ export const ProductionPage: React.FC = () => {
 
   // View mode
   const [viewMode, setViewMode] = useState<"grouped" | "all">("grouped");
+
+  // Panels (Plant + Strength)
+  const [showPlantPanel, setShowPlantPanel] = useState(false);
+  const [showStrengthPanel, setShowStrengthPanel] = useState(false);
+
+  // Plant form
+  const [plantName, setPlantName] = useState("");
+  const [latinName, setLatinName] = useState("");
+  const [originCountry, setOriginCountry] = useState("");
+
+  // Strength form (percent multiplier)
+  const [percent, setPercent] = useState<number>(100);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), 3000);
+  };
 
   const loadPlants = async (): Promise<void> => {
     if (!token) return;
@@ -227,7 +250,6 @@ export const ProductionPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // Auto refresh events every 10s (optional)
   useEffect(() => {
     if (!token) return;
     const id = window.setInterval(() => {
@@ -239,8 +261,85 @@ export const ProductionPage: React.FC = () => {
   const selectedGrouped = selectedGroupedIndex !== null ? groupedRows[selectedGroupedIndex] : null;
   const selectedFlat = selectedFlatIndex !== null ? flatRows[selectedFlatIndex] : null;
 
-  // Demo buttons (will be wired later)
-  const disabledAction = true;
+  // ✅ akcije su sada omogućene
+  const disabledAction = false;
+
+  /* ---------------- Actions ---------------- */
+
+  const handleCreatePlant = async () => {
+    if (!token) return;
+
+    const name = plantName.trim();
+    if (!name) {
+      showToast("Unesi naziv biljke.");
+      return;
+    }
+
+    const dto: CreatePlantDTO = {
+      name,
+      latinName: latinName.trim() ? latinName.trim() : undefined,
+      originCountry: originCountry.trim() ? originCountry.trim() : undefined,
+    };
+
+    try {
+      setIsLoading(true);
+      await productionAPI.createPlant(token, dto);
+      showToast("Biljka uspješno zasađena");
+      setShowPlantPanel(false);
+      setPlantName("");
+      setLatinName("");
+      setOriginCountry("");
+      await loadAll();
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || "Greška pri sadnji biljke.";
+      setPlantsError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateStrength = async () => {
+    if (!token) return;
+
+    const p = Number(percent);
+
+    if (!Number.isFinite(p)) {
+      showToast("Jačina (percent) mora biti broj.");
+      return;
+    }
+
+    if (p < 0 || p > 100) {
+      showToast("Jačina mora biti između 0 i 100.");
+      return;
+    }
+
+
+    // možeš primijeniti na selektovanu grupu ili pojedinačnu biljku
+    let ids: number[] = [];
+
+    if (viewMode === "grouped" && selectedGrouped) ids = selectedGrouped.ids;
+    if (viewMode === "all" && selectedFlat) ids = [selectedFlat.id];
+
+    if (ids.length === 0) {
+      showToast("Selektuj biljku (ili grupu) pa promijeni jačinu.");
+      return;
+    }
+
+    const dto: UpdateOilStrengthDTO = { percent: p };
+
+    try {
+      setIsLoading(true);
+      await Promise.all(ids.map((id) => productionAPI.updateOilStrength(token, id, dto)));
+      showToast(`Jačina uspješno promijenjena (× ${p}%)`);
+      setShowStrengthPanel(false);
+      await loadAll();
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || "Greška pri promjeni jačine.";
+      setPlantsError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="overlay-blur-none" style={{ width: "100%", height: "100vh" }}>
@@ -275,6 +374,22 @@ export const ProductionPage: React.FC = () => {
 
         {/* Content */}
         <div className="window-content" style={{ padding: 12, flex: 1, boxSizing: "border-box", minHeight: 0 }}>
+          {/* toast */}
+          {toast && (
+            <div
+              style={{
+                marginBottom: 10,
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: "1px solid rgba(0,200,120,0.40)",
+                background: "rgba(0,200,120,0.12)",
+                fontWeight: 700,
+              }}
+            >
+              ✅ {toast}
+            </div>
+          )}
+
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 360px", gap: 12, height: "100%", minHeight: 0 }}>
             {/* LEFT */}
             <div className="acrylic" style={{ borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -349,13 +464,11 @@ export const ProductionPage: React.FC = () => {
                 </div>
 
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <button type="button" className="btn-accent" disabled={disabledAction}>
+                  <button type="button" className="btn-accent" disabled={disabledAction} onClick={() => setShowPlantPanel((v) => !v)}>
                     + Zasadi biljku
                   </button>
-                  <button type="button" className="btn-standard" disabled={disabledAction}>
-                    Uberi biljku
-                  </button>
-                  <button type="button" className="btn-standard" disabled={disabledAction}>
+
+                  <button type="button" className="btn-standard" disabled={disabledAction} onClick={() => setShowStrengthPanel((v) => !v)}>
                     Promeni jačinu
                   </button>
 
@@ -387,6 +500,63 @@ export const ProductionPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* Panel: Zasadi */}
+                {showPlantPanel && (
+                  <div style={{ border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: 10, background: "rgba(255,255,255,0.04)" }}>
+                    <div style={{ fontWeight: 800, marginBottom: 8 }}>Zasadi biljku</div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 8, alignItems: "end" }}>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        Naziv *
+                        <input className="input" value={plantName} onChange={(e) => setPlantName(e.target.value)} placeholder="npr. Lavanda" />
+                      </label>
+
+                      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        Latinski naziv
+                        <input className="input" value={latinName} onChange={(e) => setLatinName(e.target.value)} placeholder="npr. Lavandula" />
+                      </label>
+
+                      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        Zemlja porijekla
+                        <input className="input" value={originCountry} onChange={(e) => setOriginCountry(e.target.value)} placeholder="npr. BiH" />
+                      </label>
+
+                      <button type="button" className="btn-accent" onClick={() => void handleCreatePlant()} disabled={isLoading}>
+                        {isLoading ? "..." : "Zasadi"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Panel: Jačina */}
+                {showStrengthPanel && (
+                  <div style={{ border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: 10, background: "rgba(255,255,255,0.04)" }}>
+                    <div style={{ fontWeight: 800, marginBottom: 8 }}>Promijeni jačinu ulja (percent)</div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "220px 1fr auto", gap: 8, alignItems: "end" }}>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        Percent (npr. 80, 100, 120)
+                        <input
+                          className="input"
+                          type="number"
+                          min={1}
+                          value={percent}
+                          onChange={(e) => setPercent(Number(e.target.value))}
+                        />
+                      </label>
+
+                      <div style={{ fontSize: 12, opacity: 0.85, lineHeight: 1.4 }}>
+                        Primjenjuje se na selektovanu biljku (u “Sve biljke”) ili na sve u selektovanoj grupi (u “Grupisano”).<br />
+                        Primjer: 80% smanji, 120% poveća.
+                      </div>
+
+                      <button type="button" className="btn-standard" onClick={() => void handleUpdateStrength()} disabled={isLoading}>
+                        {isLoading ? "..." : "Primijeni"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {isLoading && <div style={{ opacity: 0.8 }}>Učitavam…</div>}
                 {plantsError && <div style={{ color: "#ff6b6b" }}>Greška: {plantsError}</div>}
@@ -484,14 +654,14 @@ export const ProductionPage: React.FC = () => {
                         ? `${selectedGrouped.name} (${selectedGrouped.qty})`
                         : "Nema"
                       : selectedFlat
-                      ? `${selectedFlat.name} (id=${selectedFlat.id})`
-                      : "Nema"}
+                        ? `${selectedFlat.name} (id=${selectedFlat.id})`
+                        : "Nema"}
                   </b>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT - Events */}
+            {/* RIGHT - Events (tvoj postojeći kod ispod) */}
             <div className="acrylic" style={{ borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 0 }}>
               <div
                 style={{
@@ -523,33 +693,25 @@ export const ProductionPage: React.FC = () => {
                       border: "1px solid rgba(255,255,255,0.08)",
                       borderRadius: 10,
                       padding: 10,
-                      background: "rgba(0,0,0,0.12)",
+                      background: "rgba(255,255,255,0.03)",
                     }}
                   >
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                      <div style={{ width: 26, textAlign: "center" }}>{logIcon(d.tip)}</div>
-                      <div style={{ fontSize: 12, opacity: 0.8, width: 44 }}>{hhmm(d.datumVreme)}</div>
-                      <div style={{ fontSize: 13 }}>{d.opis}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                      <div style={{ fontWeight: 800 }}>
+                        {logIcon(d.tip)} {d.tip}
+                      </div>
+                      <div style={{ opacity: 0.8, fontSize: 12 }}>{hhmm(d.datumVreme)}</div>
                     </div>
+                    <div style={{ marginTop: 6, opacity: 0.9 }}>{d.opis}</div>
                   </div>
                 ))}
 
-                {rawDogadjaji.length === 0 && (
-                  <div style={{ opacity: 0.75, padding: 8 }}>
-                    Nema događaja za prikaz.
-                  </div>
-                )}
+                {rawDogadjaji.length === 0 && <div style={{ opacity: 0.75 }}>Nema događaja.</div>}
               </div>
             </div>
-          </div>
-
-          <div style={{ marginTop: 10, opacity: 0.65, fontSize: 12 }}>
-            Napomena: događaji se osvežavaju ručno (dugme ⟳) i na učitavanju stranice.
           </div>
         </div>
       </div>
     </div>
   );
 };
-
-export default ProductionPage;
