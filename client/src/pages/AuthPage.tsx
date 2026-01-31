@@ -11,13 +11,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authAPI }) => {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
 
   return (
-    <div className="overlay-blur-none" style={{ position: "fixed" }}>
+    <div
+      className="overlay-blur-none"
+      style={{
+        position: "fixed",
+        backgroundColor: "#f5f6f8",
+        inset: 0
+      }}
+    >
       <div className="window" style={{ width: "500px", maxWidth: "90%" }}>
         <div className="titlebar">
           <div className="titlebar-icon">
-            <img style={{marginTop: -5 }} src='/icon.png' width="20" height="20" />
+            <img style={{ marginTop: -5 }} src='/icon.png' width="20" height="20" />
           </div>
-          <span className="titlebar-title">Authentication</span>
+          <span className="titlebar-title">O'Siñel De Or</span>
         </div>
 
         <div className="window-content" style={{ padding: 0 }}>

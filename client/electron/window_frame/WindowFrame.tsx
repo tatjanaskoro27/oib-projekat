@@ -32,7 +32,7 @@ export function TitleBar() {
       </div>
 
       {/* Centered title */}
-      <div className="title">eCommerce Shop 1.44.2</div>
+      <div className="title">O'Siñel De Or</div>
 
       {/* Window control buttons */}
       <div className="window-controls">
