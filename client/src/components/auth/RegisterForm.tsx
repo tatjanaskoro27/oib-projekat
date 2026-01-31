@@ -121,6 +121,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ authAPI }) => {
           disabled={isLoading}
         >
           <option value={UserRole.SELLER}>Seller</option>
+          <option value={UserRole.MANAGER}>Manager</option>
           <option value={UserRole.ADMIN}>Admin</option>
         </select>
       </div>

@@ -38,7 +38,7 @@ function App() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute requiredRole="admin,seller">
+          <ProtectedRoute requiredRole="admin,seller,manager">
             <DashboardPage userAPI={user_api} />
           </ProtectedRoute>
         }
