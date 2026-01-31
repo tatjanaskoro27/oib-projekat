@@ -48,7 +48,7 @@ function App() {
       <Route
         path="/analytics"
         element={
-          <ProtectedRoute requiredRole="admin,seller">
+          <ProtectedRoute requiredRole="admin">
             <AnalyticsPage analyticsAPI={analytics_api} />
           </ProtectedRoute>
         }
@@ -67,7 +67,7 @@ function App() {
       <Route
         path="/production"
         element={
-          <ProtectedRoute requiredRole="admin,seller">
+          <ProtectedRoute requiredRole="seller,manager">
             <ProductionPage />
           </ProtectedRoute>
         }
@@ -75,7 +75,7 @@ function App() {
       <Route
         path="/processing"
         element={
-          <ProtectedRoute requiredRole="admin,seller">
+          <ProtectedRoute requiredRole="seller,manager">
             <ProcessingPage />
           </ProtectedRoute>
         }
@@ -84,7 +84,7 @@ function App() {
       <Route
         path="/sales"
         element={
-          <ProtectedRoute requiredRole="admin,seller">
+          <ProtectedRoute requiredRole="seller,manager">
             <SalesPage />
           </ProtectedRoute>
         }
@@ -93,7 +93,7 @@ function App() {
       <Route
         path="/performance"
         element={
-          <ProtectedRoute requiredRole="admin,seller">
+          <ProtectedRoute requiredRole="admin">
             <PerformancePage />
           </ProtectedRoute>
         }
@@ -102,7 +102,7 @@ function App() {
       <Route
         path="/dogadjaji"
         element={
-          <ProtectedRoute requiredRole="admin,seller">
+          <ProtectedRoute requiredRole="admin">
             <DogadjajiPage dogadjajiAPI={dogadjaji_api} />
           </ProtectedRoute>
         }

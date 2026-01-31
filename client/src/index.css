@@ -903,3 +903,76 @@ label {
   font-weight: 600;
   color: #4a4a4a;
 }
+
+/*DASHBOARD – CENTRALNA OSA*/
+
+.dash-grid {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ŠIROKA KARTICA */
+.dash-tile {
+  position: relative;
+  width: 100%;
+  height: 84px;
+
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+
+  cursor: pointer;
+
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.dash-tile:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(47, 125, 76, 0.35);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+/* IKONICA */
+.dash-iconBox {
+  position: absolute;
+  left: 45%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(47, 125, 76, 0.10);
+  border: 1px solid rgba(47, 125, 76, 0.25);
+  color: #2f7d4c;
+}
+
+/* TEKST */
+.dash-title {
+  position: absolute;
+  left: calc(45% + 48px);
+  top: 50%;
+  transform: translateY(-50%);
+
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
