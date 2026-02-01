@@ -1,522 +1,519 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { IAnalyticsAPI } from "../api/analytics/IAnalyticsAPI";
 import { useAuth } from "../hooks/useAuthHook";
-
-// Ako si napravila ovaj zajednički fajl sa tipovima:
 import {
-  FiskalniRacunDTO,
-  KreirajRacunDTO,
   MesecnaProdajaItem,
-  MesecnaKomadaItem,
   TrendProdajeItem,
   Top10KolicinaItem,
   Top10PrihodItem,
 } from "../models/analytics/AnalyticsDTOs";
 
-// Ako NISI napravila AnalyticsDTOs.ts nego imaš stare fajlove pojedinačno,
-// onda samo promeni import-e na tvoje postojeće DTO fajlove.
-
 type Props = {
   analyticsAPI: IAnalyticsAPI;
 };
 
+function iso(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+function fmtRsd(n: number) {
+  const x = Number(n || 0);
+  return x.toLocaleString("sr-RS") + " RSD";
+}
+
+function clamp(n: number) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, n);
+}
+
+const inputStyle: React.CSSProperties = {
+  background: "#fff",
+  color: "#111",
+  border: "1px solid rgba(0,0,0,0.18)",
+  borderRadius: 6,
+  padding: "6px 8px",
+};
+
+const cardStyle: React.CSSProperties = {
+  padding: 14,
+  background: "#fff",
+  border: "1px solid rgba(0,0,0,0.12)",
+};
+
+const cardLabelStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: "rgba(0,0,0,0.60)",
+};
+
+const cardValueStyle: React.CSSProperties = {
+  fontSize: 22,
+  fontWeight: 900,
+  color: "#111111",
+  letterSpacing: "0.2px",
+};
+
+const cardValueSmallStyle: React.CSSProperties = {
+  fontSize: 20,
+  fontWeight: 900,
+  color: "#111111",
+  letterSpacing: "0.2px",
+};
+
+/** Mini SVG line chart (bez biblioteka) */
+function LineChart({
+  title,
+  items,
+}: {
+  title: string;
+  items: { label: string; value: number }[];
+}) {
+  const w = 520;
+  const h = 180;
+  const pad = 26;
+
+  const values = items.map((i) => i.value);
+  const minY = Math.min(...values, 0);
+  const maxY = Math.max(...values, 1);
+
+  const sx = (i: number) =>
+    pad + (i * (w - 2 * pad)) / Math.max(1, items.length - 1);
+  const sy = (v: number) =>
+    h - pad - ((v - minY) * (h - 2 * pad)) / Math.max(1, maxY - minY);
+
+  const d = items
+    .map(
+      (p, i) =>
+        `${i === 0 ? "M" : "L"} ${sx(i).toFixed(1)} ${sy(p.value).toFixed(1)}`
+    )
+    .join(" ");
+
+  return (
+    <div className="card" style={{ padding: 0, overflow: "hidden", background: "#fff", border: "1px solid rgba(0,0,0,0.12)" }}>
+      <div
+        style={{
+          padding: "10px 12px",
+          fontWeight: 800,
+          borderBottom: "1px solid rgba(0,0,0,0.10)",
+          background: "#fff",
+          color: "#111",
+        }}
+      >
+        {title}
+      </div>
+
+      <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+        {/* axes */}
+        <line
+          x1={pad}
+          y1={h - pad}
+          x2={w - pad}
+          y2={h - pad}
+          stroke="rgba(0,0,0,0.25)"
+          strokeWidth="1"
+        />
+        <line
+          x1={pad}
+          y1={pad}
+          x2={pad}
+          y2={h - pad}
+          stroke="rgba(0,0,0,0.25)"
+          strokeWidth="1"
+        />
+
+        {/* line */}
+        <path d={d} fill="none" stroke="rgba(47,163,107,0.95)" strokeWidth="2.5" />
+
+        {/* dots */}
+        {items.map((p, i) => (
+          <circle key={i} cx={sx(i)} cy={sy(p.value)} r="3" fill="rgba(47,163,107,0.95)" />
+        ))}
+      </svg>
+
+      <div style={{ padding: "8px 12px", fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
+        {items.length
+          ? `${items[0].label} → ${items[items.length - 1].label}`
+          : "Nema podataka"}
+      </div>
+    </div>
+  );
+}
+
+/** Mini SVG bar chart (bez biblioteka) */
+function BarChart({
+  title,
+  items,
+}: {
+  title: string;
+  items: { label: string; value: number }[];
+}) {
+  const w = 520;
+  const h = 180;
+  const pad = 26;
+
+  const maxV = Math.max(...items.map((i) => i.value), 1);
+  const bw = (w - 2 * pad) / Math.max(1, items.length);
+
+  return (
+    <div className="card" style={{ padding: 0, overflow: "hidden", background: "#fff", border: "1px solid rgba(0,0,0,0.12)" }}>
+      <div
+        style={{
+          padding: "10px 12px",
+          fontWeight: 800,
+          borderBottom: "1px solid rgba(0,0,0,0.10)",
+          background: "#fff",
+          color: "#111",
+        }}
+      >
+        {title}
+      </div>
+
+      <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+        {/* axes */}
+        <line
+          x1={pad}
+          y1={h - pad}
+          x2={w - pad}
+          y2={h - pad}
+          stroke="rgba(0,0,0,0.25)"
+          strokeWidth="1"
+        />
+        <line
+          x1={pad}
+          y1={pad}
+          x2={pad}
+          y2={h - pad}
+          stroke="rgba(0,0,0,0.25)"
+          strokeWidth="1"
+        />
+
+        {items.map((b, i) => {
+          const x = pad + i * bw + 6;
+          const barH = ((h - 2 * pad) * b.value) / maxV;
+          const y = h - pad - barH;
+          return (
+            <rect
+              key={i}
+              x={x}
+              y={y}
+              width={Math.max(4, bw - 12)}
+              height={barH}
+              fill="rgba(47,163,107,0.75)"
+            />
+          );
+        })}
+      </svg>
+
+      <div style={{ padding: "8px 12px", fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
+        Max: {fmtRsd(maxV)}
+      </div>
+    </div>
+  );
+}
+
 export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
   const { token } = useAuth();
 
-  // --------- OSNOVNO ----------
-  const [ukupnoPrihod, setUkupnoPrihod] = useState<number | null>(null);
-  const [message, setMessage] = useState<string>("");
+  // UI state
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string>("");
 
-  // --------- RACUNI ----------
-  const [racuni, setRacuni] = useState<FiskalniRacunDTO[]>([]);
-  const [racuniError, setRacuniError] = useState<string>("");
+  // period (trend)
+  const [start, setStart] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 14);
+    return iso(d);
+  });
+  const [end, setEnd] = useState(() => iso(new Date()));
 
-  // --------- TOP10 ----------
+  // year (monthly)
+  const [godina, setGodina] = useState<number>(new Date().getFullYear());
+
+  // data
+  const [ukupnoPrihod, setUkupnoPrihod] = useState<number>(0);
+  const [ukupnoKomada, setUkupnoKomada] = useState<number>(0);
+  const [trend, setTrend] = useState<TrendProdajeItem[]>([]);
+  const [mesecnaPrihod, setMesecnaPrihod] = useState<MesecnaProdajaItem[]>([]);
+
   const [top10Kolicina, setTop10Kolicina] = useState<Top10KolicinaItem[]>([]);
   const [top10Prihod, setTop10Prihod] = useState<Top10PrihodItem[]>([]);
-  const [top10PrihodUkupno, setTop10PrihodUkupno] = useState<number | null>(null);
+  const [top10PrihodUkupno, setTop10PrihodUkupno] = useState<number>(0);
 
-  // --------- PERIOD ----------
-  const [start, setStart] = useState("2026-01-01");
-  const [end, setEnd] = useState("2026-01-31");
-  const [prihodPeriod, setPrihodPeriod] = useState<number | null>(null);
-  const [kolicinaPeriod, setKolicinaPeriod] = useState<number | null>(null);
+  const canLoad = useMemo(() => Boolean(token), [token]);
 
-  // --------- GODINA ----------
-  const [godina, setGodina] = useState<number>(2026);
-  const [mesecnaPrihod, setMesecnaPrihod] = useState<MesecnaProdajaItem[]>([]);
-  const [mesecnaKomada, setMesecnaKomada] = useState<MesecnaKomadaItem[]>([]);
-  const [godisnjaPrihod, setGodisnjaPrihod] = useState<number | null>(null);
-  const [godisnjaKomada, setGodisnjaKomada] = useState<number | null>(null);
+  const loadAll = async () => {
+    if (!token) return;
 
-  // --------- TREND ----------
-  const [trend, setTrend] = useState<TrendProdajeItem[]>([]);
+    setLoading(true);
+    setErr("");
 
-  // --------- UKUPNO KOMADA ----------
-  const [ukupnoKomada, setUkupnoKomada] = useState<number | null>(null);
-
-  // =====================================================
-  // PDF (NOVO)
-  // =====================================================
-  const downloadPdf = () => {
-  try {
-    setMessage("");
-
-    const baseUrl = "http://localhost:6756";
-    const endpoint = "/api/v1/analytics/izvestaj/pdf";
-
-    const qs = new URLSearchParams();
-
-    if (start && end) {
-      qs.set("start", start);
-      qs.set("end", end);
-    }
-
-    if (godina) {
-      qs.set("godina", String(godina));
-    }
-
-    const url = qs.toString()
-      ? `${baseUrl}${endpoint}?${qs.toString()}`
-      : `${baseUrl}${endpoint}`;
-
-    window.open(url, "_blank");
-  } catch (e: any) {
-    console.error(e);
-    setMessage(e?.message ?? "Greška pri preuzimanju PDF-a.");
-  }
-};
-
-
-  // =====================================================
-  // 1) PRIHOD UKUPNO
-  // =====================================================
-  const testPrihodUkupno = async () => {
     try {
-      setMessage("");
-      const res = await analyticsAPI.prihodUkupno(token ?? "");
+      const [
+        rPrihod,
+        rKomada,
+        rTrend,
+        rMesecna,
+        rTopK,
+        rTopP,
+        rTopPUkupno,
+      ] = await Promise.all([
+        analyticsAPI.prihodUkupno(token),
+        analyticsAPI.kolicinaUkupno(token),
+        analyticsAPI.prihodTrend(token, start, end),
+        analyticsAPI.prihodMesecna(token, godina),
+        analyticsAPI.top10Kolicina(token),
+        analyticsAPI.top10Prihod(token),
+        analyticsAPI.top10PrihodUkupno(token),
+      ]);
 
-      // Ako ti API vraća { ukupnaProdaja: number }
-      setUkupnoPrihod(res.ukupnaProdaja);
+      setUkupnoPrihod(clamp(rPrihod.ukupnaProdaja));
+      setUkupnoKomada(clamp(rKomada.ukupnoKomada));
 
-      // Ako ti API JOŠ vraća number (stari kod), onda stavi:
-      // setUkupnoPrihod(res as any);
+      setTrend(rTrend ?? []);
+      setMesecnaPrihod((rMesecna ?? []).slice().sort((a, b) => a.mesec - b.mesec));
 
+      setTop10Kolicina(rTopK ?? []);
+      setTop10Prihod(rTopP ?? []);
+      setTop10PrihodUkupno(clamp(rTopPUkupno.ukupno));
     } catch (e: any) {
       console.error(e);
-      setMessage(e?.message ?? "Greška pri pozivu prihoda ukupno.");
+      setErr(e?.message ?? "Greška pri učitavanju analytics podataka.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // =====================================================
-  // 2) UKUPNO KOMADA
-  // =====================================================
-  const loadUkupnoKomada = async () => {
+  useEffect(() => {
+    if (!canLoad) return;
+    loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canLoad, godina]);
+
+  // Derived (for charts)
+  const trendChart = (trend ?? []).map((t) => ({
+    label: t.datum?.slice(0, 10) ?? "",
+    value: clamp(t.ukupno),
+  }));
+
+  const mesecnaChart = (mesecnaPrihod ?? []).map((m) => ({
+    label: String(m.mesec),
+    value: clamp(m.ukupno),
+  }));
+
+  // Join top10 into one table (by name)
+  const topRows = useMemo(() => {
+    const mapK = new Map<string, number>();
+    for (const k of top10Kolicina ?? []) mapK.set(k.parfemNaziv, clamp(k.kolicina));
+
+    const allNames = new Set<string>();
+    (top10Prihod ?? []).forEach((x) => allNames.add(x.parfemNaziv));
+    (top10Kolicina ?? []).forEach((x) => allNames.add(x.parfemNaziv));
+
+    const rows = Array.from(allNames).map((name) => ({
+      name,
+      quantity: mapK.get(name) ?? 0,
+      revenue: clamp(
+        (top10Prihod ?? []).find((p) => p.parfemNaziv === name)?.prihod ?? 0
+      ),
+    }));
+
+    rows.sort((a, b) => b.revenue - a.revenue);
+    return rows.slice(0, 10);
+  }, [top10Kolicina, top10Prihod]);
+
+  const onRefresh = async () => {
+    await loadAll();
+  };
+
+  const onExportPdf = () => {
     try {
-      setMessage("");
-      const res = await analyticsAPI.kolicinaUkupno(token ?? "");
-      setUkupnoKomada(res.ukupnoKomada);
+      const base = import.meta.env.VITE_GATEWAY_URL; // npr. http://localhost:4000/api/v1
+      const qs = new URLSearchParams();
+      if (start) qs.set("start", start);
+      if (end) qs.set("end", end);
+      if (godina) qs.set("godina", String(godina));
+
+      const url = `${base}/analytics/izvestaj/pdf?${qs.toString()}`;
+      window.open(url, "_blank");
     } catch (e: any) {
       console.error(e);
-      setMessage(e?.message ?? "Greška pri pozivu ukupno komada.");
+      setErr(e?.message ?? "Greška pri preuzimanju PDF-a.");
     }
   };
 
-  // =====================================================
-  // 3) PERIOD PRIHOD + KOLICINA
-  // =====================================================
-  const loadPeriod = async () => {
-    try {
-      setMessage("");
-      const t = token ?? "";
-      const prihod = await analyticsAPI.prihodNedeljna(t, start, end);
-      const kom = await analyticsAPI.kolicinaNedeljna(t, start, end);
-
-      setPrihodPeriod(prihod.ukupno);
-      setKolicinaPeriod(kom.ukupnoKomada);
-    } catch (e: any) {
-      console.error(e);
-      setMessage(e?.message ?? "Greška pri pozivu period analitike.");
-    }
-  };
-
-  // =====================================================
-  // 4) TREND
-  // =====================================================
-  const loadTrend = async () => {
-    try {
-      setMessage("");
-      const data = await analyticsAPI.prihodTrend(token ?? "", start, end);
-      setTrend(data);
-    } catch (e: any) {
-      console.error(e);
-      setMessage(e?.message ?? "Greška pri pozivu trenda.");
-    }
-  };
-
-  // =====================================================
-  // 5) GODINA - MESECNO + GODISNJE
-  // =====================================================
-  const loadGodina = async () => {
-    try {
-      setMessage("");
-      const t = token ?? "";
-
-      const mp = await analyticsAPI.prihodMesecna(t, godina);
-      const mk = await analyticsAPI.kolicinaMesecna(t, godina);
-
-      const gp = await analyticsAPI.prihodGodisnja(t, godina);
-      const gk = await analyticsAPI.kolicinaGodisnja(t, godina);
-
-      setMesecnaPrihod(mp);
-      setMesecnaKomada(mk);
-
-      setGodisnjaPrihod(gp.ukupno);
-      setGodisnjaKomada(gk.ukupnoKomada);
-    } catch (e: any) {
-      console.error(e);
-      setMessage(e?.message ?? "Greška pri učitavanju mesečnih/godišnjih analiza.");
-    }
-  };
-
-  // =====================================================
-  // 6) TOP10
-  // =====================================================
-  const loadTop10 = async () => {
-    try {
-      setMessage("");
-      const t = token ?? "";
-
-      const k = await analyticsAPI.top10Kolicina(t);
-      const p = await analyticsAPI.top10Prihod(t);
-      const u = await analyticsAPI.top10PrihodUkupno(t);
-
-      setTop10Kolicina(k);
-      setTop10Prihod(p);
-      setTop10PrihodUkupno(u.ukupno);
-    } catch (e: any) {
-      console.error(e);
-      setMessage(e?.message ?? "Greška pri učitavanju Top10.");
-    }
-  };
-
-  // =====================================================
-  // 7) RACUNI (GET)
-  // =====================================================
-  const loadRacuni = async () => {
-    try {
-      setRacuniError("");
-      setMessage("");
-      const data = await analyticsAPI.getRacuni(token ?? "");
-      setRacuni(data);
-    } catch (e: any) {
-      console.error(e);
-      setRacuniError(e?.message ?? "Greška pri učitavanju računa.");
-    }
-  };
-
-  // =====================================================
-  // 8) KREIRAJ TEST RACUN (POST)
-  // =====================================================
-  const testCreateRacun = async () => {
-    try {
-      setMessage("");
-
-      // ⚠️ OVO MORA DA ODGOVARA TVOM BACKEND DTO-u.
-      // Ako tvoj backend očekuje brojRacuna/datumVreme/proizvodId/cena...
-      // ostavi tako. Ako očekuje (parfemNaziv, kolicina, cenaPoKomadu) itd,
-      // uskladi ovde.
-
-      const dto: KreirajRacunDTO = {
-        datum: new Date().toISOString().slice(0, 10),
-        stavke: [
-          { parfemNaziv: "Parfem 1", kolicina: 2, cenaPoKomadu: 150 },
-          { parfemNaziv: "Parfem 2", kolicina: 1, cenaPoKomadu: 300 },
-        ],
-      };
-
-      await analyticsAPI.createRacun(token ?? "", dto);
-      setMessage("✅ Račun kreiran!");
-
-      // refresh liste ako već postoji
-      await loadRacuni();
-    } catch (e: any) {
-      console.error(e);
-      setMessage(e?.message ?? "❌ Neuspešno kreiranje računa.");
-    }
-  };
-
-  // =====================================================
-  // UI
-  // =====================================================
   return (
-    <div className="overlay-blur-none" style={{ minHeight: "100vh" }}>
-      <div className="window" style={{ width: "1100px", maxWidth: "95%", margin: "30px auto" }}>
-        <div className="titlebar">
-          <span className="titlebar-title">Analytics microservice</span>
+    <div className="overlay-blur-none" style={{ minHeight: "100vh", background: "#ffffff" }}>
+      <div className="window" style={{ width: "1200px", maxWidth: "96%", margin: "24px auto", background: "#fff" }}>
+        <div className="titlebar" style={{ background: "#fff", color: "#111" }}>
+          <span className="titlebar-title">Analitika prodaje</span>
         </div>
 
         <div
           className="window-content"
           style={{
-            padding: 24,
-            maxHeight: "70vh",
+            padding: 20,
+            maxHeight: "75vh",
             overflowY: "auto",
+            background: "#ffffff",
+            color: "#111111",
           }}
         >
-          {/* TOP ACTIONS */}
-          <div className="flex" style={{ gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-            <button className="btn btn-accent" onClick={testPrihodUkupno}>
-              Prihod ukupno
-            </button>
-
-            <button className="btn btn-ghost" onClick={testCreateRacun}>
-              Kreiraj test račun
-            </button>
-
-            <button className="btn btn-ghost" onClick={loadRacuni}>
-              Učitaj račune
-            </button>
-
-            <button className="btn btn-ghost" onClick={loadTop10}>
-              Top 10
-            </button>
-
-            <button className="btn btn-ghost" onClick={loadUkupnoKomada}>
-              Ukupno komada
-            </button>
-
-            {/* PDF BUTTONS (NOVO) */}
-           <button className="btn btn-accent" onClick={downloadPdf}>
-            Preuzmi PDF izveštaj
-           </button>
-
-          </div>
-
-          {/* PRIHOD UKUPNO */}
-          {typeof ukupnoPrihod === "number" && (
-            <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-              Ukupno prihod: <b>{ukupnoPrihod}</b>
-            </div>
-          )}
-
-          {/* UKUPNO KOMADA */}
-          {typeof ukupnoKomada === "number" && (
-            <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-              Ukupno komada: <b>{ukupnoKomada}</b>
-            </div>
-          )}
-
-          {/* PERIOD */}
-          <div className="card" style={{ padding: 16, marginTop: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 10 }}>Period (start/end)</div>
-
+          {/* HEADER CONTROLS */}
+          <div
+            className="flex"
+            style={{
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 14,
+              background: "#fff",
+            }}
+          >
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <label>
-                Start:{" "}
-                <input value={start} onChange={(e) => setStart(e.target.value)} placeholder="YYYY-MM-DD" />
-              </label>
+              <div style={{ fontWeight: 900, fontSize: 16, color: "#111" }}>Dashboard</div>
 
-              <label>
-                End:{" "}
-                <input value={end} onChange={(e) => setEnd(e.target.value)} placeholder="YYYY-MM-DD" />
-              </label>
-
-              <button className="btn btn-ghost" onClick={loadPeriod}>
-                Prihod + količina (period)
-              </button>
-
-              <button className="btn btn-ghost" onClick={loadTrend}>
-                Trend (po danima)
-              </button>
-            </div>
-
-            <div style={{ marginTop: 10, opacity: 0.9 }}>
-              {typeof prihodPeriod === "number" && (
-                <div>
-                  Prihod u periodu: <b>{prihodPeriod}</b>
-                </div>
-              )}
-              {typeof kolicinaPeriod === "number" && (
-                <div>
-                  Komada u periodu: <b>{kolicinaPeriod}</b>
-                </div>
-              )}
-            </div>
-
-            {trend.length > 0 && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Trend</div>
-                <ul>
-                  {trend.map((x) => (
-                    <li key={x.datum}>
-                      {x.datum}: <b>{x.ukupno}</b>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* GODINA */}
-          <div className="card" style={{ padding: 16, marginTop: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 10 }}>Godina</div>
-
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <label>
-                Godina:{" "}
+              <label style={{ display: "flex", gap: 6, alignItems: "center", color: "#111" }}>
+                Godina:
                 <input
-                  type="number"
                   value={godina}
+                  type="number"
                   onChange={(e) => setGodina(Number(e.target.value))}
-                  style={{ width: 110 }}
+                  style={{ ...inputStyle, width: 100 }}
                 />
               </label>
 
-              <button className="btn btn-ghost" onClick={loadGodina}>
-                Učitaj mesečno + godišnje
+              <label style={{ display: "flex", gap: 6, alignItems: "center", color: "#111" }}>
+                Start:
+                <input value={start} type="date" onChange={(e) => setStart(e.target.value)} style={inputStyle} />
+              </label>
+
+              <label style={{ display: "flex", gap: 6, alignItems: "center", color: "#111" }}>
+                End:
+                <input value={end} type="date" onChange={(e) => setEnd(e.target.value)} style={inputStyle} />
+              </label>
+
+              <button className="btn btn-ghost" onClick={onRefresh} disabled={loading}>
+                Osveži
               </button>
             </div>
 
-            <div style={{ marginTop: 10 }}>
-              {typeof godisnjaPrihod === "number" && (
-                <div>
-                  Godišnji prihod: <b>{godisnjaPrihod}</b>
-                </div>
-              )}
-              {typeof godisnjaKomada === "number" && (
-                <div>
-                  Godišnje komada: <b>{godisnjaKomada}</b>
-                </div>
-              )}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-accent" onClick={onExportPdf}>
+                Export PDF
+              </button>
+            </div>
+          </div>
+
+          {/* ERROR */}
+          {err ? (
+            <div className="card" style={{ ...cardStyle, marginBottom: 12, border: "1px solid rgba(196,43,28,0.25)" }}>
+              <b style={{ color: "#c42b1c" }}>Greška:</b> {err}
+            </div>
+          ) : null}
+
+          {/* SUMMARY CARDS */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
+            <div className="card" style={cardStyle}>
+              <div style={cardLabelStyle}>Ukupan prihod</div>
+              <div style={cardValueStyle}>{loading ? "..." : fmtRsd(Number(ukupnoPrihod || 0))}</div>
             </div>
 
-            <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
-              <div style={{ minWidth: 240 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Mesečni prihod</div>
-                {mesecnaPrihod.length === 0 ? (
-                  <div style={{ opacity: 0.85 }}>Nema podataka.</div>
-                ) : (
-                  <ul>
-                    {mesecnaPrihod.map((x) => (
-                      <li key={x.mesec}>
-                        Mesec {x.mesec}: <b>{x.ukupno}</b>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            <div className="card" style={cardStyle}>
+              <div style={cardLabelStyle}>Ukupno komada</div>
+              <div style={cardValueSmallStyle}>
+                {loading ? "..." : Number(ukupnoKomada || 0).toLocaleString("sr-RS")}
               </div>
+            </div>
 
-              <div style={{ minWidth: 240 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Mesečno komada</div>
-                {mesecnaKomada.length === 0 ? (
-                  <div style={{ opacity: 0.85 }}>Nema podataka.</div>
-                ) : (
-                  <ul>
-                    {mesecnaKomada.map((x) => (
-                      <li key={x.mesec}>
-                        Mesec {x.mesec}: <b>{x.ukupnoKomada}</b>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            <div className="card" style={cardStyle}>
+              <div style={cardLabelStyle}>Top lista</div>
+              <div style={cardValueSmallStyle}>Top 10 parfema</div>
+            </div>
+
+            <div className="card" style={cardStyle}>
+              <div style={cardLabelStyle}>Ukupan prihod Top10</div>
+              <div style={cardValueSmallStyle}>
+                {loading ? "..." : fmtRsd(Number(top10PrihodUkupno || 0))}
               </div>
             </div>
           </div>
 
-          {/* TOP10 */}
-          <div className="card" style={{ padding: 16, marginTop: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-              <div style={{ fontWeight: 700 }}>Top 10</div>
-              <button className="btn btn-ghost" onClick={loadTop10}>
-                Učitaj Top 10
-              </button>
-            </div>
-
-            {typeof top10PrihodUkupno === "number" && (
-              <div style={{ marginTop: 10 }}>
-                Ukupno prihod Top10: <b>{top10PrihodUkupno}</b>
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
-              <div style={{ minWidth: 260 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Top10 po količini</div>
-                {top10Kolicina.length === 0 ? (
-                  <div style={{ opacity: 0.85 }}>Nema podataka.</div>
-                ) : (
-                  <ol>
-                    {top10Kolicina.map((x) => (
-                      <li key={x.parfemNaziv}>
-                        {x.parfemNaziv} — <b>{x.kolicina}</b>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </div>
-
-              <div style={{ minWidth: 260 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Top10 po prihodu</div>
-                {top10Prihod.length === 0 ? (
-                  <div style={{ opacity: 0.85 }}>Nema podataka.</div>
-                ) : (
-                  <ol>
-                    {top10Prihod.map((x) => (
-                      <li key={x.parfemNaziv}>
-                        {x.parfemNaziv} — <b>{x.prihod}</b>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </div>
-            </div>
+          {/* CHARTS */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <LineChart title="Trend prihoda (period)" items={trendChart} />
+            <BarChart title={`Prihod po mesecima (${godina})`} items={mesecnaChart} />
           </div>
 
-          {/* RACUNI */}
-          <div className="card" style={{ padding: 16, marginTop: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-              <div style={{ fontWeight: 700 }}>Fiskalni računi</div>
-              <button className="btn btn-ghost" onClick={loadRacuni}>
-                Učitaj račune
-              </button>
-            </div>
+          {/* BOTTOM: ANALYSIS + TOP10 TABLE */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="card" style={{ ...cardStyle }}>
+              <div style={{ fontWeight: 900, marginBottom: 8, color: "#111" }}>Kratka analiza</div>
 
-            {racuniError && <div style={{ marginTop: 10, opacity: 0.9 }}>{racuniError}</div>}
-
-            <div style={{ marginTop: 10 }}>
-              {racuni.length === 0 ? (
-                <div style={{ opacity: 0.85 }}>Nema računa (ili nisu učitani).</div>
+              {loading ? (
+                <div style={{ color: "rgba(0,0,0,0.55)" }}>Učitavanje...</div>
               ) : (
+                <div style={{ fontSize: 13, lineHeight: 1.45, color: "#111" }}>
+                  <div>
+                    • Izabrani period trenda: <b>{start}</b> → <b>{end}</b>
+                  </div>
+                  <div>
+                    • Ukupan prihod u sistemu: <b>{fmtRsd(Number(ukupnoPrihod || 0))}</b>
+                  </div>
+                  <div>
+                    • Ukupan prihod Top10: <b>{fmtRsd(Number(top10PrihodUkupno || 0))}</b>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="card" style={{ padding: 0, overflow: "hidden", background: "#fff", border: "1px solid rgba(0,0,0,0.12)" }}>
+              <div style={{ padding: "10px 12px", fontWeight: 900, borderBottom: "1px solid rgba(0,0,0,0.10)", color: "#111" }}>
+                Top 10 (prodaja / prihod)
+              </div>
+
+              <div style={{ padding: 12 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr>
-                      <th style={{ textAlign: "left", padding: 8 }}>ID</th>
-                      <th style={{ textAlign: "left", padding: 8 }}>Datum</th>
-                      <th style={{ textAlign: "left", padding: 8 }}>Ukupan iznos</th>
+                    <tr style={{ textAlign: "left", fontSize: 12, color: "rgba(0,0,0,0.60)" }}>
+                      <th style={{ padding: "6px 8px" }}>Parfem</th>
+                      <th style={{ padding: "6px 8px", width: 120 }}>Komada</th>
+                      <th style={{ padding: "6px 8px", width: 160 }}>Prihod</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {racuni.map((r) => (
-                      <tr key={r.id}>
-                        <td style={{ padding: 8 }}>{r.id}</td>
-                        <td style={{ padding: 8 }}>{new Date(r.datum).toISOString().slice(0, 10)}</td>
-                        <td style={{ padding: 8 }}>
-                          <b>{r.ukupanIznos}</b>
+                    {topRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} style={{ padding: "10px 8px", color: "rgba(0,0,0,0.55)" }}>
+                          Nema podataka.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      topRows.map((r, idx) => (
+                        <tr key={r.name} style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }}>
+                          <td style={{ padding: "8px", color: "#111" }}>
+                            <b>{idx + 1}.</b> {r.name}
+                          </td>
+                          <td style={{ padding: "8px", color: "#111" }}>
+                            {Number(r.quantity || 0).toLocaleString("sr-RS")}
+                          </td>
+                          <td style={{ padding: "8px", color: "#111" }}>{fmtRsd(Number(r.revenue || 0))}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
-              )}
+
+                <div style={{ marginTop: 10, fontSize: 12, color: "rgba(0,0,0,0.60)" }}>
+                  Ukupan prihod Top10:{" "}
+                  <b style={{ color: "#111" }}>{fmtRsd(Number(top10PrihodUkupno || 0))}</b>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* MESSAGE */}
-          {message && (
-            <div className="card" style={{ padding: 16, marginTop: 12 }}>
-              {message}
-            </div>
-          )}
+          {/* FOOTER */}
+          <div style={{ marginTop: 14, fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
+            Napomena: PDF export radi preko <b>gateway</b> rute <code>/analytics/izvestaj/pdf</code>.
+          </div>
         </div>
       </div>
     </div>
