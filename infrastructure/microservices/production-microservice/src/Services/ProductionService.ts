@@ -8,6 +8,7 @@ import { HarvestPlantsResponseDTO } from "../Domain/DTOs/HarvestPlantsResponseDT
 import { EventClient } from "../Services/EventClient";
 import { GetPlantsQueryDTO } from "../Domain/DTOs/GetPlantsQueryDTO";
 import { ProcessPlantsDTO, ProcessPlantsResponseDTO } from "../Domain/DTOs/ProcessPlantsDTO";
+import { PlantTypeSummaryDTO } from "../Domain/DTOs/PlantTypeSummaryDTO";
 
 
 export class ProductionService implements IProductionService {
@@ -95,6 +96,9 @@ export class ProductionService implements IProductionService {
       harvestedPlants: plants.map(p => ({
         id: p.id,
         oilStrength: Number(p.oilStrength),
+        name: p.name,
+        latinName: p.latinName,
+        originCountry: p.originCountry,
       })),
     };
   }
@@ -113,9 +117,9 @@ export class ProductionService implements IProductionService {
 
     const qb = this.plantRepo.createQueryBuilder("p");
 
-    if (status) { qb.andWhere("p.status = :status", { status });}
-    if (search) { qb.andWhere("(p.name LIKE :s OR p.latinName LIKE :s OR p.originCountry LIKE :s)",{ s: `%${search}%` });}
-    
+    if (status) { qb.andWhere("p.status = :status", { status }); }
+    if (search) { qb.andWhere("(p.name LIKE :s OR p.latinName LIKE :s OR p.originCountry LIKE :s)", { s: `%${search}%` }); }
+
     const sortColumn =
       sortBy === "oilStrength" ? "p.oilStrength" :
         sortBy === "name" ? "p.name" :
@@ -169,6 +173,84 @@ export class ProductionService implements IProductionService {
     });
 
     return { processedIds: plants.map((p) => p.id), processedCount: plants.length };
+  }
+
+  // ✅ NOVA METODA - Summary svih vrsta
+  async getPlantTypesSummary(): Promise<PlantTypeSummaryDTO[]> {
+    const qb = this.plantRepo
+      .createQueryBuilder("p")
+      .select("p.name", "name")
+      .addSelect("p.latinName", "latinName")
+      .addSelect("p.originCountry", "originCountry")
+      .addSelect(
+        "SUM(CASE WHEN p.status = 'planted' THEN 1 ELSE 0 END)",
+        "totalPlanted"
+      )
+      .addSelect(
+        "SUM(CASE WHEN p.status = 'harvested' THEN 1 ELSE 0 END)",
+        "totalHarvested"
+      )
+      .addSelect(
+        "SUM(CASE WHEN p.status = 'processed' THEN 1 ELSE 0 END)",
+        "totalProcessed"
+      )
+      .addSelect("COUNT(*)", "total")
+      .groupBy("p.name")
+      .addGroupBy("p.latinName")
+      .addGroupBy("p.originCountry")
+      .orderBy("total", "DESC");
+
+    const results = await qb.getRawMany();
+
+    return results.map((r) => ({
+      name: r.name,
+      latinName: r.latinName,
+      originCountry: r.originCountry,
+      totalPlanted: Number(r.totalPlanted),
+      totalHarvested: Number(r.totalHarvested),
+      totalProcessed: Number(r.totalProcessed),
+      total: Number(r.total),
+    }));
+  }
+
+  // ✅ NOVA METODA - Detalji jedne vrste
+  async getPlantTypeByName(name: string): Promise<PlantTypeSummaryDTO | null> {
+    const qb = this.plantRepo
+      .createQueryBuilder("p")
+      .select("p.name", "name")
+      .addSelect("p.latinName", "latinName")
+      .addSelect("p.originCountry", "originCountry")
+      .addSelect(
+        "SUM(CASE WHEN p.status = 'planted' THEN 1 ELSE 0 END)",
+        "totalPlanted"
+      )
+      .addSelect(
+        "SUM(CASE WHEN p.status = 'harvested' THEN 1 ELSE 0 END)",
+        "totalHarvested"
+      )
+      .addSelect(
+        "SUM(CASE WHEN p.status = 'processed' THEN 1 ELSE 0 END)",
+        "totalProcessed"
+      )
+      .addSelect("COUNT(*)", "total")
+      .where("p.name = :name", { name })
+      .groupBy("p.name")
+      .addGroupBy("p.latinName")
+      .addGroupBy("p.originCountry");
+
+    const result = await qb.getRawOne();
+
+    if (!result) return null;
+
+    return {
+      name: result.name,
+      latinName: result.latinName,
+      originCountry: result.originCountry,
+      totalPlanted: Number(result.totalPlanted),
+      totalHarvested: Number(result.totalHarvested),
+      totalProcessed: Number(result.totalProcessed),
+      total: Number(result.total),
+    };
   }
 
 }

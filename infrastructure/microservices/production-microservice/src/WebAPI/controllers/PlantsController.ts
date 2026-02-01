@@ -37,6 +37,9 @@ export class PlantsController {
     this.router.get("/plants", this.getAll.bind(this));
     this.router.get("/plants/:id", this.getById.bind(this));
     this.router.post("/plants/process", this.processPlants.bind(this));
+    this.router.get("/plants/types", this.getPlantTypes.bind(this));           // ✅ NOVO
+    this.router.get("/plants/types/:name", this.getPlantTypeByName.bind(this)); // ✅ NOVO
+
   }
 
   private async plant(req: Request, res: Response): Promise<void> {
@@ -159,6 +162,42 @@ export class PlantsController {
     }
   }
 
+  // ✅ NOVI ENDPOINT - Sve vrste
+  private async getPlantTypes(req: Request, res: Response): Promise<void> {
+    try {
+      const summary = await this.productionService.getPlantTypesSummary();
+      res.status(200).json(summary);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      this.logger.log(message);
+      res.status(500).json({ message });
+    }
+  }
+
+  // ✅ NOVI ENDPOINT - Jedna vrsta
+  private async getPlantTypeByName(req: Request, res: Response): Promise<void> {
+    try {
+      const name = req.params.name.trim();
+
+      if (!name) {
+        res.status(400).json({ message: "Name parameter is required" });
+        return;
+      }
+
+      const plantType = await this.productionService.getPlantTypeByName(name);
+
+      if (!plantType) {
+        res.status(404).json({ message: `Plant type "${name}" not found` });
+        return;
+      }
+
+      res.status(200).json(plantType);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      this.logger.log(message);
+      res.status(500).json({ message });
+    }
+  }
 
   public getRouter(): Router {
     return this.router;

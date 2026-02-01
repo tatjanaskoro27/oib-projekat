@@ -2,6 +2,8 @@ import axios, { AxiosInstance } from "axios";
 import { AvailableCountResponseDTO } from "../Domain/DTOs/AvailableCountResponseDTO";
 import { HarvestPlantsResponseDTO } from "../Domain/DTOs/HarvestPlantsResponseDTO";
 import { CreateDogadjajDTO } from "../Domain/DTOs/EventDTO";
+import { PlantTypeSummaryDTO } from "../Domain/DTOs/PlantTypeSummaryDTO";
+
 
 export class GatewayClient {
   private readonly client: AxiosInstance;
@@ -44,6 +46,20 @@ export class GatewayClient {
   async markPlantsProcessed(plantIds: number[]): Promise<{ processedCount: number; processedIds: number[] }> {
     const res = await this.client.post<{ processedIds: number[]; processedCount: number }>("/internal/plants/process", { plantIds });
     return res.data;
+  }
+
+  async getPlantTypeByName(name: string): Promise<PlantTypeSummaryDTO | null> {
+    try {
+      const res = await this.client.get<PlantTypeSummaryDTO>(
+        `/internal/plants/types/${encodeURIComponent(name)}`
+      );
+      return res.data;
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        return null;
+      }
+      throw err;
+    }
   }
 
   async logEvent(dto: CreateDogadjajDTO): Promise<void> {

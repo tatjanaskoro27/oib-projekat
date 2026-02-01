@@ -5,7 +5,7 @@ export interface PlantResponse {
   name: string;
   latinName: string | null;
   originCountry: string | null;
-  oilStrength: string; // DECIMAL iz MySQL dolazi kao string
+  oilStrength: string;
   status: PlantStatus;
   createdAt: string;
   updatedAt: string;
@@ -14,6 +14,10 @@ export interface PlantResponse {
 export interface HarvestedPlantDTO {
   id: number;
   oilStrength: number;
+  name: string;
+  latinName: string;
+  originCountry: string;
+
 }
 
 export interface HarvestResponse {
@@ -29,4 +33,14 @@ export interface AvailableCountResponse {
 export interface ProcessPlantsResponse {
   processedIds: number[];
   processedCount: number;
+}
+
+export interface PlantTypeSummaryResponse {
+  name: string;
+  latinName: string;
+  originCountry: string;
+  totalPlanted: number;
+  totalHarvested: number;
+  totalProcessed: number;
+  total: number;
 }

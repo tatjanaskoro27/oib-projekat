@@ -65,6 +65,9 @@ export class GatewayController {
     this.router.patch("/plants/:id/oil-strength", authenticate, authorize("manager", "seller"), this.updateOilStrength.bind(this));
     this.router.post("/plants/harvest", authenticate, authorize("manager", "seller"), this.harvest.bind(this));
     this.router.get("/plants", authenticate, authorize("manager", "seller"), this.getPlants.bind(this));
+    this.router.get("/plants/types", authenticate, authorize("manager", "seller"), this.getPlantTypesSummary.bind(this));
+    this.router.get("/plants/types/:name", authenticate, authorize("manager", "seller"), this.getPlantTypeByName.bind(this));
+
     this.router.get("/plants/:id", authenticate, authorize("manager", "seller"), this.getPlantById.bind(this));
 
     //Processing
@@ -77,6 +80,7 @@ export class GatewayController {
     this.router.post("/internal/plants/harvest", internalAuth, this.internalHarvest.bind(this));
     this.router.patch("/internal/plants/:id/oil-strength", internalAuth, this.internalUpdateOilStrength.bind(this));
     this.router.post("/internal/plants/process", internalAuth, this.internalProcessPlants.bind(this));
+    this.router.get("/internal/plants/types/:name", internalAuth, this.getPlantTypeByName.bind(this));
 
     // Dogadjaji
     this.router.get("/dogadjaji", authenticate, authorize("admin", "seller", "manager"), this.getDogadjaji.bind(this));
@@ -434,6 +438,37 @@ export class GatewayController {
       res.status(404).json({ message: (err as Error).message });
     }
   }
+
+  private async getPlantTypesSummary(req: Request, res: Response): Promise<void> {
+    try {
+      const summary = await this.gatewayService.getPlantTypesSummary();
+      res.status(200).json(summary);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      console.error("Error fetching plant types summary:", message);
+      res.status(500).json({ message });
+    }
+  }
+
+  private async getPlantTypeByName(req: Request, res: Response): Promise<void> {
+    try {
+      const name = String(req.params.name ?? "").trim();
+      if (!name) {
+        res.status(400).json({ message: "Name parameter is required" });
+        return;
+      }
+
+      const data = await this.gatewayService.getPlantTypeByName(name);
+      res.status(200).json(data);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        res.status(404).json({ message: `Plant type "${req.params.name}" not found` });
+        return;
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
 
   private async internalProcessPlants(req: Request, res: Response): Promise<void> {
     try {

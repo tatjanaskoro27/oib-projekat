@@ -27,7 +27,7 @@ import { KolicinaGodisnjaDTO } from "../Domain/DTOs/analytics/KolicinaGodisnjaDT
 
 //
 import { CreatePlantDTO, HarvestPlantsDTO, ProcessPlantsDTO, UpdateOilStrengthDTO } from "../Domain/DTOs/production/PlantDTOs";
-import { PlantResponse, HarvestResponse, AvailableCountResponse, ProcessPlantsResponse } from "../Domain/DTOs/production/PlantTypes";
+import { PlantResponse, HarvestResponse, AvailableCountResponse, ProcessPlantsResponse, PlantTypeSummaryResponse } from "../Domain/DTOs/production/PlantTypes";
 
 import { StartProcessingDTO, GetPerfumesDTO } from "../Domain/DTOs/processing/ProcessingDTOs";
 import { PerfumeResponse } from "../Domain/DTOs/processing/PerfumeTypes";
@@ -112,12 +112,12 @@ export class GatewayService implements IGatewayService {
       timeout: 5000,
     });
 
-    
-  this.skladisteClient = axios.create({
-  baseURL: skladisteBaseURL,
-  headers: { "Content-Type": "application/json" },
-  timeout: 10000,
-});
+
+    this.skladisteClient = axios.create({
+      baseURL: skladisteBaseURL,
+      headers: { "Content-Type": "application/json" },
+      timeout: 10000,
+    });
 
   }
   // Auth microservice
@@ -304,6 +304,15 @@ export class GatewayService implements IGatewayService {
     return response.data;
   }
 
+  async getPlantTypesSummary(): Promise<PlantTypeSummaryResponse[]> {
+    const response = await this.productionClient.get<PlantTypeSummaryResponse[]>("/plants/types");
+    return response.data;
+  }
+
+  async getPlantTypeByName(name: string): Promise<PlantTypeSummaryResponse> {
+    const response = await this.productionClient.get<PlantTypeSummaryResponse>(`/plants/types/${encodeURIComponent(name)}`);
+    return response.data;
+  }
 
 
   //processing
@@ -354,11 +363,11 @@ export class GatewayService implements IGatewayService {
   }
 
   async salesPurchase(dto: any, role: string): Promise<any> {
-  const res = await this.salesClient.post("/sales/purchase", dto, {
-    headers: { "x-uloga": String(role || "") },
-  });
-  return res.data;
-}
+    const res = await this.salesClient.post("/sales/purchase", dto, {
+      headers: { "x-uloga": String(role || "") },
+    });
+    return res.data;
+  }
 
 
   async internalSendAmbalaze(trazenaKolicina: number, uloga: string): Promise<any> {

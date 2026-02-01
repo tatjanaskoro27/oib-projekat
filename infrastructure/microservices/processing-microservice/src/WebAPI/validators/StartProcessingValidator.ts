@@ -4,6 +4,11 @@ import { PerfumeType } from "../../Domain/enums/PerfumeType";
 export function validateStartProcessingData(
   data: StartProcessingDTO
 ): { success: boolean; message?: string } {
+
+  if (!data.plantName || data.plantName.trim().length < 2) {
+    return { success: false, message: "plantName is required" };
+  }
+
   if (!data.perfumeName || data.perfumeName.trim().length < 2) {
     return { success: false, message: "perfumeName is required" };
   }
