@@ -1,5 +1,8 @@
 import { Router, Request, Response } from "express";
-import { PurchaseRequestDTO, PurchaseItemDTO } from "../Domain/DTOs/PurchaseRequestDTO";
+import {
+  PurchaseRequestDTO,
+  PurchaseItemDTO,
+} from "../Domain/DTOs/PurchaseRequestDTO";
 import { SalesService } from "../Services/SalesService";
 
 // mali lokalni tip za normalizovane stavke
@@ -38,47 +41,59 @@ export class SalesController {
   }
 
   private async purchase(req: Request, res: Response) {
-  try {
-    const body = req.body as any;
+    try {
+      const body = req.body as any;
 
-    const items = (Array.isArray(body.items) ? body.items : []).map((it: any) => ({
-      name: String(it?.name ?? "").trim(),
-      quantity: Number(it?.quantity ?? it?.kolicina ?? it?.qty ?? 1),
-    }));
+      const items = (Array.isArray(body.items) ? body.items : []).map(
+        (it: any) => ({
+          name: String(it?.name ?? "").trim(),
+          quantity: Number(it?.quantity ?? it?.kolicina ?? it?.qty ?? 1),
+        }),
+      );
 
-    if (!items.length) return res.status(400).json({ message: "Items array is empty" });
-    if (items.some((i: any) => !i.name || !Number.isFinite(i.quantity) || i.quantity <= 0)) {
-      return res.status(400).json({ message: "Each item must have name and quantity > 0", items });
+      if (!items.length)
+        return res.status(400).json({ message: "Items array is empty" });
+      if (
+        items.some(
+          (i: any) =>
+            !i.name || !Number.isFinite(i.quantity) || i.quantity <= 0,
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            message: "Each item must have name and quantity > 0",
+            items,
+          });
+      }
+
+      const dto: any = {
+        userId: String(body.userId ?? "").trim(),
+        saleType: body.saleType,
+        paymentType: body.paymentType,
+        items,
+      };
+      if (!dto.userId)
+        return res.status(400).json({ message: "userId is required" });
+
+      const raw = String(req.header("x-uloga") || "").toUpperCase();
+      const uloga: "MENADZER_PRODAJE" | "PRODAVAC" =
+        raw === "MENADZER_PRODAJE" ? "MENADZER_PRODAJE" : "PRODAVAC";
+
+      const result = await this.salesService.purchase(dto, uloga);
+
+      return res.status(201).json({
+        message: "Purchase successful",
+        sale: result.sale,
+        racun: result.racun,
+        storageResponse: result.storageResponse,
+        qrCode: result.qrCode,
+      });
+    } catch (err: any) {
+      console.log("🔥 SALES PURCHASE ERROR:", err);
+      return res.status(400).json({ message: err?.message ?? "Error" });
     }
-
-    const dto: any = {
-      userId: String(body.userId ?? "").trim(),
-      saleType: body.saleType,
-      paymentType: body.paymentType,
-      items,
-    };
-    if (!dto.userId) return res.status(400).json({ message: "userId is required" });
-
-    const raw = String(req.header("x-uloga") || "").toUpperCase();
-    const uloga: "MENADZER_PRODAJE" | "PRODAVAC" =
-      raw === "MENADZER_PRODAJE" ? "MENADZER_PRODAJE" : "PRODAVAC";
-
-    const result = await this.salesService.purchase(dto, uloga);
-
-    return res.status(201).json({
-      message: "Purchase successful",
-      sale: result.sale,
-      racun: result.racun,
-      storageResponse: result.storageResponse,
-    });
-  } catch (err: any) {
-    console.log("🔥 SALES PURCHASE ERROR:", err);
-    return res.status(400).json({ message: err?.message ?? "Error" });
   }
-}
-
-
-
 
   public getRouter(): Router {
     return this.router;

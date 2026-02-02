@@ -5,6 +5,7 @@ import { PurchaseRequestDTO } from "../Domain/DTOs/PurchaseRequestDTO";
 import { GatewayClient } from "./GatewayClient";
 import { CreateFiscalReceiptDTO } from "../Domain/DTOs/CreateFiscalReceiptDTO";
 import { CreateDogadjajDTO } from "../Domain/DTOs/EventDTO";
+import QRCode from "qrcode";
 
 type Uloga = "MENADZER_PRODAJE" | "PRODAVAC";
 
@@ -18,7 +19,7 @@ export class SalesService {
   constructor(
     private readonly perfumeRepo: Repository<Perfume>,
     private readonly saleRepo: Repository<Sale>,
-    private readonly gatewayClient: GatewayClient
+    private readonly gatewayClient: GatewayClient,
   ) {}
 
   async getAllPerfumes(): Promise<Perfume[]> {
@@ -30,9 +31,24 @@ export class SalesService {
     if (existing > 0) return { message: "Data already exists" };
 
     const perfumes = [
-      { name: "Chanel No 5", description: "Classic floral perfume", price: 120.0, stock: 10 },
-      { name: "Dior Sauvage", description: "Fresh woody scent", price: 95.5, stock: 15 },
-      { name: "Gucci Bloom", description: "Floral bouquet", price: 105.0, stock: 8 },
+      {
+        name: "Chanel No 5",
+        description: "Classic floral perfume",
+        price: 120.0,
+        stock: 10,
+      },
+      {
+        name: "Dior Sauvage",
+        description: "Fresh woody scent",
+        price: 95.5,
+        stock: 15,
+      },
+      {
+        name: "Gucci Bloom",
+        description: "Floral bouquet",
+        price: 105.0,
+        stock: 8,
+      },
     ];
 
     for (const p of perfumes) {
@@ -44,10 +60,14 @@ export class SalesService {
     return { message: "Test data seeded successfully" };
   }
 
-  async purchase(dto: PurchaseRequestDTO, uloga: Uloga): Promise<{
+  async purchase(
+    dto: PurchaseRequestDTO,
+    uloga: Uloga,
+  ): Promise<{
     sale: Sale;
     racun: any;
     storageResponse: any;
+    qrCode: string;
   }> {
     // helper: audit log ne sme da obori kupovinu
     const safeLog = async (event: CreateDogadjajDTO) => {
@@ -63,23 +83,32 @@ export class SalesService {
       const userId = String((dto as any)?.userId ?? "").trim();
       if (!userId) throw new Error("Missing userId");
 
-      if (!Array.isArray((dto as any)?.items) || (dto as any).items.length === 0) {
+      if (
+        !Array.isArray((dto as any)?.items) ||
+        (dto as any).items.length === 0
+      ) {
         throw new Error("Missing items");
       }
 
       // 1) Parse items: očekujemo name + quantity
-      const parsedItems: ParsedItem[] = ((dto as any).items as any[]).map((i: any) => {
-        const name = String(i?.name ?? "").trim();
-        if (!name) throw new Error("Missing perfume name");
+      const parsedItems: ParsedItem[] = ((dto as any).items as any[]).map(
+        (i: any) => {
+          const name = String(i?.name ?? "").trim();
+          if (!name) throw new Error("Missing perfume name");
 
-        const qty = Number(i?.quantity ?? i?.kolicina ?? i?.qty);
-        if (!Number.isFinite(qty) || qty <= 0) throw new Error("Invalid quantity");
+          const qty = Number(i?.quantity ?? i?.kolicina ?? i?.qty);
+          if (!Number.isFinite(qty) || qty <= 0)
+            throw new Error("Invalid quantity");
 
-        return { name, quantity: qty };
-      });
+          return { name, quantity: qty };
+        },
+      );
 
       // 2) Sum quantity
-      const trazenaKolicina = parsedItems.reduce((sum, it) => sum + it.quantity, 0);
+      const trazenaKolicina = parsedItems.reduce(
+        (sum, it) => sum + it.quantity,
+        0,
+      );
       if (!Number.isFinite(trazenaKolicina) || trazenaKolicina <= 0) {
         throw new Error("Invalid quantity");
       }
@@ -110,7 +139,11 @@ export class SalesService {
 
       // 5) Storage preko GW internal (ambalaže -> raspakivanje)
       // Napomena: ako skladiste vraća detalje, mi ih samo prosledimo nazad.
-      const storageResponse = await this.gatewayClient.requestPerfumesFromStorage(trazenaKolicina, uloga);
+      const storageResponse =
+        await this.gatewayClient.requestPerfumesFromStorage(
+          trazenaKolicina,
+          uloga,
+        );
 
       // 6) Fiskalni račun preko GW internal (analytics)
       const receiptDto: CreateFiscalReceiptDTO = {
@@ -127,6 +160,24 @@ export class SalesService {
       };
 
       const racun = await this.gatewayClient.createFiscalReceipt(receiptDto);
+
+      // ---- QR KOD (NADOGRADNJA) ----
+      const qrPayload = {
+        brojProizvoda: parsedItems.length,
+        proizvodi: parsedItems.map((it) => {
+          const p = byName.get(it.name)!;
+          return {
+            sifraProizvoda: p.id,
+            nazivProizvoda: p.name,
+            jedinicnaCena: Number(p.price),
+            kolicina: it.quantity,
+            ukupnaCena: Number((p.price * it.quantity).toFixed(2)),
+          };
+        }),
+        ukupno: total,
+      };
+
+      const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(qrPayload));
 
       // 7) Transaction: update stock + save sale (da bude atomic)
       const savedSale = await this.saleRepo.manager.transaction(async (trx) => {
@@ -153,7 +204,12 @@ export class SalesService {
         opis: `Uspesna kupovina. SaleId=${savedSale.id}. RacunId=${racun?.id ?? "?"}`,
       });
 
-      return { sale: savedSale, racun, storageResponse };
+      return {
+        sale: savedSale,
+        racun,
+        storageResponse,
+        qrCode: qrCodeDataUrl,
+      };
     } catch (err: any) {
       // Log fail event (ignore errors)
       await safeLog({
@@ -165,4 +221,3 @@ export class SalesService {
     }
   }
 }
-
