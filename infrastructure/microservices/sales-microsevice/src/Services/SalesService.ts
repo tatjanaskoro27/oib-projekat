@@ -21,7 +21,7 @@ export class SalesService {
     private readonly perfumeRepo: Repository<Perfume>,
     private readonly saleRepo: Repository<Sale>,
     private readonly gatewayClient: GatewayClient,
-  ) {}
+  ) { }
 
   async getAllPerfumes(): Promise<Perfume[]> {
     return this.perfumeRepo.find();
@@ -178,8 +178,8 @@ export class SalesService {
         ukupno: total,
       };
 
-     const text = `RACUN\nUkupno: ${total}\nStavke: ${parsedItems.map(i=>`${i.name} x${i.quantity}`).join(", ")}`;
-const qrCodeDataUrl = await QRCode.toDataURL(text);
+      const text = `RACUN\nUkupno: ${total}\nStavke: ${parsedItems.map(i => `${i.name} x${i.quantity}`).join(", ")}`;
+      const qrCodeDataUrl = await QRCode.toDataURL(text);
 
 
       // 7) Transaction: update stock + save sale (da bude atomic)
@@ -204,8 +204,9 @@ const qrCodeDataUrl = await QRCode.toDataURL(text);
       // 8) Log success event (NE SME da obori response)
       await safeLog({
         tip: "INFO",
-        opis: `Uspesna kupovina. SaleId=${savedSale.id}. RacunId=${racun?.id ?? "?"}`,
+        opis: `Uspesna kupovina. SaleId=${savedSale.id}. RacunId=${racun?.racunId ?? racun?.id ?? "?"}`,
       });
+
 
       return {
         sale: savedSale,
