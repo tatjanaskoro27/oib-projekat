@@ -12,10 +12,14 @@ export type PurchaseRequestDTO = {
 };
 
 export type PurchaseResponseDTO = {
-  id: string;
-  userId: string;
-  items: PurchaseItemDTO[];
-  totalAmount: number;
-  saleDate: string;
-  status: string;
+  sale: {
+    id: number;
+    userId: string;
+    items: any[];
+    totalAmount: number;
+    status: string;
+  };
+  racun: any;
+  storageResponse: any;
+  qrCode: string;
 };
