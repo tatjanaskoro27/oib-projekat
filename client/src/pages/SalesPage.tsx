@@ -331,8 +331,14 @@ export const SalesPage: React.FC = () => {
             </div>
 
             {/* KORPA */}
-            <div>
-              <h3 style={{ margin: "8px 0 12px" }}>Korpa</h3>
+        
+            <div
+             style={{
+             maxHeight: "calc(100vh - 220px)",
+             overflowY: "auto",
+             paddingRight: 6,
+            }}
+            >
 
               <div
                 style={{

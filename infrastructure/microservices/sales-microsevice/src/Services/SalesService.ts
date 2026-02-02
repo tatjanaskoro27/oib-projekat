@@ -5,7 +5,8 @@ import { PurchaseRequestDTO } from "../Domain/DTOs/PurchaseRequestDTO";
 import { GatewayClient } from "./GatewayClient";
 import { CreateFiscalReceiptDTO } from "../Domain/DTOs/CreateFiscalReceiptDTO";
 import { CreateDogadjajDTO } from "../Domain/DTOs/EventDTO";
-import QRCode from "qrcode";
+import * as QRCode from "qrcode";
+
 
 type Uloga = "MENADZER_PRODAJE" | "PRODAVAC";
 
@@ -177,7 +178,9 @@ export class SalesService {
         ukupno: total,
       };
 
-      const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(qrPayload));
+     const text = `RACUN\nUkupno: ${total}\nStavke: ${parsedItems.map(i=>`${i.name} x${i.quantity}`).join(", ")}`;
+const qrCodeDataUrl = await QRCode.toDataURL(text);
+
 
       // 7) Transaction: update stock + save sale (da bude atomic)
       const savedSale = await this.saleRepo.manager.transaction(async (trx) => {
