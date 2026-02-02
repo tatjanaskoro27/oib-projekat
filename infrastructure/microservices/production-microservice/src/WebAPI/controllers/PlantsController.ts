@@ -30,6 +30,8 @@ export class PlantsController {
   }
 
   private initializeRoutes(): void {
+    this.router.get("/plants/types", this.getPlantTypes.bind(this));
+    this.router.get("/plants/types/:name", this.getPlantTypeByName.bind(this));
     this.router.get("/plants/available-count", this.getAvailableCount.bind(this));
     this.router.post("/plants", this.plant.bind(this));
     this.router.patch("/plants/:id/oil-strength", this.updateOilStrength.bind(this));
@@ -37,8 +39,6 @@ export class PlantsController {
     this.router.get("/plants", this.getAll.bind(this));
     this.router.get("/plants/:id", this.getById.bind(this));
     this.router.post("/plants/process", this.processPlants.bind(this));
-    this.router.get("/plants/types", this.getPlantTypes.bind(this));           // ✅ NOVO
-    this.router.get("/plants/types/:name", this.getPlantTypeByName.bind(this)); // ✅ NOVO
 
   }
 
@@ -162,7 +162,6 @@ export class PlantsController {
     }
   }
 
-  // ✅ NOVI ENDPOINT - Sve vrste
   private async getPlantTypes(req: Request, res: Response): Promise<void> {
     try {
       const summary = await this.productionService.getPlantTypesSummary();
@@ -174,7 +173,6 @@ export class PlantsController {
     }
   }
 
-  // ✅ NOVI ENDPOINT - Jedna vrsta
   private async getPlantTypeByName(req: Request, res: Response): Promise<void> {
     try {
       const name = req.params.name.trim();

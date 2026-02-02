@@ -459,7 +459,7 @@ hr {
 }
 
 .overlay-blur-none {
-  background-image: var(--win11-bg);
+  background: var(--win11-bg);
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;
@@ -473,6 +473,14 @@ hr {
   align-items: center;
   justify-content: center;
   animation: fadeIn var(--win11-transition-normal);
+}
+
+.page-fill {
+  min-height: 100vh;
+  width: 100%;
+  background: var(--win11-bg);
+  color: var(--win11-text-primary);
+  display: block;
 }
 
 @keyframes fadeIn {

@@ -175,30 +175,22 @@ export class ProductionService implements IProductionService {
     return { processedIds: plants.map((p) => p.id), processedCount: plants.length };
   }
 
-  // ✅ NOVA METODA - Summary svih vrsta
   async getPlantTypesSummary(): Promise<PlantTypeSummaryDTO[]> {
     const qb = this.plantRepo
       .createQueryBuilder("p")
       .select("p.name", "name")
-      .addSelect("p.latinName", "latinName")
-      .addSelect("p.originCountry", "originCountry")
-      .addSelect(
-        "SUM(CASE WHEN p.status = 'planted' THEN 1 ELSE 0 END)",
-        "totalPlanted"
-      )
-      .addSelect(
-        "SUM(CASE WHEN p.status = 'harvested' THEN 1 ELSE 0 END)",
-        "totalHarvested"
-      )
-      .addSelect(
-        "SUM(CASE WHEN p.status = 'processed' THEN 1 ELSE 0 END)",
-        "totalProcessed"
-      )
-      .addSelect("COUNT(*)", "total")
+
+      // ✅ MySQL-safe kada postoji više latin/origin za isti name
+      .addSelect("ANY_VALUE(p.latinName)", "latinName")
+      .addSelect("ANY_VALUE(p.originCountry)", "originCountry")
+
+      .addSelect(`SUM(p.status = '${PlantStatus.PLANTED}')`, "totalPlanted")
+      .addSelect(`SUM(p.status = '${PlantStatus.HARVESTED}')`, "totalHarvested")
+      .addSelect(`SUM(p.status = '${PlantStatus.PROCESSED}')`, "totalProcessed")
+      .addSelect("COUNT(p.id)", "total")
+
       .groupBy("p.name")
-      .addGroupBy("p.latinName")
-      .addGroupBy("p.originCountry")
-      .orderBy("total", "DESC");
+      .orderBy("COUNT(p.id)", "DESC");
 
     const results = await qb.getRawMany();
 
@@ -206,51 +198,37 @@ export class ProductionService implements IProductionService {
       name: r.name,
       latinName: r.latinName,
       originCountry: r.originCountry,
-      totalPlanted: Number(r.totalPlanted),
-      totalHarvested: Number(r.totalHarvested),
-      totalProcessed: Number(r.totalProcessed),
-      total: Number(r.total),
+      totalPlanted: Number(r.totalPlanted ?? 0),
+      totalHarvested: Number(r.totalHarvested ?? 0),
+      totalProcessed: Number(r.totalProcessed ?? 0),
+      total: Number(r.total ?? 0),
     }));
   }
 
-  // ✅ NOVA METODA - Detalji jedne vrste
   async getPlantTypeByName(name: string): Promise<PlantTypeSummaryDTO | null> {
     const qb = this.plantRepo
       .createQueryBuilder("p")
       .select("p.name", "name")
-      .addSelect("p.latinName", "latinName")
-      .addSelect("p.originCountry", "originCountry")
-      .addSelect(
-        "SUM(CASE WHEN p.status = 'planted' THEN 1 ELSE 0 END)",
-        "totalPlanted"
-      )
-      .addSelect(
-        "SUM(CASE WHEN p.status = 'harvested' THEN 1 ELSE 0 END)",
-        "totalHarvested"
-      )
-      .addSelect(
-        "SUM(CASE WHEN p.status = 'processed' THEN 1 ELSE 0 END)",
-        "totalProcessed"
-      )
-      .addSelect("COUNT(*)", "total")
+      .addSelect("ANY_VALUE(p.latinName)", "latinName")
+      .addSelect("ANY_VALUE(p.originCountry)", "originCountry")
+      .addSelect(`SUM(p.status = '${PlantStatus.PLANTED}')`, "totalPlanted")
+      .addSelect(`SUM(p.status = '${PlantStatus.HARVESTED}')`, "totalHarvested")
+      .addSelect(`SUM(p.status = '${PlantStatus.PROCESSED}')`, "totalProcessed")
+      .addSelect("COUNT(p.id)", "total")
       .where("p.name = :name", { name })
-      .groupBy("p.name")
-      .addGroupBy("p.latinName")
-      .addGroupBy("p.originCountry");
+      .groupBy("p.name");
 
-    const result = await qb.getRawOne();
-
-    if (!result) return null;
+    const r = await qb.getRawOne();
+    if (!r) return null;
 
     return {
-      name: result.name,
-      latinName: result.latinName,
-      originCountry: result.originCountry,
-      totalPlanted: Number(result.totalPlanted),
-      totalHarvested: Number(result.totalHarvested),
-      totalProcessed: Number(result.totalProcessed),
-      total: Number(result.total),
+      name: r.name,
+      latinName: r.latinName,
+      originCountry: r.originCountry,
+      totalPlanted: Number(r.totalPlanted ?? 0),
+      totalHarvested: Number(r.totalHarvested ?? 0),
+      totalProcessed: Number(r.totalProcessed ?? 0),
+      total: Number(r.total ?? 0),
     };
   }
-
 }

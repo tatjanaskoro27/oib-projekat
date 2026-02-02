@@ -4,6 +4,7 @@ import { PlantDTO } from "../../models/production/PlantDTO";
 import { GetPlantsQueryDTO } from "../../models/production/GetPlantsQueryDTO";
 import { CreatePlantDTO } from "../../models/production/CreatePlantDTO";
 import { UpdateOilStrengthDTO } from "../../models/production/UpdateOilStrengthDTO";
+import { PlantTypeSummaryDTO } from "../../models/production/PlantTypeSummaryDTO";
 
 export class ProductionAPI implements IProductionAPI {
   private readonly axiosInstance: AxiosInstance;
@@ -47,4 +48,19 @@ export class ProductionAPI implements IProductionAPI {
     });
     return response.data;
   }
+
+    async getPlantTypes(token: string): Promise<PlantTypeSummaryDTO[]> {
+    const response: AxiosResponse<PlantTypeSummaryDTO[]> = await this.axiosInstance.get("/plants/types", { 
+      headers: this.authHeaders(token),
+    });
+    return response.data;
+  }
+
+  async getPlantTypeByName(token: string, name: string): Promise<PlantTypeSummaryDTO> {
+    const response: AxiosResponse<PlantTypeSummaryDTO> = await this.axiosInstance.get(`/plants/types/${encodeURIComponent(name)}`,{ 
+      headers: this.authHeaders(token) }
+    );
+    return response.data;
+  }
+
 }
