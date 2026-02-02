@@ -26,39 +26,6 @@ function clamp(n: number) {
   return Math.max(0, n);
 }
 
-const inputStyle: React.CSSProperties = {
-  background: "#fff",
-  color: "#111",
-  border: "1px solid rgba(0,0,0,0.18)",
-  borderRadius: 6,
-  padding: "6px 8px",
-};
-
-const cardStyle: React.CSSProperties = {
-  padding: 14,
-  background: "#fff",
-  border: "1px solid rgba(0,0,0,0.12)",
-};
-
-const cardLabelStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: "rgba(0,0,0,0.60)",
-};
-
-const cardValueStyle: React.CSSProperties = {
-  fontSize: 22,
-  fontWeight: 900,
-  color: "#111111",
-  letterSpacing: "0.2px",
-};
-
-const cardValueSmallStyle: React.CSSProperties = {
-  fontSize: 20,
-  fontWeight: 900,
-  color: "#111111",
-  letterSpacing: "0.2px",
-};
-
 /** Mini SVG line chart (bez biblioteka) */
 function LineChart({
   title,
@@ -87,49 +54,74 @@ function LineChart({
     )
     .join(" ");
 
+  const card: React.CSSProperties = {
+    background: "#fff",
+    border: "1px solid rgba(2,6,23,0.10)",
+    borderRadius: 16,
+    boxShadow: "0 10px 24px rgba(2,6,23,0.06)",
+    overflow: "hidden",
+  };
+
+  const head: React.CSSProperties = {
+    padding: "12px 14px",
+    borderBottom: "1px solid rgba(2,6,23,0.06)",
+    fontWeight: 950,
+    letterSpacing: "0.2px",
+  };
+
+  const foot: React.CSSProperties = {
+    padding: "10px 14px 12px 14px",
+    fontSize: 12,
+    color: "rgba(15,23,42,0.62)",
+    borderTop: "1px solid rgba(2,6,23,0.05)",
+  };
+
   return (
-    <div className="card" style={{ padding: 0, overflow: "hidden", background: "#fff", border: "1px solid rgba(0,0,0,0.12)" }}>
-      <div
-        style={{
-          padding: "10px 12px",
-          fontWeight: 800,
-          borderBottom: "1px solid rgba(0,0,0,0.10)",
-          background: "#fff",
-          color: "#111",
-        }}
-      >
-        {title}
+    <div style={card}>
+      <div style={head}>{title}</div>
+
+      <div style={{ padding: "10px 14px 0 14px" }}>
+        <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+          {/* axes */}
+          <line
+            x1={pad}
+            y1={h - pad}
+            x2={w - pad}
+            y2={h - pad}
+            stroke="rgba(0,0,0,0.22)"
+            strokeWidth="1"
+          />
+          <line
+            x1={pad}
+            y1={pad}
+            x2={pad}
+            y2={h - pad}
+            stroke="rgba(0,0,0,0.22)"
+            strokeWidth="1"
+          />
+
+          {/* line */}
+          <path
+            d={d}
+            fill="none"
+            stroke="rgba(22,163,74,0.95)"
+            strokeWidth="2.6"
+          />
+
+          {/* dots */}
+          {items.map((p, i) => (
+            <circle
+              key={i}
+              cx={sx(i)}
+              cy={sy(p.value)}
+              r="3.2"
+              fill="rgba(22,163,74,0.95)"
+            />
+          ))}
+        </svg>
       </div>
 
-      <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-        {/* axes */}
-        <line
-          x1={pad}
-          y1={h - pad}
-          x2={w - pad}
-          y2={h - pad}
-          stroke="rgba(0,0,0,0.25)"
-          strokeWidth="1"
-        />
-        <line
-          x1={pad}
-          y1={pad}
-          x2={pad}
-          y2={h - pad}
-          stroke="rgba(0,0,0,0.25)"
-          strokeWidth="1"
-        />
-
-        {/* line */}
-        <path d={d} fill="none" stroke="rgba(47,163,107,0.95)" strokeWidth="2.5" />
-
-        {/* dots */}
-        {items.map((p, i) => (
-          <circle key={i} cx={sx(i)} cy={sy(p.value)} r="3" fill="rgba(47,163,107,0.95)" />
-        ))}
-      </svg>
-
-      <div style={{ padding: "8px 12px", fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
+      <div style={foot}>
         {items.length
           ? `${items[0].label} → ${items[items.length - 1].label}`
           : "Nema podataka"}
@@ -153,59 +145,72 @@ function BarChart({
   const maxV = Math.max(...items.map((i) => i.value), 1);
   const bw = (w - 2 * pad) / Math.max(1, items.length);
 
+  const card: React.CSSProperties = {
+    background: "#fff",
+    border: "1px solid rgba(2,6,23,0.10)",
+    borderRadius: 16,
+    boxShadow: "0 10px 24px rgba(2,6,23,0.06)",
+    overflow: "hidden",
+  };
+
+  const head: React.CSSProperties = {
+    padding: "12px 14px",
+    borderBottom: "1px solid rgba(2,6,23,0.06)",
+    fontWeight: 950,
+    letterSpacing: "0.2px",
+  };
+
+  const foot: React.CSSProperties = {
+    padding: "10px 14px 12px 14px",
+    fontSize: 12,
+    color: "rgba(15,23,42,0.62)",
+    borderTop: "1px solid rgba(2,6,23,0.05)",
+  };
+
   return (
-    <div className="card" style={{ padding: 0, overflow: "hidden", background: "#fff", border: "1px solid rgba(0,0,0,0.12)" }}>
-      <div
-        style={{
-          padding: "10px 12px",
-          fontWeight: 800,
-          borderBottom: "1px solid rgba(0,0,0,0.10)",
-          background: "#fff",
-          color: "#111",
-        }}
-      >
-        {title}
+    <div style={card}>
+      <div style={head}>{title}</div>
+
+      <div style={{ padding: "10px 14px 0 14px" }}>
+        <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+          {/* axes */}
+          <line
+            x1={pad}
+            y1={h - pad}
+            x2={w - pad}
+            y2={h - pad}
+            stroke="rgba(0,0,0,0.22)"
+            strokeWidth="1"
+          />
+          <line
+            x1={pad}
+            y1={pad}
+            x2={pad}
+            y2={h - pad}
+            stroke="rgba(0,0,0,0.22)"
+            strokeWidth="1"
+          />
+
+          {items.map((b, i) => {
+            const x = pad + i * bw + 6;
+            const barH = ((h - 2 * pad) * b.value) / maxV;
+            const y = h - pad - barH;
+            return (
+              <rect
+                key={i}
+                x={x}
+                y={y}
+                width={Math.max(4, bw - 12)}
+                height={barH}
+                fill="rgba(22,163,74,0.75)"
+                rx="4"
+              />
+            );
+          })}
+        </svg>
       </div>
 
-      <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-        {/* axes */}
-        <line
-          x1={pad}
-          y1={h - pad}
-          x2={w - pad}
-          y2={h - pad}
-          stroke="rgba(0,0,0,0.25)"
-          strokeWidth="1"
-        />
-        <line
-          x1={pad}
-          y1={pad}
-          x2={pad}
-          y2={h - pad}
-          stroke="rgba(0,0,0,0.25)"
-          strokeWidth="1"
-        />
-
-        {items.map((b, i) => {
-          const x = pad + i * bw + 6;
-          const barH = ((h - 2 * pad) * b.value) / maxV;
-          const y = h - pad - barH;
-          return (
-            <rect
-              key={i}
-              x={x}
-              y={y}
-              width={Math.max(4, bw - 12)}
-              height={barH}
-              fill="rgba(47,163,107,0.75)"
-            />
-          );
-        })}
-      </svg>
-
-      <div style={{ padding: "8px 12px", fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
-        Max: {fmtRsd(maxV)}
-      </div>
+      <div style={foot}>Max: {fmtRsd(maxV)}</div>
     </div>
   );
 }
@@ -213,22 +218,17 @@ function BarChart({
 export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
   const { token } = useAuth();
 
-  // UI state
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
 
-  // period (trend)
   const [start, setStart] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 14);
     return iso(d);
   });
   const [end, setEnd] = useState(() => iso(new Date()));
-
-  // year (monthly)
   const [godina, setGodina] = useState<number>(new Date().getFullYear());
 
-  // data
   const [ukupnoPrihod, setUkupnoPrihod] = useState<number>(0);
   const [ukupnoKomada, setUkupnoKomada] = useState<number>(0);
   const [trend, setTrend] = useState<TrendProdajeItem[]>([]);
@@ -269,7 +269,9 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
       setUkupnoKomada(clamp(rKomada.ukupnoKomada));
 
       setTrend(rTrend ?? []);
-      setMesecnaPrihod((rMesecna ?? []).slice().sort((a, b) => a.mesec - b.mesec));
+      setMesecnaPrihod(
+        (rMesecna ?? []).slice().sort((a, b) => a.mesec - b.mesec)
+      );
 
       setTop10Kolicina(rTopK ?? []);
       setTop10Prihod(rTopP ?? []);
@@ -288,7 +290,6 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canLoad, godina]);
 
-  // Derived (for charts)
   const trendChart = (trend ?? []).map((t) => ({
     label: t.datum?.slice(0, 10) ?? "",
     value: clamp(t.ukupno),
@@ -299,10 +300,10 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
     value: clamp(m.ukupno),
   }));
 
-  // Join top10 into one table (by name)
   const topRows = useMemo(() => {
     const mapK = new Map<string, number>();
-    for (const k of top10Kolicina ?? []) mapK.set(k.parfemNaziv, clamp(k.kolicina));
+    for (const k of top10Kolicina ?? [])
+      mapK.set(k.parfemNaziv, clamp(k.kolicina));
 
     const allNames = new Set<string>();
     (top10Prihod ?? []).forEach((x) => allNames.add(x.parfemNaziv));
@@ -326,7 +327,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
 
   const onExportPdf = () => {
     try {
-      const base = import.meta.env.VITE_GATEWAY_URL; // npr. http://localhost:4000/api/v1
+      const base = import.meta.env.VITE_GATEWAY_URL;
       const qs = new URLSearchParams();
       if (start) qs.set("start", start);
       if (end) qs.set("end", end);
@@ -340,181 +341,539 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
     }
   };
 
+  const s = {
+    page: {
+      minHeight: "100vh",
+      background: "#f5f7fb",
+      color: "#0f172a",
+      padding: "18px 0 26px",
+    } as React.CSSProperties,
+    shell: {
+      width: "1200px",
+      maxWidth: "96%",
+      margin: "0 auto",
+    } as React.CSSProperties,
+
+    top: {
+      display: "flex",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+      gap: 14,
+      padding: "14px 14px 10px 14px",
+      borderRadius: 16,
+      background: "#fff",
+      border: "1px solid rgba(2,6,23,0.08)",
+      boxShadow: "0 10px 24px rgba(2,6,23,0.06)",
+      flexWrap: "wrap",
+    } as React.CSSProperties,
+    titleKicker: {
+      fontWeight: 900,
+      fontSize: 12,
+      color: "rgba(15,23,42,0.55)",
+      letterSpacing: "0.2px",
+    } as React.CSSProperties,
+    title: {
+      margin: "2px 0 0 0",
+      fontSize: 22,
+      fontWeight: 950,
+    } as React.CSSProperties,
+    topRight: {
+      display: "flex",
+      gap: 10,
+      alignItems: "center",
+      flexWrap: "wrap",
+    } as React.CSSProperties,
+
+    btn: {
+      border: "1px solid rgba(2,6,23,0.12)",
+      background: "#fff",
+      color: "#0f172a",
+      borderRadius: 12,
+      padding: "10px 12px",
+      fontWeight: 950,
+      cursor: "pointer",
+      boxShadow: "0 8px 18px rgba(2,6,23,0.06)",
+      transition:
+        "transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease",
+    } as React.CSSProperties,
+    btnPrimary: {
+      background: "#16a34a",
+      border: "1px solid rgba(22,163,74,0.25)",
+      color: "#fff",
+      boxShadow: "0 10px 22px rgba(22,163,74,0.22)",
+    } as React.CSSProperties,
+    btnDisabled: { opacity: 0.55, cursor: "not-allowed" } as React.CSSProperties,
+
+    card: {
+      background: "#fff",
+      border: "1px solid rgba(2,6,23,0.08)",
+      borderRadius: 16,
+      boxShadow: "0 10px 24px rgba(2,6,23,0.06)",
+    } as React.CSSProperties,
+    cardHead: {
+      padding: "12px 14px",
+      borderBottom: "1px solid rgba(2,6,23,0.06)",
+      fontWeight: 950,
+      letterSpacing: "0.2px",
+    } as React.CSSProperties,
+
+    cardFill: {
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+    } as React.CSSProperties,
+    cardBodyFill: {
+      padding: 14,
+      flex: 1,
+      display: "flex",
+      flexDirection: "column",
+    } as React.CSSProperties,
+
+    cardBody: { padding: 14 } as React.CSSProperties,
+
+    filters: {
+      marginTop: 12,
+      padding: 14,
+      display: "grid",
+      gridTemplateColumns: "160px 200px 200px 1fr",
+      gap: 12,
+      alignItems: "end",
+    } as React.CSSProperties,
+    field: { display: "grid", gap: 6 } as React.CSSProperties,
+    label: {
+      fontSize: 12,
+      fontWeight: 950,
+      color: "rgba(15,23,42,0.60)",
+    } as React.CSSProperties,
+    input: {
+      width: "100%",
+      background: "#fff",
+      border: "1px solid rgba(2,6,23,0.14)",
+      borderRadius: 12,
+      padding: "10px 10px",
+      fontWeight: 850,
+      color: "#0f172a",
+      outline: "none",
+    } as React.CSSProperties,
+    pill: {
+      display: "inline-flex",
+      gap: 8,
+      alignItems: "center",
+      padding: "9px 12px",
+      borderRadius: 999,
+      border: "1px solid rgba(2,6,23,0.10)",
+      background: "rgba(15,23,42,0.03)",
+      fontSize: 12,
+      fontWeight: 850,
+      color: "rgba(15,23,42,0.75)",
+      whiteSpace: "nowrap",
+      justifySelf: "end",
+    } as React.CSSProperties,
+    pillDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 999,
+      background: "#16a34a",
+      boxShadow: "0 0 0 4px rgba(22,163,74,0.18)",
+      display: "inline-block",
+    } as React.CSSProperties,
+
+    alert: {
+      marginTop: 12,
+      padding: "12px 14px",
+      borderRadius: 14,
+      border: "1px solid rgba(196,43,28,0.24)",
+      background: "rgba(196,43,28,0.06)",
+      color: "#7f1d1d",
+      fontWeight: 850,
+    } as React.CSSProperties,
+
+    stats: {
+      marginTop: 12,
+      display: "grid",
+      gridTemplateColumns: "repeat(4, 1fr)",
+      gap: 12,
+    } as React.CSSProperties,
+    stat: (_grad: string) =>
+      ({
+        padding: 14,
+        borderRadius: 16,
+        background: "#fff",
+        border: "1px solid rgba(2,6,23,0.08)",
+        boxShadow: "0 10px 24px rgba(2,6,23,0.06)",
+        position: "relative",
+        overflow: "hidden",
+      } as React.CSSProperties),
+    statOverlay: (grad: string) =>
+      ({
+        position: "absolute",
+        inset: 0,
+        opacity: 0.08,
+        background: grad,
+      } as React.CSSProperties),
+    statLabel: {
+      position: "relative",
+      fontSize: 12,
+      fontWeight: 950,
+      color: "rgba(15,23,42,0.64)",
+      marginBottom: 6,
+    } as React.CSSProperties,
+    statValue: {
+      position: "relative",
+      fontSize: 22,
+      fontWeight: 950,
+      color: "#0f172a",
+      letterSpacing: "0.2px",
+    } as React.CSSProperties,
+
+    grid2: {
+      marginTop: 12,
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: 12,
+      alignItems: "stretch",
+    } as React.CSSProperties,
+
+    muted: { color: "rgba(15,23,42,0.6)", fontWeight: 750 } as React.CSSProperties,
+
+    list: {
+      display: "grid",
+      gap: 8,
+      fontSize: 13,
+      lineHeight: 1.45,
+    } as React.CSSProperties,
+    listRow: { display: "flex", gap: 10, alignItems: "flex-start" } as React.CSSProperties,
+    bullet: {
+      width: 10,
+      height: 10,
+      borderRadius: 999,
+      marginTop: 5,
+      background: "#16a34a",
+      boxShadow: "0 0 0 4px rgba(22,163,74,0.16)",
+      flex: "0 0 auto",
+    } as React.CSSProperties,
+
+    tableWrap: {
+      overflow: "auto",
+      borderRadius: 12,
+      border: "1px solid rgba(2,6,23,0.08)",
+      maxHeight: 340,
+    } as React.CSSProperties,
+    table: { width: "100%", borderCollapse: "collapse", minWidth: 520 } as React.CSSProperties,
+    th: {
+      textAlign: "left",
+      fontSize: 12,
+      color: "rgba(15,23,42,0.62)",
+      padding: "10px 10px",
+      background: "rgba(15,23,42,0.02)",
+      borderBottom: "1px solid rgba(2,6,23,0.08)",
+      fontWeight: 950,
+    } as React.CSSProperties,
+    td: {
+      padding: "10px 10px",
+      borderTop: "1px solid rgba(2,6,23,0.06)",
+      fontWeight: 750,
+      color: "#0f172a",
+      verticalAlign: "top",
+    } as React.CSSProperties,
+    right: { textAlign: "right" as const } as React.CSSProperties,
+    rank: {
+      display: "inline-flex",
+      width: 26,
+      height: 26,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 10,
+      background: "rgba(22,163,74,0.12)",
+      border: "1px solid rgba(22,163,74,0.22)",
+      color: "rgba(15,23,42,0.92)",
+      fontWeight: 950,
+      marginRight: 10,
+    } as React.CSSProperties,
+    sum: { marginTop: 10, fontSize: 12, color: "rgba(15,23,42,0.66)" } as React.CSSProperties,
+
+    foot: { marginTop: 12, textAlign: "center", fontSize: 12, color: "rgba(15,23,42,0.60)" } as React.CSSProperties,
+    responsiveNote: { marginTop: 10, fontSize: 12, color: "rgba(15,23,42,0.62)", textAlign: "center" } as React.CSSProperties,
+
+    noData: {
+      marginTop: 10,
+      padding: "10px 12px",
+      borderRadius: 12,
+      border: "1px dashed rgba(2,6,23,0.18)",
+      background: "rgba(15,23,42,0.02)",
+      color: "rgba(15,23,42,0.70)",
+      fontSize: 12,
+      fontWeight: 850,
+    } as React.CSSProperties,
+  };
+
+  const isNarrow =
+    typeof window !== "undefined" ? window.innerWidth < 980 : false;
+  const statsCols = isNarrow ? "repeat(2, 1fr)" : "repeat(4, 1fr)";
+  const gridCols = isNarrow ? "1fr" : "1fr 1fr";
+  const filterCols = isNarrow ? "1fr 1fr" : "160px 200px 200px 1fr";
+
   return (
-    <div className="overlay-blur-none" style={{ minHeight: "100vh", background: "#ffffff" }}>
-      <div className="window" style={{ width: "1200px", maxWidth: "96%", margin: "24px auto", background: "#fff" }}>
-        <div className="titlebar" style={{ background: "#fff", color: "#111" }}>
-          <span className="titlebar-title">Analitika prodaje</span>
+    <div style={s.page}>
+      <div style={s.shell}>
+        <div style={s.top}>
+          <div>
+            <div style={s.titleKicker}>Dashboard</div>
+            <h1 style={s.title}>Analitika prodaje</h1>
+          </div>
+
+          <div style={s.topRight}>
+            <button
+              style={{ ...s.btn, ...(loading ? s.btnDisabled : null) }}
+              onClick={onRefresh}
+              disabled={loading}
+            >
+              Osveži
+            </button>
+
+            <button style={{ ...s.btn, ...s.btnPrimary }} onClick={onExportPdf}>
+              Export PDF
+            </button>
+          </div>
         </div>
 
-        <div
-          className="window-content"
-          style={{
-            padding: 20,
-            maxHeight: "75vh",
-            overflowY: "auto",
-            background: "#ffffff",
-            color: "#111111",
-          }}
-        >
-          {/* HEADER CONTROLS */}
-          <div
-            className="flex"
-            style={{
-              justifyContent: "space-between",
-              gap: 12,
-              flexWrap: "wrap",
-              marginBottom: 14,
-              background: "#fff",
-            }}
-          >
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <div style={{ fontWeight: 900, fontSize: 16, color: "#111" }}>Dashboard</div>
+        <div style={{ ...s.card, marginTop: 12 }}>
+          <div style={{ ...s.filters, gridTemplateColumns: filterCols }}>
+            <label style={s.field}>
+              <span style={s.label}>Godina</span>
+              <input
+                value={godina}
+                type="number"
+                onChange={(e) => setGodina(Number(e.target.value))}
+                style={s.input}
+              />
+            </label>
 
-              <label style={{ display: "flex", gap: 6, alignItems: "center", color: "#111" }}>
-                Godina:
-                <input
-                  value={godina}
-                  type="number"
-                  onChange={(e) => setGodina(Number(e.target.value))}
-                  style={{ ...inputStyle, width: 100 }}
-                />
-              </label>
+            <label style={s.field}>
+              <span style={s.label}>Start</span>
+              <input
+                value={start}
+                type="date"
+                onChange={(e) => setStart(e.target.value)}
+                style={s.input}
+              />
+            </label>
 
-              <label style={{ display: "flex", gap: 6, alignItems: "center", color: "#111" }}>
-                Start:
-                <input value={start} type="date" onChange={(e) => setStart(e.target.value)} style={inputStyle} />
-              </label>
+            <label style={s.field}>
+              <span style={s.label}>End</span>
+              <input
+                value={end}
+                type="date"
+                onChange={(e) => setEnd(e.target.value)}
+                style={s.input}
+              />
+            </label>
 
-              <label style={{ display: "flex", gap: 6, alignItems: "center", color: "#111" }}>
-                End:
-                <input value={end} type="date" onChange={(e) => setEnd(e.target.value)} style={inputStyle} />
-              </label>
-
-              <button className="btn btn-ghost" onClick={onRefresh} disabled={loading}>
-                Osveži
-              </button>
-            </div>
-
-            <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn btn-accent" onClick={onExportPdf}>
-                Export PDF
-              </button>
-            </div>
-          </div>
-
-          {/* ERROR */}
-          {err ? (
-            <div className="card" style={{ ...cardStyle, marginBottom: 12, border: "1px solid rgba(196,43,28,0.25)" }}>
-              <b style={{ color: "#c42b1c" }}>Greška:</b> {err}
-            </div>
-          ) : null}
-
-          {/* SUMMARY CARDS */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
-            <div className="card" style={cardStyle}>
-              <div style={cardLabelStyle}>Ukupan prihod</div>
-              <div style={cardValueStyle}>{loading ? "..." : fmtRsd(Number(ukupnoPrihod || 0))}</div>
-            </div>
-
-            <div className="card" style={cardStyle}>
-              <div style={cardLabelStyle}>Ukupno komada</div>
-              <div style={cardValueSmallStyle}>
-                {loading ? "..." : Number(ukupnoKomada || 0).toLocaleString("sr-RS")}
-              </div>
-            </div>
-
-            <div className="card" style={cardStyle}>
-              <div style={cardLabelStyle}>Top lista</div>
-              <div style={cardValueSmallStyle}>Top 10 parfema</div>
-            </div>
-
-            <div className="card" style={cardStyle}>
-              <div style={cardLabelStyle}>Ukupan prihod Top10</div>
-              <div style={cardValueSmallStyle}>
-                {loading ? "..." : fmtRsd(Number(top10PrihodUkupno || 0))}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: isNarrow ? "flex-start" : "flex-end",
+              }}
+            >
+              <div style={s.pill}>
+                <span style={s.pillDot} />
+                PDF export:{" "}
+                <code style={{ fontWeight: 950 }}>/analytics/izvestaj/pdf</code>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* CHARTS */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <LineChart title="Trend prihoda (period)" items={trendChart} />
-            <BarChart title={`Prihod po mesecima (${godina})`} items={mesecnaChart} />
+        {err ? (
+          <div style={s.alert}>
+            <b>Greška:</b> {err}
+          </div>
+        ) : null}
+
+        <div style={{ ...s.stats, gridTemplateColumns: statsCols }}>
+          <div style={s.stat("x")}>
+            <div
+              style={s.statOverlay(
+                "linear-gradient(135deg, rgba(22,163,74,1), rgba(14,165,233,1))"
+              )}
+            />
+            <div style={s.statLabel}>Ukupan prihod</div>
+            <div style={s.statValue}>
+              {loading ? "..." : fmtRsd(Number(ukupnoPrihod || 0))}
+            </div>
           </div>
 
-          {/* BOTTOM: ANALYSIS + TOP10 TABLE */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div className="card" style={{ ...cardStyle }}>
-              <div style={{ fontWeight: 900, marginBottom: 8, color: "#111" }}>Kratka analiza</div>
+          <div style={s.stat("x")}>
+            <div
+              style={s.statOverlay(
+                "linear-gradient(135deg, rgba(14,165,233,1), rgba(99,102,241,1))"
+              )}
+            />
+            <div style={s.statLabel}>Ukupno komada</div>
+            <div style={s.statValue}>
+              {loading
+                ? "..."
+                : Number(ukupnoKomada || 0).toLocaleString("sr-RS")}
+            </div>
+          </div>
 
+          <div style={s.stat("x")}>
+            <div
+              style={s.statOverlay(
+                "linear-gradient(135deg, rgba(249,115,22,1), rgba(245,158,11,1))"
+              )}
+            />
+            <div style={s.statLabel}>Top lista</div>
+            <div style={s.statValue}>Top 10 parfema</div>
+          </div>
+
+          <div style={s.stat("x")}>
+            <div
+              style={s.statOverlay(
+                "linear-gradient(135deg, rgba(236,72,153,1), rgba(99,102,241,1))"
+              )}
+            />
+            <div style={s.statLabel}>Ukupan prihod Top10</div>
+            <div style={s.statValue}>
+              {loading ? "..." : fmtRsd(Number(top10PrihodUkupno || 0))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ ...s.grid2, gridTemplateColumns: gridCols }}>
+          <LineChart title="Trend prihoda (period)" items={trendChart} />
+          <div>
+            <BarChart
+              title={`Prihod po mesecima (${godina})`}
+              items={mesecnaChart}
+            />
+            {!loading && mesecnaChart.length === 0 ? (
+              <div style={s.noData}>Nema podataka za izabranu godinu.</div>
+            ) : null}
+          </div>
+        </div>
+
+        <div style={{ ...s.grid2, gridTemplateColumns: gridCols }}>
+          <div style={{ ...s.card, ...s.cardFill }}>
+            <div style={s.cardHead}>Kratka analiza</div>
+
+            <div style={s.cardBodyFill}>
               {loading ? (
-                <div style={{ color: "rgba(0,0,0,0.55)" }}>Učitavanje...</div>
+                <div style={s.muted}>Učitavanje...</div>
               ) : (
-                <div style={{ fontSize: 13, lineHeight: 1.45, color: "#111" }}>
-                  <div>
-                    • Izabrani period trenda: <b>{start}</b> → <b>{end}</b>
+                <div style={s.list}>
+                  <div style={s.listRow}>
+                    <span style={s.bullet} />
+                    Izabrani period trenda: <b>{start}</b> → <b>{end}</b>
                   </div>
-                  <div>
-                    • Ukupan prihod u sistemu: <b>{fmtRsd(Number(ukupnoPrihod || 0))}</b>
-                  </div>
-                  <div>
-                    • Ukupan prihod Top10: <b>{fmtRsd(Number(top10PrihodUkupno || 0))}</b>
+                  <div style={s.listRow}>
+                    <span style={s.bullet} />
+                    Ukupan prihod u sistemu:{" "}
+                    <b>{fmtRsd(Number(ukupnoPrihod || 0))}</b>
                   </div>
                 </div>
               )}
             </div>
+          </div>
 
-            <div className="card" style={{ padding: 0, overflow: "hidden", background: "#fff", border: "1px solid rgba(0,0,0,0.12)" }}>
-              <div style={{ padding: "10px 12px", fontWeight: 900, borderBottom: "1px solid rgba(0,0,0,0.10)", color: "#111" }}>
-                Top 10 (prodaja / prihod)
-              </div>
+          <div style={{ ...s.card, ...s.cardFill }}>
+            <div style={s.cardHead}>Top 10 (prodaja / prihod)</div>
 
-              <div style={{ padding: 12 }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <div style={s.cardBodyFill}>
+              <div style={s.tableWrap}>
+                <table style={s.table}>
                   <thead>
-                    <tr style={{ textAlign: "left", fontSize: 12, color: "rgba(0,0,0,0.60)" }}>
-                      <th style={{ padding: "6px 8px" }}>Parfem</th>
-                      <th style={{ padding: "6px 8px", width: 120 }}>Komada</th>
-                      <th style={{ padding: "6px 8px", width: 160 }}>Prihod</th>
+                    <tr>
+                      <th
+                        style={{
+                          ...s.th,
+                          position: "sticky",
+                          top: 0,
+                          zIndex: 1,
+                        }}
+                      >
+                        Parfem
+                      </th>
+                      <th
+                        style={{
+                          ...s.th,
+                          ...s.right,
+                          position: "sticky",
+                          top: 0,
+                          zIndex: 1,
+                        }}
+                      >
+                        Komada
+                      </th>
+                      <th
+                        style={{
+                          ...s.th,
+                          ...s.right,
+                          position: "sticky",
+                          top: 0,
+                          zIndex: 1,
+                        }}
+                      >
+                        Prihod
+                      </th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {topRows.length === 0 ? (
                       <tr>
-                        <td colSpan={3} style={{ padding: "10px 8px", color: "rgba(0,0,0,0.55)" }}>
+                        <td
+                          colSpan={3}
+                          style={{ ...s.td, ...s.muted, padding: "12px 10px" }}
+                        >
                           Nema podataka.
                         </td>
                       </tr>
                     ) : (
                       topRows.map((r, idx) => (
-                        <tr key={r.name} style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }}>
-                          <td style={{ padding: "8px", color: "#111" }}>
-                            <b>{idx + 1}.</b> {r.name}
+                        <tr
+                          key={r.name}
+                          style={{
+                            background:
+                              idx % 2 === 0 ? "rgba(15,23,42,0.02)" : "#fff",
+                          }}
+                        >
+                          <td style={s.td}>
+                            <span style={s.rank}>{idx + 1}</span>
+                            {r.name}
                           </td>
-                          <td style={{ padding: "8px", color: "#111" }}>
+                          <td style={{ ...s.td, ...s.right }}>
                             {Number(r.quantity || 0).toLocaleString("sr-RS")}
                           </td>
-                          <td style={{ padding: "8px", color: "#111" }}>{fmtRsd(Number(r.revenue || 0))}</td>
+                          <td style={{ ...s.td, ...s.right }}>
+                            {fmtRsd(Number(r.revenue || 0))}
+                          </td>
                         </tr>
                       ))
                     )}
                   </tbody>
                 </table>
+              </div>
 
-                <div style={{ marginTop: 10, fontSize: 12, color: "rgba(0,0,0,0.60)" }}>
-                  Ukupan prihod Top10:{" "}
-                  <b style={{ color: "#111" }}>{fmtRsd(Number(top10PrihodUkupno || 0))}</b>
-                </div>
+              <div style={s.sum}>
+                Ukupan prihod Top10:{" "}
+                <b style={{ color: "#0f172a" }}>
+                  {fmtRsd(Number(top10PrihodUkupno || 0))}
+                </b>
               </div>
             </div>
           </div>
-
-          {/* FOOTER */}
-          <div style={{ marginTop: 14, fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
-            Napomena: PDF export radi preko <b>gateway</b> rute <code>/analytics/izvestaj/pdf</code>.
-          </div>
         </div>
+
+        <div style={s.foot}>
+         
+        </div>
+
+        {isNarrow ? (
+          <div style={s.responsiveNote}>
+            (Responsive) Na manjim ekranima layout prelazi u 1 kolonu.
+          </div>
+        ) : null}
       </div>
     </div>
   );
