@@ -102,18 +102,15 @@ export class GatewayController {
 
     // ✅ DODATO: Performance (proxy -> performance-microservice)
     // Mora i "/performance" i "/performance/*"
-    this.router.all(
-      "/performance",
-      authenticate,
-      authorize("admin"),
-      this.proxyPerformance.bind(this)
-    );/*
-    this.router.all(
-      "/performance/*",
-      authenticate,
-      authorize("admin"),
-      this.proxyPerformance.bind(this)
-    );*/
+     // ✅ Performance (proxy -> performance-microservice)
+
+     this.router.use(
+    "/performance",
+    authenticate,
+     authorize("admin", "seller"),
+    this.proxyPerformance.bind(this)
+    );
+
   }
 
   // Auth
@@ -664,44 +661,64 @@ export class GatewayController {
   // ✅ DODATO: generički proxy za performance mikroservis
   // Gateway ruta:  /api/v1/performance/...
   // Mikroservis:   ${PERFORMANCE_SERVICE_API}/...
-  private async proxyPerformance(req: Request, res: Response): Promise<void> {
-    try {
-      const PERFORMANCE_API = process.env.PERFORMANCE_SERVICE_API!;
-      // skini gateway prefix: "/api/v1/performance"
-      const forwardPath =
-        req.originalUrl.replace(/^\/api\/v1\/performance/, "") || "/";
+  // ✅ DODATO: generički proxy za performance mikroservis
+// Gateway ruta:  /api/v1/performance/...
+// Mikroservis:   ${PERFORMANCE_SERVICE_API}/api/v1/performanse/...
+private async proxyPerformance(req: Request, res: Response): Promise<void> {
+  try {
+    const base = String(process.env.PERFORMANCE_SERVICE_API || "").replace(/\/$/, "");
 
-      const url = `${PERFORMANCE_API}${forwardPath}`;
+    // ✅ performance MS je mountovan na /api/v1/performanse
+    const targetBase = base.endsWith("/api/v1/performanse")
+      ? base
+      : `${base}/api/v1/performanse`;
 
-      const response = await axios.request({
-        method: req.method as any,
-        url,
-        data: req.body,
-        params: req.query,
-        headers: {
-          authorization: req.headers.authorization || "",
-          "content-type": req.headers["content-type"] || "application/json",
-        },
-        validateStatus: () => true,
-        responseType: "arraybuffer", // ✅ da PDF radi (a i JSON ostaje OK)
-      });
+    // ✅ req.url je putanja posle "/performance" + query string
+    // npr: "/izvestaji/1/pdf?download=1"
+    const forwardPath = req.url && req.url.length > 0 ? req.url : "/";
 
-      // ✅ Ako je PDF, vrati PDF (ne JSON)
-      const contentType = String(response.headers["content-type"] || "");
-      if (contentType.includes("application/pdf")) {
-        res.setHeader("Content-Type", "application/pdf");
-        const dispo = response.headers["content-disposition"];
-        if (dispo) res.setHeader("Content-Disposition", dispo);
-        res.status(response.status).send(Buffer.from(response.data));
-        return;
-      }
+    const url = `${targetBase}${forwardPath}`;
 
-      // JSON/ostalo
-      res.status(response.status).send(response.data);
-    } catch (err: any) {
-      res.status(500).json({
-        message: err?.message || "Performance proxy error",
-      });
+    const response = await axios.request({
+      method: req.method as any,
+      url,
+      data: req.body,
+      params: req.query,
+      headers: {
+        authorization: req.headers.authorization || "",
+        "content-type": req.headers["content-type"] || "application/json",
+      },
+      validateStatus: () => true,
+      responseType: "arraybuffer", // ✅ da PDF radi (a i JSON ostaje OK)
+    });
+
+    const contentType = String(response.headers["content-type"] || "");
+    const buf = Buffer.from(response.data);
+
+    // ✅ Ako je PDF, vrati PDF (ne JSON)
+    if (contentType.includes("application/pdf")) {
+      res.setHeader("Content-Type", "application/pdf");
+      const dispo = response.headers["content-disposition"];
+      if (dispo) res.setHeader("Content-Disposition", dispo);
+      res.status(response.status).send(buf);
+      return;
     }
+
+    // ✅ JSON / text iz arraybuffer-a
+    if (contentType.includes("application/json") || contentType.startsWith("text/")) {
+      res.setHeader("Content-Type", contentType || "application/json");
+      res.status(response.status).send(buf.toString("utf8"));
+      return;
+    }
+
+    // ✅ ostalo binarno
+    res.setHeader("Content-Type", contentType || "application/octet-stream");
+    res.status(response.status).send(buf);
+  } catch (err: any) {
+    res.status(500).json({
+      message: err?.message || "Performance proxy error",
+    });
   }
+}
+
 }
