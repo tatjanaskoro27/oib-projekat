@@ -19,37 +19,13 @@ export class ProcessingService implements IProcessingService {
     const available = await this.gateway.getAvailableCount(plantName);
     const missing = plantsNeeded - available;
 
-    // probamo naći postojeću vrstu u productionu
     let plantType = await this.gateway.getPlantTypeByName(plantName);
-
-    // ako ne postoji -> NOVA VRSTA: obavezno latinName + originCountry 
+ 
     if (!plantType) {
-      const latin = String(dto.latinName ?? "").trim();
-      const origin = String(dto.originCountry ?? "").trim();
-
-      if (latin.length < 3 || origin.length < 2) {
-        throw new Error(
-          `Plant type "${plantName}" does not exist. latinName and originCountry are required for new plant type.`
-        );
-      }
-
-      await this.gateway.logEvent({
-        tip: "INFO",
-        opis: `Nova vrsta biljke "${plantName}" - kreiranje na osnovu unesenih podataka`,
-      });
-
-      plantType = {
-        name: plantName,
-        latinName: latin,
-        originCountry: origin,
-        totalPlanted: 0,
-        totalHarvested: 0,
-        totalProcessed: 0,
-        total: 0,
-      };
+      throw new Error(
+        `Vrsta biljke "${dto.plantName}" ne postoji. ` + `Kreiraj je prvo u Proizvodnji.`);
     }
-
-    // zasadi koliko fali
+    
     if (missing > 0) {
       await this.gateway.logEvent({
         tip: "INFO",

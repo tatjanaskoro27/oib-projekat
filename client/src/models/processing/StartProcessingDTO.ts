@@ -7,6 +7,7 @@ export type GetPerfumesDTO = {
 };
 
 export type StartProcessingDTO = {
+  plantName: string;
   perfumeName: string;
   perfumeType: PerfumeType;
   bottleCount: number;

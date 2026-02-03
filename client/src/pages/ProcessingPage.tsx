@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import AuthContext from "../contexts/AuthContext";
 
 import { ProcessingAPI } from "../api/processing/ProcessingAPI";
+import { ProductionAPI } from "../api/production/ProductionAPI";
+
 import type { PerfumeDTO } from "../models/processing/PerfumeDTO";
 import type {
   BottleVolume,
@@ -10,6 +12,7 @@ import type {
   PerfumeType,
 } from "../models/processing/StartProcessingDTO";
 import type { ProcessingResultDTO } from "../models/processing/ProcessingResultDTO";
+import type { PlantTypeSummaryDTO } from "../models/production/PlantTypeSummaryDTO";
 
 /* ================= Helpers ================= */
 
@@ -40,13 +43,20 @@ export const ProcessingPage: React.FC = () => {
   const token = auth?.token;
 
   const api = useMemo(() => new ProcessingAPI(), []);
+  const productionAPI = useMemo(() => new ProductionAPI(), []);
 
   const [perfumes, setPerfumes] = useState<PerfumeDTO[]>([]);
-  const [perfumeId, setPerfumeId] = useState<number>(0);
+
+  // Start panel inputs
+  const [plantTypes, setPlantTypes] = useState<PlantTypeSummaryDTO[]>([]);
+  const [plantName, setPlantName] = useState<string>("");
+
+  const [perfumeName, setPerfumeName] = useState<string>("");
 
   const [bottleCount, setBottleCount] = useState<number>(1);
   const [bottleVolume, setBottleVolume] = useState<BottleVolume>(150);
-  const perfumeType: PerfumeType = "parfum";
+
+  const [perfumeType, setPerfumeType] = useState<PerfumeType>("parfum");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,22 +75,44 @@ export const ProcessingPage: React.FC = () => {
       setLoading(true);
       const data = await api.getPerfumes(token);
       setPerfumes(data);
-      if (data.length > 0) setPerfumeId(data[0].id);
     } catch (e: any) {
       setError(
         e?.response?.data?.message ||
-        e?.message ||
-        "Greška pri učitavanju parfema."
+          e?.message ||
+          "Greška pri učitavanju parfema."
       );
     } finally {
       setLoading(false);
     }
   };
 
+  const loadPlantTypes = async () => {
+    if (!token) return;
+    setError(null);
+
+    try {
+      const types = await productionAPI.getPlantTypes(token);
+      setPlantTypes(types);
+
+      // default: prva biljka
+      if (types.length > 0) setPlantName(types[0].name);
+    } catch (e: any) {
+      setError(
+        e?.response?.data?.message ||
+          e?.message ||
+          "Greška pri učitavanju vrsta biljaka."
+      );
+    }
+  };
+
   useEffect(() => {
     loadPerfumes();
+    loadPlantTypes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  const requiredMl = bottleCount * bottleVolume;
+  const requiredPlants = Math.ceil(requiredMl / 50); // 1 biljka -> 50 ml parfema
 
   const startProcessing = async () => {
     if (!token) return;
@@ -88,9 +120,13 @@ export const ProcessingPage: React.FC = () => {
     setError(null);
     setResult(null);
 
-    const selected = perfumes.find((p) => p.id === perfumeId);
-    if (!selected) {
-      setError("Izaberi parfem.");
+    if (!plantName || plantName.trim().length < 2) {
+      setError("Izaberi biljku.");
+      return;
+    }
+
+    if (!perfumeName || perfumeName.trim().length < 2) {
+      setError("Unesi naziv parfema.");
       return;
     }
 
@@ -100,7 +136,12 @@ export const ProcessingPage: React.FC = () => {
     }
 
     const dto: StartProcessingDTO = {
-      perfumeName: selected.name,
+      // ✅ šaljemo samo naziv postojeće biljke (nema kreiranja nove)
+      plantName: plantName.trim(),
+
+      // ✅ unos naziva parfema
+      perfumeName: perfumeName.trim(),
+
       perfumeType,
       bottleCount,
       bottleVolume,
@@ -128,8 +169,8 @@ export const ProcessingPage: React.FC = () => {
     } catch (e: any) {
       setError(
         e?.response?.data?.message ||
-        e?.message ||
-        "Greška pri pokretanju prerade."
+          e?.message ||
+          "Greška pri pokretanju prerade."
       );
     } finally {
       setLoading(false);
@@ -217,18 +258,37 @@ export const ProcessingPage: React.FC = () => {
             {showStartPanel && (
               <div className="card" style={{ marginTop: 14, padding: 16 }}>
                 <label>
-                  Parfem
+                  Biljka (postojeće vrste)
                   <select
-                    value={perfumeId}
-                    onChange={(e) =>
-                      setPerfumeId(Number(e.target.value))
-                    }
+                    value={plantName}
+                    onChange={(e) => setPlantName(e.target.value)}
                   >
-                    {perfumes.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
+                    {plantTypes.map((t) => (
+                      <option key={t.name} value={t.name}>
+                        {t.name}
                       </option>
                     ))}
+                  </select>
+                </label>
+
+                <label>
+                  Naziv parfema
+                  <input
+                    type="text"
+                    value={perfumeName}
+                    onChange={(e) => setPerfumeName(e.target.value)}
+                    placeholder="npr. Lavender Bliss"
+                  />
+                </label>
+
+                <label>
+                  Tip
+                  <select
+                    value={perfumeType}
+                    onChange={(e) => setPerfumeType(e.target.value as PerfumeType)}
+                  >
+                    <option value="parfum">Parfem</option>
+                    <option value="cologne">Kolonjska voda</option>
                   </select>
                 </label>
 
@@ -238,9 +298,7 @@ export const ProcessingPage: React.FC = () => {
                     type="number"
                     min={1}
                     value={bottleCount}
-                    onChange={(e) =>
-                      setBottleCount(Number(e.target.value))
-                    }
+                    onChange={(e) => setBottleCount(Number(e.target.value))}
                   />
                 </label>
 
@@ -249,9 +307,7 @@ export const ProcessingPage: React.FC = () => {
                   <select
                     value={bottleVolume}
                     onChange={(e) =>
-                      setBottleVolume(
-                        Number(e.target.value) as BottleVolume
-                      )
+                      setBottleVolume(Number(e.target.value) as BottleVolume)
                     }
                   >
                     <option value={150}>150 ml</option>
@@ -259,10 +315,16 @@ export const ProcessingPage: React.FC = () => {
                   </select>
                 </label>
 
+                <div style={{ marginTop: 6, opacity: 0.85 }}>
+                  Potrebno: <b>{requiredMl}</b> ml → približno <b>{requiredPlants}</b>{" "}
+                  biljaka
+                </div>
+
                 <button
                   className="btn btn-accent"
                   onClick={startProcessing}
                   disabled={loading}
+                  style={{ marginTop: 10 }}
                 >
                   {loading ? "Radim..." : "Pokreni"}
                 </button>
@@ -270,9 +332,7 @@ export const ProcessingPage: React.FC = () => {
             )}
 
             {error && (
-              <div style={{ marginTop: 12, color: "crimson" }}>
-                {error}
-              </div>
+              <div style={{ marginTop: 12, color: "crimson" }}>{error}</div>
             )}
 
             {/* ===== Table ===== */}
@@ -291,7 +351,6 @@ export const ProcessingPage: React.FC = () => {
                   tableLayout: "fixed",
                 }}
               >
-
                 <thead>
                   <tr>
                     <th>Naziv parfema</th>
@@ -324,6 +383,13 @@ export const ProcessingPage: React.FC = () => {
             <div style={{ marginTop: 8, opacity: 0.8 }}>
               Ukupno parfema: {perfumes.length}
             </div>
+
+            {/* result (ako ti treba kasnije za debug) */}
+            {result && (
+              <div style={{ marginTop: 12, opacity: 0.85, fontSize: 12 }}>
+                {/* možeš ovo ukloniti ako ne želiš */}
+              </div>
+            )}
           </div>
         </div>
       </div>
