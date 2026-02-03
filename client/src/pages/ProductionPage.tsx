@@ -79,35 +79,22 @@ const logIcon = (t: TipDogadjaja): string => {
 
 const eventCardStyle = (t: TipDogadjaja): React.CSSProperties => {
   const base: React.CSSProperties = {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 12,
-    padding: 12,
-    background: "rgba(255,255,255,0.88)",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+    border: "1px solid rgba(0,0,0,0.06)",
+    borderRadius: 8,
+    padding: "6px 8px",
+    background: "rgba(255,255,255,0.85)",
+    boxShadow: "none",
   };
 
   if (t === "WARNING") {
-    return {
-      ...base,
-      background: "rgba(255, 165, 0, 0.10)",
-      border: "1px solid rgba(255, 165, 0, 0.28)",
-    };
+    return { ...base, background: "rgba(255,165,0,0.08)", border: "1px solid rgba(255,165,0,0.18)" };
   }
-
   if (t === "ERROR") {
-    return {
-      ...base,
-      background: "rgba(255, 80, 80, 0.10)",
-      border: "1px solid rgba(255, 80, 80, 0.28)",
-    };
+    return { ...base, background: "rgba(255,80,80,0.08)", border: "1px solid rgba(255,80,80,0.18)" };
   }
-
-  return {
-    ...base,
-    background: "rgba(47, 163, 107, 0.10)",
-    border: "1px solid rgba(47, 163, 107, 0.28)",
-  };
+  return { ...base, background: "rgba(47,163,107,0.08)", border: "1px solid rgba(47,163,107,0.18)" };
 };
+
 
 const hhmm = (iso: string): string => {
   const d = new Date(iso);
@@ -212,8 +199,8 @@ export const ProductionPage: React.FC = () => {
   // Filter state
   const [search, setSearch] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<"all" | PlantStatus>("all");
-  const [sortBy, setSortBy] = useState<GetPlantsQueryDTO["sortBy"]>("createdAt");
-  const [sortDir, setSortDir] = useState<GetPlantsQueryDTO["sortDir"]>("DESC");
+  const [sortBy, setSortBy] = useState<GetPlantsQueryDTO["sortBy"]>("name");
+  const [sortDir, setSortDir] = useState<GetPlantsQueryDTO["sortDir"]>("ASC");
 
   // View mode
   const [viewMode, setViewMode] = useState<"grouped" | "all">("grouped");
@@ -597,20 +584,31 @@ export const ProductionPage: React.FC = () => {
               <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "minmax(240px, 1fr) 170px 170px 120px 140px",
+                    display: "flex",
+                    flexWrap: "wrap",
                     gap: 8,
+                    alignItems: "center",
+                    padding: 10,
+                    borderRadius: 12,
+                    background: "rgba(255,255,255,0.65)",
+                    border: "1px solid rgba(0,0,0,0.06)",
                   }}
                 >
+
+
                   <input
                     className="input"
+                    style={{ flex: "1 1 280px", minWidth: 240 }}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Pretraga (naziv / latin / zemlja)…"
                   />
 
+
                   <select
                     className="input"
+                    style={{ flex: "0 0 160px", minWidth: 140 }}
+
                     value={statusFilter}
                     onChange={(e) => {
                       const v = e.target.value;
@@ -628,19 +626,22 @@ export const ProductionPage: React.FC = () => {
 
                   <select
                     className="input"
+                    style={{ flex: "0 0 160px", minWidth: 140 }}
+
                     value={sortBy ?? "createdAt"}
                     onChange={(e) => {
                       const v = e.target.value;
                       if (v === "createdAt" || v === "oilStrength" || v === "name") setSortBy(v);
                     }}
                   >
-                    <option value="createdAt">Sort: datum</option>
                     <option value="oilStrength">Sort: jačina</option>
                     <option value="name">Sort: naziv</option>
                   </select>
 
                   <select
                     className="input"
+                    style={{ flex: "0 0 160px", minWidth: 140 }}
+
                     value={sortDir ?? "DESC"}
                     onChange={(e) => {
                       const v = e.target.value;
@@ -651,9 +652,15 @@ export const ProductionPage: React.FC = () => {
                     <option value="ASC">ASC</option>
                   </select>
 
-                  <button type="button" className="btn-standard" onClick={() => void loadAll()}>
-                    Primeni
+                  <button
+                    type="button"
+                    className="btn-standard"
+                    style={{ height: 34, padding: "0 12px", fontWeight: 600 }}
+                    onClick={() => void loadAll()}
+                  >
+                    Primijeni filtere
                   </button>
+
                 </div>
 
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1003,19 +1010,6 @@ export const ProductionPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-
-                <div style={{ marginTop: 10, opacity: 0.85, fontSize: 12, color: "rgba(0,0,0,0.75)" }}>
-                  Ukupno iz baze: <b>{rawPlants.length}</b> | Selektovana:{" "}
-                  <b>
-                    {viewMode === "grouped"
-                      ? selectedGrouped
-                        ? `${selectedGrouped.name} (${selectedGrouped.qty})`
-                        : "Nema"
-                      : selectedFlat
-                        ? `${selectedFlat.name} (id=${selectedFlat.id})`
-                        : "Nema"}
-                  </b>
-                </div>
               </div>
             </div>
 
@@ -1034,7 +1028,7 @@ export const ProductionPage: React.FC = () => {
                   color: "rgba(0,0,0,0.86)",
                 }}
               >
-                <span>🕒 Dnevnik proizvodnje</span>
+                <span>Dnevnik proizvodnje</span>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <span style={{ opacity: 0.75, fontSize: 12 }}>Ukupno: {rawDogadjaji.length}</span>
                   <button type="button" className="btn-standard" style={{ padding: "6px 10px" }} onClick={() => void loadDogadjaji()}>
@@ -1045,16 +1039,19 @@ export const ProductionPage: React.FC = () => {
 
               {eventsError && <div style={{ padding: 12, color: "#b00020", fontWeight: 700 }}>Greška: {eventsError}</div>}
 
-              <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, overflow: "auto", minHeight: 0 }}>
+              <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 6, overflow: "auto", minHeight: 0 }}>
                 {rawDogadjaji.slice(0, 50).map((d) => (
                   <div key={d.id} style={eventCardStyle(d.tip)}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                      <div style={{ fontWeight: 900 }}>{logIcon(d.tip)}</div>
-                      <div style={{ opacity: 0.75, fontSize: 12, color: "rgba(0,0,0,0.75)" }}>{hhmm(d.datumVreme)}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                      <div style={{ fontWeight: 600, fontSize: 12 }}>{logIcon(d.tip)}</div>
+                      <div style={{ opacity: 0.70, fontSize: 11, color: "rgba(0,0,0,0.70)" }}>{hhmm(d.datumVreme)}</div>
                     </div>
-                    <div style={{ marginTop: 6, opacity: 0.95, fontWeight: 800, color: "rgba(0,0,0,0.85)" }}>{d.opis}</div>
+                    <div style={{ marginTop: 4, opacity: 0.90, fontWeight: 500, fontSize: 12, color: "rgba(0,0,0,0.82)" }}>
+                      {d.opis}
+                    </div>
                   </div>
                 ))}
+
 
                 {rawDogadjaji.length === 0 && <div style={{ opacity: 0.75, color: "rgba(0,0,0,0.75)" }}>Nema događaja.</div>}
               </div>
