@@ -39,15 +39,22 @@ export class ProcessingAPI implements IProcessingAPI {
   }
 
   async getPerfumes(token: string): Promise<PerfumeDTO[]> {
-    // Backend validator za /processing/get traži perfumeType + count
-    const res = await this.axiosInstance.post<PerfumeDTO[]>(
+  const [parfumsRes, colognesRes] = await Promise.all([
+    this.axiosInstance.post<PerfumeDTO[]>(
       "/processing/get",
-      { perfumeType: "parfum", count: 50 },
-      {
-        headers: { ...this.auth(token), ...this.noCache() },
-        params: { t: Date.now() },
-      },
-    );
-    return res.data;
-  }
+      { perfumeType: "parfum", count: 10000 },
+      { headers: { ...this.auth(token) } }
+    ),
+    this.axiosInstance.post<PerfumeDTO[]>(
+      "/processing/get",
+      { perfumeType: "cologne", count: 10000 },
+      { headers: { ...this.auth(token) } }
+    ),
+  ]);
+
+  return [...parfumsRes.data, ...colognesRes.data].sort(
+    (a, b) => (b.id ?? 0) - (a.id ?? 0)
+  );
+}
+
 }
