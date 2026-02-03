@@ -2,18 +2,24 @@ import { Repository } from "typeorm";
 import { FiskalniRacun } from "../Domain/models/FiskalniRacun";
 import { FiskalnaStavka } from "../Domain/models/FiskalnaStavka";
 import { KreirajRacunDto } from "../Domain/DTOs/KreirajRacunDto";
+import { IzvestajAnalize } from "../Domain/models/IzvestajAnalize";
+
 
 export class AnalyticsService {
   private fiskalniRacunRepository: Repository<FiskalniRacun>;
   private fiskalnaStavkaRepository: Repository<FiskalnaStavka>;
+ private izvestajAnalizeRepository: Repository<IzvestajAnalize>; 
 
   constructor(
-    fiskalniRacunRepository: Repository<FiskalniRacun>,
-    fiskalnaStavkaRepository: Repository<FiskalnaStavka>
-  ) {
-    this.fiskalniRacunRepository = fiskalniRacunRepository;
-    this.fiskalnaStavkaRepository = fiskalnaStavkaRepository;
-  }
+  fiskalniRacunRepository: Repository<FiskalniRacun>,
+  fiskalnaStavkaRepository: Repository<FiskalnaStavka>,
+  izvestajAnalizeRepository: Repository<IzvestajAnalize>
+) {
+  this.fiskalniRacunRepository = fiskalniRacunRepository;
+  this.fiskalnaStavkaRepository = fiskalnaStavkaRepository;
+  this.izvestajAnalizeRepository = izvestajAnalizeRepository;
+}
+
 
   // pregled fiskalnih računa
   async pregledFiskalnihRacuna(): Promise<FiskalniRacun[]> {
@@ -329,4 +335,32 @@ export class AnalyticsService {
       ukupnoKomada: Number(result?.ukupnoKomada) || 0,
     };
   }
+
+  // ===============================
+// NOVO – ČUVANJE IZVEŠTAJA ANALIZE
+// ===============================
+async sacuvajIzvestajAnalize(input: {
+  nazivIzvestaja: string;
+  kriterijum?: string;
+  od?: string;
+  do?: string;
+  rezultati: any;
+  zakljucak?: string;
+}): Promise<IzvestajAnalize> {
+  if (!input?.nazivIzvestaja || input.nazivIzvestaja.trim().length < 2) {
+    throw new Error("Naziv izveštaja je obavezan.");
+  }
+
+  const entitet = this.izvestajAnalizeRepository.create({
+    nazivIzvestaja: input.nazivIzvestaja.trim(),
+    kriterijum: input.kriterijum,
+    od: input.od ? new Date(input.od) : undefined,
+    do: input.do ? new Date(input.do) : undefined,
+    rezultatiJson: JSON.stringify(input.rezultati ?? {}),
+    zakljucak: input.zakljucak,
+  });
+
+  return await this.izvestajAnalizeRepository.save(entitet);
+}
+
 }

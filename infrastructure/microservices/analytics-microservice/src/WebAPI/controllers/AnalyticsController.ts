@@ -4,6 +4,8 @@ import { AnalyticsPdfService } from "../../Services/AnalyticsPdfService";
 import { Db } from "../../Database/DbConnectionPool";
 import { FiskalniRacun } from "../../Domain/models/FiskalniRacun";
 import { FiskalnaStavka } from "../../Domain/models/FiskalnaStavka";
+import { IzvestajAnalize } from "../../Domain/models/IzvestajAnalize";
+
 
 export class AnalyticsController {
   private service: AnalyticsService;
@@ -11,9 +13,11 @@ export class AnalyticsController {
 
   constructor() {
     this.service = new AnalyticsService(
-      Db.getRepository(FiskalniRacun),
-      Db.getRepository(FiskalnaStavka)
-    );
+  Db.getRepository(FiskalniRacun),
+  Db.getRepository(FiskalnaStavka),
+  Db.getRepository(IzvestajAnalize)
+);
+
     this.router = Router();
     this.registerRoutes();
   }
@@ -248,6 +252,81 @@ export class AnalyticsController {
         res.status(500).json({ error: "Greška pri dobijanju top 10 prihoda" });
       }
     });
+
+
+    // =========================
+// IZVEŠTAJI ANALIZE (Baza)
+// =========================
+
+// snimi izveštaj analize u bazu
+// POST /izvestaji
+// body: { nazivIzvestaja, kriterijum?, od?, do?, rezultati, zakljucak? }
+this.router.post("/izvestaji", async (req, res) => {
+  try {
+    const created = await this.service.sacuvajIzvestajAnalize(req.body);
+    res.status(201).json(created);
+  } catch (err: any) {
+    res.status(400).json({
+      error: err?.message ?? "Greška pri čuvanju izveštaja analize",
+    });
+  }
+});
+
+  // pregled prethodnih izveštaja
+  // GET /izvestaji
+  this.router.get("/izvestaji", async (req, res) => {
+   try {
+     const data = await Db.getRepository(IzvestajAnalize).find({
+      order: { datumKreiranja: "DESC" },
+     });
+     res.json(data);
+   } catch (err) {
+     res.status(500).json({ error: "Greška pri čitanju izveštaja analize" });
+   }
+  });
+
+  // =========================
+// IZVESTAJ ANALIZE – PDF PO ID-u
+// =========================
+// GET /izvestaji/:id/pdf
+this.router.get("/izvestaji/:id/pdf", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ error: "ID mora biti broj." });
+    }
+
+    const izvestaj = await Db.getRepository(IzvestajAnalize).findOne({
+      where: { id },
+    });
+
+    if (!izvestaj) {
+      return res.status(404).json({ error: "Izveštaj analize nije pronađen." });
+    }
+
+    const rezultati = JSON.parse(izvestaj.rezultatiJson);
+
+    const pdfPayload = {
+      nazivIzvestaja: izvestaj.nazivIzvestaja,
+      datumKreiranja: izvestaj.datumKreiranja.toLocaleString(),
+      kriterijum: izvestaj.kriterijum,
+      period: izvestaj.od && izvestaj.do ? {
+        start: izvestaj.od.toISOString().slice(0, 10),
+        end: izvestaj.do.toISOString().slice(0, 10),
+      } : undefined,
+      zakljucak: izvestaj.zakljucak,
+      ...rezultati
+    };
+
+    return AnalyticsPdfService.streamIzvestajPdf(res, pdfPayload);
+  } catch (err: any) {
+    return res.status(500).json({
+      error: err?.message ?? "Greška pri generisanju PDF iz baze",
+    });
+  }
+});
+
 
     // =========================
     // PDF IZVESTAJ (NOVO)

@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 
 import { FiskalniRacun } from "../Domain/models/FiskalniRacun";
 import { FiskalnaStavka } from "../Domain/models/FiskalnaStavka";
+import { IzvestajAnalize } from "../Domain/models/IzvestajAnalize";
+
 
 dotenv.config();
 
@@ -21,6 +23,7 @@ export const Db = new DataSource({
 
   entities: [
     FiskalniRacun,
-    FiskalnaStavka
+    FiskalnaStavka,
+    IzvestajAnalize
   ],
 });
