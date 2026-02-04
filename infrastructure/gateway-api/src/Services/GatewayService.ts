@@ -371,15 +371,25 @@ export class GatewayService implements IGatewayService {
 
 
   async internalSendAmbalaze(trazenaKolicina: number, uloga: string): Promise<any> {
-    const res = await this.skladisteClient.post(
-      "/slanje",
-      { trazenaKolicina },
-      { headers: { "x-uloga": uloga } }
-    );
-    return res.data;
-  }
+  const res = await this.skladisteClient.post(
+    "/slanje",
+    { trazenaKolicina },
+    { headers: { "x-uloga": uloga } }
+  );
+  return res.data;
+}
 
 
+
+  async getSkladista(): Promise<any> {
+  const res = await this.skladisteClient.get("/skladista");
+  return res.data;
+}
+
+async getAmbalaze(): Promise<any> {
+  const res = await this.skladisteClient.get("/ambalaze");
+  return res.data;
+}
 
 
 }

@@ -23,6 +23,8 @@ import { DogadjajiPage } from "./pages/Dogadjaji";
 import { DogadjajiAPI } from "./api/dogadjaji/DogadjajiAPI";
 import { IDogadjajiAPI } from "./api/dogadjaji/IDogadjajiAPI";
 
+import  SkladistePage  from "./pages/SkladistePage";
+
 const auth_api: IAuthAPI = new AuthAPI();
 const user_api: IUserAPI = new UserAPI();
 const analytics_api: IAnalyticsAPI = new AnalyticsAPI();
@@ -107,6 +109,16 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/skladiste"
+         element={
+        <ProtectedRoute requiredRole="seller,manager">
+          <SkladistePage />
+         </ProtectedRoute>
+        }
+      />
+
 
       {/* (opciono) fallback */}
       {/* <Route path="*" element={<Navigate to="/" replace />} /> */}

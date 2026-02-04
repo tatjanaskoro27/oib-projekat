@@ -100,6 +100,11 @@ export class GatewayController {
     // INTERNAL analytics racuni (server-to-server)
     this.router.post("/internal/analytics/racuni", internalAuth, this.internalCreateRacun.bind(this));
 
+    // Skladiste (PUBLIC za UI)
+    this.router.get("/skladiste/skladista", authenticate, authorize("seller", "manager"), this.getSkladista.bind(this));
+    this.router.post("/skladiste/send", authenticate, authorize("seller", "manager"), this.sendAmbalaze.bind(this));
+    this.router.get("/skladiste/ambalaze", authenticate, authorize("seller", "manager"), this.getAmbalaze.bind(this));
+
     // ✅ DODATO: Performance (proxy -> performance-microservice)
     // Mora i "/performance" i "/performance/*"
      // ✅ Performance (proxy -> performance-microservice)
@@ -720,5 +725,48 @@ private async proxyPerformance(req: Request, res: Response): Promise<void> {
     });
   }
 }
+
+
+private async getAmbalaze(req: Request, res: Response): Promise<void> {
+  try {
+    const data = await this.gatewayService.getAmbalaze();
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+}
+
+private async getSkladista(req: Request, res: Response): Promise<void> {
+  try {
+    const data = await this.gatewayService.getSkladista();
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+}
+
+
+private async sendAmbalaze(req: Request, res: Response) {
+  try {
+    const role = String((req.user as any)?.role || "").toLowerCase();
+
+    const uloga =
+      role === "manager" ? "MENADZER_PRODAJE" :
+      role === "seller"  ? "PRODAVAC" :
+      "PRODAVAC";
+
+    const brojAmbalaza = Number(req.body?.brojAmbalaza);
+    if (!Number.isFinite(brojAmbalaza) || brojAmbalaza <= 0) {
+      return res.status(400).json({ message: "brojAmbalaza mora biti broj > 0" });
+    }
+
+    const data = await this.gatewayService.internalSendAmbalaze(brojAmbalaza, uloga);
+    return res.status(200).json(data);
+  } catch (e) {
+    return res.status(500).json({ message: (e as Error).message });
+  }
+}
+
+
 
 }

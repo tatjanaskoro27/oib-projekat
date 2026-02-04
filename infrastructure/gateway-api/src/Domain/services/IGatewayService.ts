@@ -96,5 +96,8 @@ export interface IGatewayService {
 
   internalSendAmbalaze(trazenaKolicina: number, uloga: string): Promise<any>;
 
+  getSkladista(): Promise<any>;
+  getAmbalaze(): Promise<any>;
+  getSkladista(): Promise<any>;
 
 }
