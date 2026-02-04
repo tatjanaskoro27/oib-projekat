@@ -38,4 +38,10 @@ export interface IAnalyticsAPI {
   top10Kolicina(token: string): Promise<Top10KolicinaItem[]>;
   top10Prihod(token: string): Promise<Top10PrihodItem[]>;
   top10PrihodUkupno(token: string): Promise<Top10PrihodUkupnoResponse>;
+
+  getIzvestajPdf(
+    token: string,
+    params: { start?: string; end?: string; godina?: number }
+  ): Promise<Blob>;
+
 }

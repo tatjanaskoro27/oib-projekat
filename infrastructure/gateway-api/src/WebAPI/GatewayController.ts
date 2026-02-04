@@ -59,6 +59,15 @@ export class GatewayController {
     this.router.get("/analytics/prodaja/kolicina/nedeljna", authenticate, authorize("admin"), this.getKolicinaNedeljna.bind(this));
     this.router.get("/analytics/prodaja/kolicina/mesecna/:godina", authenticate, authorize("admin"), this.getKolicinaMesecna.bind(this));
     this.router.get("/analytics/prodaja/kolicina/godisnja/:godina", authenticate, authorize("admin"), this.getKolicinaGodisnja.bind(this));
+    //pdf
+    // ✅ PDF izvestaj (proxy -> analytics mikroservis)
+    this.router.get(
+      "/analytics/izvestaj/pdf",
+      authenticate,
+      authorize("admin"),
+      this.getAnalyticsPdf.bind(this)
+    );
+
 
     //Production
     this.router.post("/plants", authenticate, authorize("manager", "seller"), this.plant.bind(this));
@@ -107,13 +116,13 @@ export class GatewayController {
 
     // ✅ DODATO: Performance (proxy -> performance-microservice)
     // Mora i "/performance" i "/performance/*"
-     // ✅ Performance (proxy -> performance-microservice)
+    // ✅ Performance (proxy -> performance-microservice)
 
-     this.router.use(
-    "/performance",
-    authenticate,
-     authorize("admin", "seller"),
-    this.proxyPerformance.bind(this)
+    this.router.use(
+      "/performance",
+      authenticate,
+      authorize("admin", "seller"),
+      this.proxyPerformance.bind(this)
     );
 
   }
@@ -218,6 +227,52 @@ export class GatewayController {
       res.status(500).json({ message: (err as Error).message });
     }
   }
+  //PDF
+  private async getAnalyticsPdf(req: Request, res: Response): Promise<void> {
+    try {
+      const base = String(process.env.ANALYTICS_SERVICE_API || "").replace(/\/$/, "");
+      if (!base) {
+        res.status(500).json({ message: "ANALYTICS_SERVICE_API nije podešen u .env" });
+        return;
+      }
+
+      const targetBase = base.endsWith("/api/v1")
+        ? base
+        : base.endsWith("/api/v1/analytics")
+          ? base.replace(/\/api\/v1\/analytics$/, "/api/v1")
+          : `${base}/api/v1`;
+
+      const url = `${targetBase}/analytics/izvestaj/pdf`;
+
+      const response = await axios.request({
+        method: "GET",
+        url,
+        params: req.query, // start/end/godina
+        headers: {
+          authorization: req.headers.authorization || "",
+          accept: "application/pdf",
+        },
+        responseType: "arraybuffer",    
+        validateStatus: () => true,
+      });
+
+      const contentType = String(response.headers["content-type"] || "");
+      const buf = Buffer.from(response.data || []);
+
+      if (contentType.includes("application/pdf")) {
+        res.setHeader("Content-Type", "application/pdf");
+        const dispo = response.headers["content-disposition"];
+        if (dispo) res.setHeader("Content-Disposition", dispo);
+        res.status(response.status).send(buf);
+        return;
+      }
+
+      res.status(response.status).send(buf.toString("utf8"));
+    } catch (err: any) {
+      res.status(500).json({ message: err?.message ?? "Greška pri proxy PDF-a" });
+    }
+  }
+
 
   private async getProdajaNedeljna(req: Request, res: Response): Promise<void> {
     try {
@@ -279,6 +334,7 @@ export class GatewayController {
       res.status(500).json({ message: (err as Error).message });
     }
   }
+
 
   private async getProdajaMesecna(req: Request, res: Response): Promise<void> {
     try {
@@ -667,105 +723,105 @@ export class GatewayController {
   // Gateway ruta:  /api/v1/performance/...
   // Mikroservis:   ${PERFORMANCE_SERVICE_API}/...
   // ✅ DODATO: generički proxy za performance mikroservis
-// Gateway ruta:  /api/v1/performance/...
-// Mikroservis:   ${PERFORMANCE_SERVICE_API}/api/v1/performanse/...
-private async proxyPerformance(req: Request, res: Response): Promise<void> {
-  try {
-    const base = String(process.env.PERFORMANCE_SERVICE_API || "").replace(/\/$/, "");
+  // Gateway ruta:  /api/v1/performance/...
+  // Mikroservis:   ${PERFORMANCE_SERVICE_API}/api/v1/performanse/...
+  private async proxyPerformance(req: Request, res: Response): Promise<void> {
+    try {
+      const base = String(process.env.PERFORMANCE_SERVICE_API || "").replace(/\/$/, "");
 
-    // ✅ performance MS je mountovan na /api/v1/performanse
-    const targetBase = base.endsWith("/api/v1/performanse")
-      ? base
-      : `${base}/api/v1/performanse`;
+      // ✅ performance MS je mountovan na /api/v1/performanse
+      const targetBase = base.endsWith("/api/v1/performanse")
+        ? base
+        : `${base}/api/v1/performanse`;
 
-    // ✅ req.url je putanja posle "/performance" + query string
-    // npr: "/izvestaji/1/pdf?download=1"
-    const forwardPath = req.url && req.url.length > 0 ? req.url : "/";
+      // ✅ req.url je putanja posle "/performance" + query string
+      // npr: "/izvestaji/1/pdf?download=1"
+      const forwardPath = req.url && req.url.length > 0 ? req.url : "/";
 
-    const url = `${targetBase}${forwardPath}`;
+      const url = `${targetBase}${forwardPath}`;
 
-    const response = await axios.request({
-      method: req.method as any,
-      url,
-      data: req.body,
-      params: req.query,
-      headers: {
-        authorization: req.headers.authorization || "",
-        "content-type": req.headers["content-type"] || "application/json",
-      },
-      validateStatus: () => true,
-      responseType: "arraybuffer", // ✅ da PDF radi (a i JSON ostaje OK)
-    });
+      const response = await axios.request({
+        method: req.method as any,
+        url,
+        data: req.body,
+        params: req.query,
+        headers: {
+          authorization: req.headers.authorization || "",
+          "content-type": req.headers["content-type"] || "application/json",
+        },
+        validateStatus: () => true,
+        responseType: "arraybuffer", // ✅ da PDF radi (a i JSON ostaje OK)
+      });
 
-    const contentType = String(response.headers["content-type"] || "");
-    const buf = Buffer.from(response.data);
+      const contentType = String(response.headers["content-type"] || "");
+      const buf = Buffer.from(response.data);
 
-    // ✅ Ako je PDF, vrati PDF (ne JSON)
-    if (contentType.includes("application/pdf")) {
-      res.setHeader("Content-Type", "application/pdf");
-      const dispo = response.headers["content-disposition"];
-      if (dispo) res.setHeader("Content-Disposition", dispo);
+      // ✅ Ako je PDF, vrati PDF (ne JSON)
+      if (contentType.includes("application/pdf")) {
+        res.setHeader("Content-Type", "application/pdf");
+        const dispo = response.headers["content-disposition"];
+        if (dispo) res.setHeader("Content-Disposition", dispo);
+        res.status(response.status).send(buf);
+        return;
+      }
+
+      // ✅ JSON / text iz arraybuffer-a
+      if (contentType.includes("application/json") || contentType.startsWith("text/")) {
+        res.setHeader("Content-Type", contentType || "application/json");
+        res.status(response.status).send(buf.toString("utf8"));
+        return;
+      }
+
+      // ✅ ostalo binarno
+      res.setHeader("Content-Type", contentType || "application/octet-stream");
       res.status(response.status).send(buf);
-      return;
+    } catch (err: any) {
+      res.status(500).json({
+        message: err?.message || "Performance proxy error",
+      });
     }
+  }
 
-    // ✅ JSON / text iz arraybuffer-a
-    if (contentType.includes("application/json") || contentType.startsWith("text/")) {
-      res.setHeader("Content-Type", contentType || "application/json");
-      res.status(response.status).send(buf.toString("utf8"));
-      return;
+
+  private async getAmbalaze(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.getAmbalaze();
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
     }
-
-    // ✅ ostalo binarno
-    res.setHeader("Content-Type", contentType || "application/octet-stream");
-    res.status(response.status).send(buf);
-  } catch (err: any) {
-    res.status(500).json({
-      message: err?.message || "Performance proxy error",
-    });
   }
-}
 
-
-private async getAmbalaze(req: Request, res: Response): Promise<void> {
-  try {
-    const data = await this.gatewayService.getAmbalaze();
-    res.status(200).json(data);
-  } catch (err) {
-    res.status(500).json({ message: (err as Error).message });
-  }
-}
-
-private async getSkladista(req: Request, res: Response): Promise<void> {
-  try {
-    const data = await this.gatewayService.getSkladista();
-    res.status(200).json(data);
-  } catch (err) {
-    res.status(500).json({ message: (err as Error).message });
-  }
-}
-
-
-private async sendAmbalaze(req: Request, res: Response) {
-  try {
-    const role = String((req.user as any)?.role || "").toLowerCase();
-
-    const uloga =
-      role === "manager" ? "MENADZER_PRODAJE" :
-      role === "seller"  ? "PRODAVAC" :
-      "PRODAVAC";
-
-    const brojAmbalaza = Number(req.body?.brojAmbalaza);
-    if (!Number.isFinite(brojAmbalaza) || brojAmbalaza <= 0) {
-      return res.status(400).json({ message: "brojAmbalaza mora biti broj > 0" });
+  private async getSkladista(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await this.gatewayService.getSkladista();
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
     }
-
-    const data = await this.gatewayService.internalSendAmbalaze(brojAmbalaza, uloga);
-    return res.status(200).json(data);
-  } catch (e) {
-    return res.status(500).json({ message: (e as Error).message });
   }
-}
+
+
+  private async sendAmbalaze(req: Request, res: Response) {
+    try {
+      const role = String((req.user as any)?.role || "").toLowerCase();
+
+      const uloga =
+        role === "manager" ? "MENADZER_PRODAJE" :
+          role === "seller" ? "PRODAVAC" :
+            "PRODAVAC";
+
+      const brojAmbalaza = Number(req.body?.brojAmbalaza);
+      if (!Number.isFinite(brojAmbalaza) || brojAmbalaza <= 0) {
+        return res.status(400).json({ message: "brojAmbalaza mora biti broj > 0" });
+      }
+
+      const data = await this.gatewayService.internalSendAmbalaze(brojAmbalaza, uloga);
+      return res.status(200).json(data);
+    } catch (e) {
+      return res.status(500).json({ message: (e as Error).message });
+    }
+  }
 
 
 

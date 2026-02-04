@@ -325,21 +325,30 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
     await loadAll();
   };
 
-  const onExportPdf = () => {
-    try {
-      const base = import.meta.env.VITE_GATEWAY_URL;
-      const qs = new URLSearchParams();
-      if (start) qs.set("start", start);
-      if (end) qs.set("end", end);
-      if (godina) qs.set("godina", String(godina));
-
-      const url = `${base}/analytics/izvestaj/pdf?${qs.toString()}`;
-      window.open(url, "_blank");
-    } catch (e: any) {
-      console.error(e);
-      setErr(e?.message ?? "Greška pri preuzimanju PDF-a.");
+  const onExportPdf = async () => {
+  try {
+    if (!token) {
+      setErr("Niste prijavljeni.");
+      return;
     }
-  };
+
+    const blob = await analyticsAPI.getIzvestajPdf(token, {
+      start: start || undefined,
+      end: end || undefined,
+      godina: godina || undefined,
+    });
+
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+
+    // opcionalno: oslobodi memoriju posle malo vremena
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch (e: any) {
+    console.error(e);
+    setErr(e?.message ?? "Greška pri preuzimanju PDF izveštaja");
+  }
+};
+
 
   const s = {
     page: {

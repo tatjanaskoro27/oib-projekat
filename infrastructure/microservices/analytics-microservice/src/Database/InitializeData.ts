@@ -1,3 +1,5 @@
+///OBRISANO ZA SEED PODATKE , OVO VISE NE KORISTIMOOO!!!
+
 import { DataSource } from "typeorm";
 import { FiskalniRacun } from "../Domain/models/FiskalniRacun";
 import { FiskalnaStavka } from "../Domain/models/FiskalnaStavka";

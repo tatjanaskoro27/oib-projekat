@@ -152,4 +152,17 @@ export class AnalyticsAPI implements IAnalyticsAPI {
     });
     return res.data;
   }
+
+  async getIzvestajPdf(
+  token: string,
+  params: { start?: string; end?: string; godina?: number }
+): Promise<Blob> {
+  const res = await this.axiosInstance.get("/analytics/izvestaj/pdf", {
+    headers: { ...this.auth(token), ...this.noCache() },
+    params: { ...params, t: Date.now() },
+    responseType: "blob",
+  });
+  return res.data;
+}
+
 }
