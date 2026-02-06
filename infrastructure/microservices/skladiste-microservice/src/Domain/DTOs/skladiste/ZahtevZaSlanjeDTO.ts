@@ -1,3 +1,3 @@
 export interface ZahtevZaSlanjeDTO {
-  trazenaKolicina: number;
+  items: { name: string; quantity: number }[];
 }

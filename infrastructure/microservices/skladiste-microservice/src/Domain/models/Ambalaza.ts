@@ -13,9 +13,10 @@ export class Ambalaza {
   @Column({ length: 120 })
   adresaPosiljaoca!: string;
 
-  // najbrže rešenje: parfemi kao JSON string (npr. "[1,2,3]")
+  // parfemi i količine kao JSON string:
+  // npr: [{"name":"Chanel No 5","quantity":5},{"name":"Dior Sauvage","quantity":3}]
   @Column({ type: "text" })
-  perfumeIdsJson!: string;
+  perfumesJson!: string;
 
   @Column({ type: "enum", enum: StatusAmbalaze, default: StatusAmbalaze.SPAKOVANA })
   status!: StatusAmbalaze;

@@ -1,46 +1,128 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AuthContext from "../contexts/AuthContext";
 
 type WarehouseDTO = {
   id: number;
+  naziv: string;
+  lokacija: string;
+  maksimalanBrojAmbalaza: number;
+};
+
+type PerfumeInPack = {
   name: string;
-  location: string;
-  maxPackages: number;
+  quantity: number;
 };
 
 type PackageDTO = {
   id: number;
-  name: string;
-  senderAddress: string;
-  warehouseId: number;
-  perfumeIds: number[];
-  status: "spakovana" | "poslata";
+  naziv: string;
+  adresaPosiljaoca: string;
+  perfumesJson: string;
+  status: "SPAKOVANA" | "POSLATA" | "USKLADISTENA" | "ISPORUCENA";
+  skladiste: WarehouseDTO | null;
 };
 
-const GATEWAY_BASE = "http://localhost:4000";
+const GATEWAY_BASE = import.meta.env.VITE_GATEWAY_URL ?? "http://localhost:4000";
 
-function pill(status: PackageDTO["status"]) {
+const shell: React.CSSProperties = {
+  padding: 16,
+  maxWidth: 1250,
+  margin: "0 auto",
+};
+
+const card: React.CSSProperties = {
+  background: "rgba(255,255,255,0.96)",
+  border: "1px solid rgba(0,0,0,0.08)",
+  borderRadius: 14,
+  boxShadow: "0 10px 22px rgba(0,0,0,0.06)",
+};
+
+const inputBase: React.CSSProperties = {
+  padding: "10px 12px",
+  borderRadius: 12,
+  border: "1px solid rgba(0,0,0,0.12)",
+  outline: "none",
+  background: "rgba(255,255,255,0.95)",
+};
+
+// ----------- helpers -----------
+function safeParsePerfumes(json?: string): PerfumeInPack[] {
+  try {
+    const arr = JSON.parse(json || "[]");
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((p: any) => ({
+        name: String(p?.name ?? "").trim(),
+        quantity: Number(p?.quantity ?? 0),
+      }))
+      .filter((p) => p.name.length > 0 && Number.isFinite(p.quantity) && p.quantity > 0);
+  } catch {
+    return [];
+  }
+}
+
+function countPerfumes(json?: string) {
+  return safeParsePerfumes(json).reduce((s, x) => s + x.quantity, 0);
+}
+
+function statusOrder(s: PackageDTO["status"]) {
+  if (s === "SPAKOVANA") return 1;
+  if (s === "USKLADISTENA") return 2;
+  if (s === "POSLATA") return 3;
+  return 4; // ISPORUCENA
+}
+
+function statusLabel(s: PackageDTO["status"]) {
+  if (s === "SPAKOVANA" || s === "USKLADISTENA") return "Spakovana";
+  return "Poslata";
+}
+
+function statusPill(status: PackageDTO["status"]) {
   const base: React.CSSProperties = {
-    padding: "4px 10px",
+    padding: "5px 10px",
     borderRadius: 999,
     fontSize: 12,
-    fontWeight: 700,
+    fontWeight: 800,
     display: "inline-flex",
     alignItems: "center",
-    gap: 6,
+    letterSpacing: 0.3,
   };
-  if (status === "poslata") {
-    return { ...base, background: "#E8FFF1", color: "#0F7A3D", border: "1px solid #BFF2D3" };
-  }
-  return { ...base, background: "#FFF7E6", color: "#8A5A00", border: "1px solid #FFE1A6" };
+
+  const green = status === "ISPORUCENA" || status === "POSLATA";
+
+  return green
+    ? {
+        ...base,
+        background: "rgba(18,185,90,0.12)",
+        color: "#0F7A3D",
+        border: "1px solid rgba(18,185,90,0.25)",
+      }
+    : {
+        ...base,
+        background: "rgba(255,170,0,0.14)",
+        color: "#8A5A00",
+        border: "1px solid rgba(255,170,0,0.30)",
+      };
+}
+
+// ✅ kapacitet kao na slici: SVE ambalaze u skladistu / maksimalanBrojAmbalaza
+function usedInWarehouse(all: PackageDTO[], warehouseId: number) {
+  return all.filter((p) => p.skladiste?.id === warehouseId).length;
+}
+
+function pct(used: number, cap: number) {
+  if (!cap || cap <= 0) return 0;
+  return Math.max(0, Math.min(100, (used / cap) * 100));
 }
 
 export default function SkladistePage() {
   const auth = useContext(AuthContext);
   const token = auth?.token || "";
+  const navigate = useNavigate();
 
   async function fetchWarehouses(): Promise<WarehouseDTO[]> {
-    const r = await fetch(`${GATEWAY_BASE}/api/v1/skladiste/skladista`, {
+    const r = await fetch(`${GATEWAY_BASE}/skladiste/skladista?t=${Date.now()}`, {
       method: "GET",
       headers: {
         Authorization: token ? "Bearer " + token : "",
@@ -56,7 +138,7 @@ export default function SkladistePage() {
   }
 
   async function fetchPackages(): Promise<PackageDTO[]> {
-    const r = await fetch(`${GATEWAY_BASE}/api/v1/skladiste/ambalaze`, {
+    const r = await fetch(`${GATEWAY_BASE}/skladiste/ambalaze?t=${Date.now()}`, {
       method: "GET",
       headers: {
         Authorization: token ? "Bearer " + token : "",
@@ -79,262 +161,359 @@ export default function SkladistePage() {
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"novo" | "naziv" | "status">("novo");
 
-  async function load() {
-  setLoading(true);
-  setErr(null);
-  try {
-    const wh = await fetchWarehouses();
-    setWarehouses(wh);
-    setPackages([]); // nema ambalaža jer backend nema rutu
-  } catch (e: any) {
-    setErr(e?.message || "Greška pri učitavanju.");
-  } finally {
-    setLoading(false);
-  }
-}
+  const [brojAmbalaza, setBrojAmbalaza] = useState<number>(1);
+  const [sending, setSending] = useState(false);
 
+  async function load() {
+    setLoading(true);
+    setErr(null);
+    try {
+      const [wh, pk] = await Promise.all([fetchWarehouses(), fetchPackages()]);
+      setWarehouses(wh);
+      setPackages(pk);
+    } catch (e: any) {
+      setErr(e?.message || "Greška pri učitavanju.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
+    if (!token) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]); // kad se token pojavi posle logina, ponovo učitaj
+  }, [token]);
 
-  const whMap = useMemo(() => {
-    const m = new Map<number, WarehouseDTO>();
-    warehouses.forEach((w) => m.set(w.id, w));
-    return m;
-  }, [warehouses]);
+  async function sendPackages() {
+    try {
+      setSending(true);
+      setErr(null);
+
+      const n = Math.max(1, Math.floor(Number(brojAmbalaza || 1)));
+
+      const r = await fetch(`${GATEWAY_BASE}/skladiste/send`, {
+        method: "POST",
+        headers: {
+          Authorization: token ? "Bearer " + token : "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ brojAmbalaza: n }),
+      });
+
+      const data = await r.json().catch(() => ({}));
+
+      if (r.status === 401) throw new Error("Nisi ulogovana (401). Uloguj se ponovo.");
+      if (r.status === 403) throw new Error("Nemaš pravo pristupa (403). Proveri ulogu.");
+      if (!r.ok) throw new Error(data?.message || "Neuspešno slanje ambalaža.");
+
+      await load();
+    } catch (e: any) {
+      setErr(e?.message || "Greška pri slanju.");
+    } finally {
+      setSending(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
 
     let list = packages.filter((p) => {
-      const w = whMap.get(p.warehouseId);
-      const whText = w ? `${w.name} ${w.location}` : "";
-      const txt = `${p.name} ${p.senderAddress} ${p.status} ${p.perfumeIds.join(",")} ${whText}`;
+      const whText = p.skladiste ? `${p.skladiste.naziv} ${p.skladiste.lokacija}` : "";
+      const txt = `${p.naziv} ${p.adresaPosiljaoca} ${p.status} ${whText} ${p.perfumesJson}`;
       return txt.toLowerCase().includes(needle);
     });
 
-    if (sort === "naziv") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
-    if (sort === "status") list = [...list].sort((a, b) => a.status.localeCompare(b.status));
-    if (sort === "novo") list = [...list].sort((a, b) => b.id - a.id);
+    if (sort === "naziv") {
+      list = [...list].sort((a, b) =>
+        a.naziv.localeCompare(b.naziv, "sr", { sensitivity: "base" }),
+      );
+    }
+    if (sort === "status") {
+      list = [...list].sort(
+        (a, b) => statusOrder(a.status) - statusOrder(b.status) || b.id - a.id,
+      );
+    }
+    if (sort === "novo") {
+      list = [...list].sort((a, b) => b.id - a.id);
+    }
 
     return list;
-  }, [packages, q, sort, whMap]);
+  }, [packages, q, sort]);
 
-  const totalPackages = packages.length;
-  const packed = packages.filter((p) => p.status === "spakovana").length;
-  const sent = packages.filter((p) => p.status === "poslata").length;
+  const total = packages.length;
 
-  const card: React.CSSProperties = {
-    background: "#fff",
-    borderRadius: 16,
-    boxShadow: "0 18px 40px rgba(17, 24, 39, 0.12)",
-    border: "1px solid rgba(0,0,0,0.06)",
-    overflow: "hidden",
-  };
+  // ✅ “u skladistu” = USKLADISTENA/SPAKOVANA
+  const uskladistena = packages.filter(
+    (p) => p.status === "SPAKOVANA" || p.status === "USKLADISTENA",
+  ).length;
 
-  const topTabs: React.CSSProperties = {
-    display: "flex",
-    gap: 10,
-    padding: 14,
-    alignItems: "center",
-    justifyContent: "space-between",
-  };
-
-  const tabBtn: React.CSSProperties = {
-    display: "inline-flex",
-    gap: 10,
-    alignItems: "center",
-    borderRadius: 999,
-    padding: "8px 12px",
-    border: "1px solid rgba(0,0,0,0.10)",
-    background: "#fff",
-    fontWeight: 700,
-  };
-
-  const headerBar: React.CSSProperties = {
-    background: "#6D3CFF",
-    color: "white",
-    padding: "14px 18px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    fontWeight: 800,
-    letterSpacing: 0.2,
-  };
-
-  const body: React.CSSProperties = { padding: 18 };
-
-  const controlsRow: React.CSSProperties = {
-    display: "flex",
-    gap: 12,
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    marginBottom: 12,
-  };
-
-  const input: React.CSSProperties = {
-    width: 340,
-    maxWidth: "100%",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.12)",
-    padding: "10px 12px",
-    outline: "none",
-  };
-
-  const select: React.CSSProperties = {
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.12)",
-    padding: "10px 12px",
-    background: "#fff",
-    fontWeight: 700,
-  };
-
-  const button: React.CSSProperties = {
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.12)",
-    padding: "10px 12px",
-    background: "#13A05F",
-    color: "white",
-    fontWeight: 800,
-    cursor: "pointer",
-  };
-
-  const statPill: React.CSSProperties = {
-    borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.25)",
-    background: "rgba(255,255,255,0.16)",
-    padding: "6px 10px",
-    fontSize: 12,
-    fontWeight: 800,
-  };
+  // ✅ “poslate” = POSLATA/ISPORUCENA
+  const isporucena = packages.filter(
+    (p) => p.status === "POSLATA" || p.status === "ISPORUCENA",
+  ).length;
 
   return (
-    <div style={{ padding: 18 }}>
-      <div style={card}>
-        <div style={topTabs}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <button style={tabBtn}>🏭 Servis skladištenja</button>
-            <button style={{ ...tabBtn, opacity: 0.75 }}>📦 Ambalaže</button>
+    <div style={shell}>
+      {/* Top bar */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
+        <div>
+          <h2 style={{ margin: 0, fontSize: 22 }}>Skladište</h2>
+          <div style={{ opacity: 0.75, marginTop: 4, fontSize: 13 }}>
+            Pregled skladišta i ambalaža (naziv parfema × količina)
           </div>
+        </div>
 
-          <button style={{ ...tabBtn, opacity: 0.85 }} onClick={() => window.history.back()}>
-            ↩ Nazad na meni
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button className="btn" onClick={() => navigate("/dashboard")}>
+            Nazad
+          </button>
+          <button onClick={load} disabled={loading} className="btn btn-primary">
+            {loading ? "Učitavam..." : "Osveži"}
           </button>
         </div>
+      </div>
 
-        <div style={headerBar}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <span style={{ fontSize: 18 }}>📦</span>
-            <span>Skladište i ambalaže</span>
+      {/* Filters */}
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: 12,
+        }}
+      >
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Pretraga (ambalaža, pošiljalac, parfemi, status, skladište...)"
+          style={{ ...inputBase, flex: 1, minWidth: 260 }}
+        />
+
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as any)}
+          style={{ ...inputBase, minWidth: 220 }}
+        >
+          <option value="novo">Sort: najnovije</option>
+          <option value="naziv">Sort: naziv</option>
+          <option value="status">Sort: status</option>
+        </select>
+
+        <div style={{ marginLeft: "auto", opacity: 0.85, fontWeight: 800 }}>
+          Skladišta: {warehouses.length}
+        </div>
+      </div>
+
+      {/* Counters */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
+        <div style={{ ...card, padding: 14 }}>
+          <div style={{ opacity: 0.7, fontSize: 12, fontWeight: 900 }}>
+            Ukupno ambalaža
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, marginTop: 4 }}>{total}</div>
+        </div>
+
+        <div style={{ ...card, padding: 14 }}>
+          <div style={{ opacity: 0.7, fontSize: 12, fontWeight: 900 }}>
+            U skladištu
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, marginTop: 4 }}>{uskladistena}</div>
+        </div>
+
+        <div style={{ ...card, padding: 14 }}>
+          <div style={{ opacity: 0.7, fontSize: 12, fontWeight: 900 }}>
+            Poslate ambalaže
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, marginTop: 4 }}>{isporucena}</div>
+        </div>
+      </div>
+
+      {err && (
+        <div style={{ marginBottom: 12, color: "crimson", fontWeight: 800 }}>
+          {err}
+        </div>
+      )}
+
+      {/* 2 columns */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.05fr 1.4fr",
+          gap: 12,
+          alignItems: "start",
+        }}
+      >
+        {/* Left: Warehouses */}
+        <div style={{ ...card, padding: 0, overflow: "hidden" }}>
+          <div
+            style={{
+              padding: 12,
+              borderBottom: "1px solid rgba(0,0,0,0.08)",
+              background: "rgba(255,120,0,0.12)",
+            }}
+          >
+            <div style={{ fontWeight: 900 }}>Skladišta</div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <span style={statPill}>Ukupno: {totalPackages}</span>
-            <span style={statPill}>Spakovano: {packed}</span>
-            <span style={statPill}>Poslato: {sent}</span>
+          <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+            {warehouses.map((w) => {
+              const used = usedInWarehouse(packages, w.id);
+              const cap = Number(w.maksimalanBrojAmbalaza || 0);
+              const percent = pct(used, cap);
+
+              return (
+                <div
+                  key={w.id}
+                  style={{
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    borderRadius: 12,
+                    padding: 14,
+                    background: "rgba(0,0,0,0.02)",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                    <div>
+                      <div style={{ fontWeight: 900 }}>{w.naziv}</div>
+                      <div style={{ opacity: 0.75, fontSize: 13 }}>{w.lokacija}</div>
+                      <div style={{ marginTop: 8, opacity: 0.7, fontSize: 12, fontWeight: 800 }}>
+                        Kapacitet:
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontWeight: 900, fontSize: 14 }}>
+                        {used} / {cap || "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 10 }}>
+                    <div
+                      style={{
+                        height: 10,
+                        borderRadius: 999,
+                        background: "rgba(0,0,0,0.12)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${percent}%`,
+                          height: "100%",
+                          background: "rgba(18,185,90,0.75)",
+                        }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: 12,
+                        opacity: 0.75,
+                        textAlign: "right",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {percent.toFixed(1)}% popunjeno
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <div style={body}>
-          <div style={controlsRow}>
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <button style={button} onClick={load} disabled={loading}>
-                {loading ? "Učitavam..." : "Osveži"}
-              </button>
+        {/* Right: Packages table */}
+        <div style={{ ...card, padding: 0, overflow: "hidden" }}>
+          <div
+            style={{
+              padding: 12,
+              borderBottom: "1px solid rgba(0,0,0,0.08)",
+              background: "rgba(140,80,255,0.14)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <div style={{ fontWeight: 900 }}>Ambalaže u skladištu</div>
 
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <input
-                style={input}
-                placeholder="Pretraga: ambalaža, skladište, status, parfemi..."
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
+                type="number"
+                min={1}
+                value={brojAmbalaza}
+                onChange={(e) => setBrojAmbalaza(Math.max(1, Number(e.target.value || 1)))}
+                style={{ ...inputBase, width: 110 }}
               />
-
-              <select style={select} value={sort} onChange={(e) => setSort(e.target.value as any)}>
-                <option value="novo">Sort: najnovije</option>
-                <option value="naziv">Sort: naziv</option>
-                <option value="status">Sort: status</option>
-              </select>
-            </div>
-
-            <div style={{ display: "flex", gap: 10, alignItems: "center", opacity: 0.9 }}>
-              <span style={{ fontWeight: 800 }}>Skladišta: {warehouses.length}</span>
+              <button className="btn btn-primary" onClick={sendPackages} disabled={sending || loading}>
+                {sending ? "Šaljem..." : "Pošalji"}
+              </button>
             </div>
           </div>
 
-          {err && (
-            <div
-              style={{
-                background: "#FFF1F2",
-                border: "1px solid #FECDD3",
-                color: "#9F1239",
-                borderRadius: 12,
-                padding: 12,
-                fontWeight: 800,
-                marginBottom: 12,
-              }}
-            >
-              {err}
-            </div>
-          )}
-
-          <div style={{ overflowX: "auto", borderRadius: 12, border: "1px solid rgba(0,0,0,0.08)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead style={{ background: "rgba(17,24,39,0.04)" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 860 }}>
+              <thead style={{ background: "rgba(0,0,0,0.03)" }}>
                 <tr>
-                  {["Ambalaža", "Pošiljalac", "Skladište", "Parfemi (ID)", "Status"].map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        textAlign: "left",
-                        padding: "12px 12px",
-                        fontSize: 13,
-                        letterSpacing: 0.2,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  <th style={{ textAlign: "left", padding: 12, fontSize: 12, opacity: 0.8 }}>ID</th>
+                  <th style={{ textAlign: "left", padding: 12, fontSize: 12, opacity: 0.8 }}>Ambalaža</th>
+                  <th style={{ textAlign: "left", padding: 12, fontSize: 12, opacity: 0.8 }}>Pošiljalac</th>
+                  <th style={{ textAlign: "right", padding: 12, fontSize: 12, opacity: 0.8 }}>Broj parfema</th>
+                  <th style={{ textAlign: "left", padding: 12, fontSize: 12, opacity: 0.8 }}>Skladište</th>
+                  <th style={{ textAlign: "left", padding: 12, fontSize: 12, opacity: 0.8 }}>Status</th>
                 </tr>
               </thead>
-              <tbody>
-                {filtered.map((p) => {
-                  const w = whMap.get(p.warehouseId);
-                  return (
-                    <tr key={p.id} style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-                      <td style={{ padding: 12, fontWeight: 900 }}>{p.name}</td>
-                      <td style={{ padding: 12 }}>{p.senderAddress}</td>
-                      <td style={{ padding: 12 }}>
-                        {w ? (
-                          <div style={{ display: "grid" }}>
-                            <span style={{ fontWeight: 900 }}>{w.name}</span>
-                            <span style={{ opacity: 0.75, fontSize: 12 }}>{w.location}</span>
-                          </div>
-                        ) : (
-                          <span style={{ opacity: 0.7 }}>—</span>
-                        )}
-                      </td>
-                      <td style={{ padding: 12, fontFamily: "monospace" }}>
-                        {p.perfumeIds?.length ? p.perfumeIds.join(", ") : "—"}
-                      </td>
-                      <td style={{ padding: 12 }}>
-                        <span style={pill(p.status)}>
-                          {p.status === "poslata" ? "✅ Poslata" : "📦 Spakovana"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
 
-                {!loading && filtered.length === 0 && (
+              <tbody>
+                {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ padding: 16, opacity: 0.75 }}>
+                    <td colSpan={6} style={{ padding: 16, color: "#666" }}>
                       Nema rezultata za ovu pretragu.
                     </td>
                   </tr>
+                ) : (
+                  filtered.map((p) => {
+                    const wh = p.skladiste ? `${p.skladiste.naziv} (${p.skladiste.lokacija})` : "—";
+                    const totalPerfumes = countPerfumes(p.perfumesJson);
+
+                    return (
+                      <tr key={p.id} style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }}>
+                        <td
+                          style={{
+                            padding: 12,
+                            fontFamily:
+                              "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                            fontSize: 12,
+                          }}
+                        >
+                          {p.id}
+                        </td>
+                        <td style={{ padding: 12, fontWeight: 900 }}>{p.naziv}</td>
+                        <td style={{ padding: 12 }}>{p.adresaPosiljaoca}</td>
+                        <td style={{ padding: 12, textAlign: "right", fontWeight: 900 }}>{totalPerfumes}</td>
+                        <td style={{ padding: 12, opacity: 0.9 }}>{wh}</td>
+                        <td style={{ padding: 12 }}>
+                          <span style={statusPill(p.status)}>{statusLabel(p.status)}</span>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

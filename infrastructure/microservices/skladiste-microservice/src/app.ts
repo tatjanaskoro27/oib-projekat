@@ -10,7 +10,6 @@ import { Db } from "./Database/DbConnectionPool";
 import { Skladiste } from "./Domain/models/Skladiste";
 import { Ambalaza } from "./Domain/models/Ambalaza";
 
-
 import { IServisSkladista } from "./Domain/services/IServisSkladista";
 import { ServisSkladista } from "./Services/ServisSkladista";
 
@@ -23,10 +22,22 @@ import { SkladisteController } from "./WebAPI/controllers/SkladisteController";
 dotenv.config({ quiet: true });
 
 const app = express();
-app.use(cors());
+
+// Read CORS settings from environment (isto kao processing/production)
+const corsOrigin = process.env.CORS_ORIGIN ?? "*";
+const corsMethods =
+  process.env.CORS_METHODS?.split(",").map((m) => m.trim()) ?? ["GET", "POST", "PATCH", "PUT", "DELETE"];
+
+app.use(
+  cors({
+    origin: corsOrigin,
+    methods: corsMethods,
+  })
+);
+
 app.use(express.json());
 
-// inicijalizacija baze
+// inicijalizacija baze (kao šablon)
 initialize_database();
 
 // ORM repositories
@@ -49,7 +60,7 @@ const servisSkladista: IServisSkladista = new ServisSkladista(
 const controller = new SkladisteController(servisSkladista);
 
 // rute
-app.get("/health", (_, res) => res.json({ status: "SKLADISTE UP" }));
+app.get("/health", (_req, res) => res.json({ status: "SKLADISTE UP" }));
 app.use("/api/v1", controller.getRouter());
 
 export default app;

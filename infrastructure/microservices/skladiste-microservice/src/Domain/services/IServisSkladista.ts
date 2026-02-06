@@ -9,8 +9,21 @@ export interface IServisSkladista {
 
   prijemAmbalaze(skladisteId: number, dto: PrijemAmbalazeDTO): Promise<Ambalaza>;
 
+  // x-mode=STANJE -> samo vraća stanje (ne skida)
+  // bez x-mode ili x-mode=ISPORUKA -> skida količine i vraća isporučeno
+  posaljiParfeme(
+    items: { name: string; quantity: number }[],
+    uloga: "MENADZER_PRODAJE" | "PRODAVAC",
+    mode: "STANJE" | "ISPORUKA"
+  ): Promise<{ name: string; quantity: number }[]>;
+
+  sveAmbalaze(): Promise<Ambalaza[]>;
+
+
+
   posaljiAmbalaze(
-    trazenaKolicina: number,
-    uloga: "MENADZER_PRODAJE" | "PRODAVAC"
+  trazenaKolicina: number,
+  uloga: "MENADZER_PRODAJE" | "PRODAVAC"
   ): Promise<Ambalaza[]>;
+
 }

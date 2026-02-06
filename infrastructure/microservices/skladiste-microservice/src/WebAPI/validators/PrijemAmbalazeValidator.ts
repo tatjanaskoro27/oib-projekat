@@ -1,13 +1,26 @@
 import { PrijemAmbalazeDTO } from "../../Domain/DTOs/skladiste/PrijemAmbalazeDTO";
 
+const isNonEmptyString = (v: any): v is string => typeof v === "string" && v.trim().length > 0;
+
 export function validirajPrijemAmbalaze(body: any): PrijemAmbalazeDTO {
-  const { naziv, adresaPosiljaoca, perfumeIds } = body ?? {};
+  const { naziv, adresaPosiljaoca, items } = body ?? {};
 
-  if (!naziv || typeof naziv !== "string") throw new Error("Naziv ambalaze je obavezan.");
-  if (!adresaPosiljaoca || typeof adresaPosiljaoca !== "string") throw new Error("Adresa posiljaoca je obavezna.");
+  if (!isNonEmptyString(naziv)) throw new Error("Naziv ambalaže je obavezan.");
+  if (!isNonEmptyString(adresaPosiljaoca)) throw new Error("Adresa pošiljaoca je obavezna.");
 
-  const ids = Array.isArray(perfumeIds) ? perfumeIds.map(Number) : [];
-  if (ids.some((x) => !Number.isFinite(x) || x <= 0)) throw new Error("perfumeIds mora biti niz pozitivnih brojeva.");
+  if (!Array.isArray(items) || items.length === 0) throw new Error("items mora biti ne-prazan niz.");
 
-  return { naziv, adresaPosiljaoca, perfumeIds: ids };
+  const norm = items.map((x: any) => {
+    const name = String(x?.name ?? "").trim();
+    const quantity = Number(x?.quantity);
+    if (!isNonEmptyString(name)) throw new Error("Svaki item mora imati name.");
+    if (!Number.isFinite(quantity) || quantity <= 0) throw new Error("Svaki item mora imati quantity > 0.");
+    return { name, quantity };
+  });
+
+  return {
+    naziv: naziv.trim(),
+    adresaPosiljaoca: adresaPosiljaoca.trim(),
+    items: norm,
+  };
 }

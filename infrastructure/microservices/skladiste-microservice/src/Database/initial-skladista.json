@@ -1,0 +1,5 @@
+[
+  { "naziv": "Centralno skladiste", "lokacija": "Novi Sad", "maksimalanBrojAmbalaza": 120 },
+  { "naziv": "Sjeverni centar", "lokacija": "Subotica", "maksimalanBrojAmbalaza": 80 },
+  { "naziv": "Juzni centar", "lokacija": "Nis", "maksimalanBrojAmbalaza": 90 }
+]
