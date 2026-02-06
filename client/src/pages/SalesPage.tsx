@@ -20,6 +20,7 @@ export const SalesPage: React.FC = () => {
   const [perfumes, setPerfumes] = useState<SalesPerfumeDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastItems, setLastItems] = useState<{ naziv: string; kol: number; cena: number }[]>([]);
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [saleType, setSaleType] =
@@ -79,6 +80,7 @@ export const SalesPage: React.FC = () => {
       setError("Ovaj parfem trenutno nije dostupan.");
       return;
     }
+      
 
     setCart((prev) => {
       const existing = prev.find((x) => x.perfume.id === p.id);
@@ -114,61 +116,103 @@ export const SalesPage: React.FC = () => {
   );
 
   const purchase = async () => {
-    if (!token) return;
+  if (!token) return;
 
-    setError(null);
-    setReceipt(null);
-    setQrCode(null);
+  setError(null);
+  setReceipt(null);
+  setQrCode(null);
 
-    if (!userId) {
-      setError("Ne mogu da odredim userId iz tokena.");
-      return;
-    }
-    if (cart.length === 0) {
-      setError("Korpa je prazna.");
-      return;
-    }
+  if (!userId) {
+    setError("Ne mogu da odredim userId iz tokena.");
+    return;
+  }
+  if (cart.length === 0) {
+    setError("Korpa je prazna.");
+    return;
+  }
 
-    const items = cart.map((x) => ({
-      name: x.perfume.name,
-      quantity: x.quantity,
-    })) as any;
+  const items = cart.map((x) => ({
+    name: x.perfume.name,
+    quantity: x.quantity,
+  })) as any;
 
-    const dto: PurchaseRequestDTO = {
-      userId,
-      items,
-      saleType,
-      paymentType,
-    };
-
-    try {
-      setLoading(true);
-
-      const res: any = await api.purchase(token, dto);
-
-      // prikaz fiskalnog računa
-      setReceipt(res?.racun ?? null);
-
-      // prikaz QR koda
-      setQrCode(res?.qrCode ?? null);
-
-      // očisti korpu
-      setCart([]);
-
-      // osveži katalog odmah (stock će se smanjiti)
-      const fresh = await api.getPerfumes(token);
-      setPerfumes(fresh);
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          "Greška pri kupovini.",
-      );
-    } finally {
-      setLoading(false);
-    }
+  const dto: PurchaseRequestDTO = {
+    userId,
+    items,
+    saleType,
+    paymentType,
   };
+
+  try {
+    setLoading(true);
+
+    const res: any = await api.purchase(token, dto);
+
+    // ✅ SAČUVAJ STAVKE KUPOVINE (za prikaz na fiskalnom)
+    const last = cart.map((x) => ({
+      naziv: x.perfume.name,
+      kol: x.quantity,
+      cena: Number(x.perfume.price),
+    }));
+    setLastItems(last);
+
+    // ✅ racun je u res.racun
+    setReceipt(res?.racun ?? null);
+
+    // ✅ QR ostaje kako jeste
+    setQrCode(res?.qrCode ?? null);
+
+    // očisti korpu
+    setCart([]);
+
+    // osveži katalog odmah (stock će se smanjiti)
+    const fresh = await api.getPerfumes(token);
+    setPerfumes(fresh);
+  } catch (err: any) {
+    setError(
+      err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Greška pri kupovini.",
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  // ✅ Normalizacija računa (ako nekad dođe ugnježdeno)
+  const r = receipt?.racun ?? receipt;
+
+  // ✅ Normalizacija stavki (stavke/items)
+  const receiptItems: any[] = Array.isArray(r?.stavke)
+    ? r.stavke
+    : Array.isArray(r?.items)
+      ? r.items
+      : [];
+
+  // ✅ Ukupno: probaj polja, ako nema – izračunaj iz stavki
+  const receiptTotal =
+    Number(
+      r?.ukupnoZaNaplatu ??
+        r?.ukupno ??
+        r?.iznos ??
+        r?.totalAmount ??
+        r?.total ??
+        NaN,
+    );
+
+  const calcTotalFromItems = receiptItems.reduce((sum, s) => {
+    const kol = Number(s?.kolicina ?? s?.quantity ?? 0);
+    const cena = Number(s?.cenaPoKomadu ?? s?.cena ?? s?.price ?? 0);
+    const line =
+      (Number.isFinite(kol) ? kol : 0) * (Number.isFinite(cena) ? cena : 0);
+    return sum + line;
+  }, 0);
+
+  const totalToShow = Number.isFinite(receiptTotal)
+    ? receiptTotal
+    : Number(calcTotalFromItems);
 
   return (
     <div className="overlay-blur-none" style={{ minHeight: "100vh" }}>
@@ -277,9 +321,7 @@ export const SalesPage: React.FC = () => {
             <div>
               <h3 style={{ margin: "8px 0 12px" }}>Katalog</h3>
 
-              <div
-                style={{ maxHeight: 420, overflowY: "auto", paddingRight: 6 }}
-              >
+              <div style={{ maxHeight: 420, overflowY: "auto", paddingRight: 6 }}>
                 {perfumes.length === 0 && (
                   <div style={{ opacity: 0.8 }}>
                     {loading ? "Učitavam..." : "Nema parfema."}
@@ -301,19 +343,14 @@ export const SalesPage: React.FC = () => {
                   >
                     <div>
                       <div style={{ fontWeight: 700 }}>{p.name}</div>
-                      <div
-                        style={{ opacity: 0.85, marginTop: 4, fontSize: 13 }}
-                      >
+                      <div style={{ opacity: 0.85, marginTop: 4, fontSize: 13 }}>
                         {p.description}
                       </div>
-                      <div
-                        style={{ opacity: 0.85, marginTop: 6, fontSize: 13 }}
-                      >
+                      <div style={{ opacity: 0.85, marginTop: 6, fontSize: 13 }}>
                         Cena: <b>{Number(p.price).toFixed(2)}</b> | Na stanju:{" "}
                         <b>{p.stock}</b> | Status:{" "}
                         <b>{p.available ? "dostupan" : "nedostupan"}</b>
                       </div>
-                      {/* ID se ne prikazuje */}
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center" }}>
@@ -331,15 +368,13 @@ export const SalesPage: React.FC = () => {
             </div>
 
             {/* KORPA */}
-        
             <div
-             style={{
-             maxHeight: "calc(100vh - 220px)",
-             overflowY: "auto",
-             paddingRight: 6,
-            }}
+              style={{
+                maxHeight: "calc(100vh - 220px)",
+                overflowY: "auto",
+                paddingRight: 6,
+              }}
             >
-
               <div
                 style={{
                   background: "rgba(0,0,0,0.10)",
@@ -413,139 +448,88 @@ export const SalesPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* FISKALNI RAČUN (prikaz umesto JSON) */}
-              {receipt && (
-                <div style={{ marginTop: 16 }}>
-                  <h4 style={{ marginBottom: 10 }}>Fiskalni račun</h4>
+              {/* FISKALNI RAČUN */}
+{receipt && (
+  <div style={{ marginTop: 16 }}>
+    <h4 style={{ marginBottom: 10 }}>Fiskalni račun</h4>
 
-                  <div
-                    style={{
-                      background: "rgba(0,0,0,0.15)",
-                      padding: 12,
-                      borderRadius: 10,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <div style={{ opacity: 0.9 }}>
-                        <div>
-                          <b>Tip prodaje:</b>{" "}
-                          {receipt?.tipProdaje ?? receipt?.saleType ?? "-"}
-                        </div>
-                        <div>
-                          <b>Način plaćanja:</b>{" "}
-                          {receipt?.nacinPlacanja ??
-                            receipt?.paymentType ??
-                            "-"}
-                        </div>
-                      </div>
+    <div
+      style={{
+        background: "rgba(0,0,0,0.15)",
+        padding: 12,
+        borderRadius: 10,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ opacity: 0.9 }}>
+          <div><b>Tip prodaje:</b> {saleType}</div>
+          <div><b>Način plaćanja:</b> {paymentType}</div>
+        </div>
 
-                      <div style={{ textAlign: "right", opacity: 0.9 }}>
-                        <div>
-                          <b>Broj računa:</b>{" "}
-                          {receipt?.id ?? receipt?.broj ?? "-"}
-                        </div>
-                        <div>
-                          <b>Datum:</b>{" "}
-                          {receipt?.datumVreme ?? receipt?.createdAt ?? "-"}
-                        </div>
-                      </div>
-                    </div>
+        <div style={{ textAlign: "right", opacity: 0.9 }}>
+          <div><b>Broj računa:</b> {receipt?.racunId ?? receipt?.id ?? "-"}</div>
+          <div>
+            <b>Ukupan iznos:</b>{" "}
+            {Number(receipt?.ukupanIznos ?? receipt?.ukupno ?? total).toFixed(2)}
+          </div>
+        </div>
+      </div>
 
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ fontWeight: 700, marginBottom: 6 }}>
-                        Stavke
-                      </div>
+      <div style={{ marginTop: 12 }}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>Stavke</div>
 
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 90px 120px 120px",
-                          gap: 8,
-                          fontSize: 13,
-                          opacity: 0.95,
-                        }}
-                      >
-                        <div style={{ fontWeight: 700 }}>Naziv</div>
-                        <div style={{ fontWeight: 700, textAlign: "right" }}>
-                          Kol.
-                        </div>
-                        <div style={{ fontWeight: 700, textAlign: "right" }}>
-                          Cena
-                        </div>
-                        <div style={{ fontWeight: 700, textAlign: "right" }}>
-                          Ukupno
-                        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 90px 120px 120px",
+            gap: 8,
+            fontSize: 13,
+            opacity: 0.95,
+          }}
+        >
+          <div style={{ fontWeight: 700 }}>Naziv</div>
+          <div style={{ fontWeight: 700, textAlign: "right" }}>Kol.</div>
+          <div style={{ fontWeight: 700, textAlign: "right" }}>Cena</div>
+          <div style={{ fontWeight: 700, textAlign: "right" }}>Ukupno</div>
 
-                        {(receipt?.stavke ?? receipt?.items ?? []).map(
-                          (s: any, idx: number) => {
-                            const naziv = s?.parfemNaziv ?? s?.name ?? "-";
-                            const kol = Number(s?.kolicina ?? s?.quantity ?? 0);
-                            const cena = Number(
-                              s?.cenaPoKomadu ?? s?.cena ?? s?.price ?? 0,
-                            );
-                            const line =
-                              (Number.isFinite(kol) ? kol : 0) *
-                              (Number.isFinite(cena) ? cena : 0);
+          {lastItems.length === 0 ? (
+            <div style={{ gridColumn: "1 / -1", opacity: 0.75 }}>
+              Nema stavki za prikaz.
+            </div>
+          ) : (
+            lastItems.map((s, idx) => {
+              const line = Number(s.kol) * Number(s.cena);
+              return (
+                <React.Fragment key={idx}>
+                  <div>{s.naziv}</div>
+                  <div style={{ textAlign: "right" }}>{s.kol}</div>
+                  <div style={{ textAlign: "right" }}>{Number(s.cena).toFixed(2)}</div>
+                  <div style={{ textAlign: "right" }}>{Number(line).toFixed(2)}</div>
+                </React.Fragment>
+              );
+            })
+          )}
+        </div>
 
-                            return (
-                              <React.Fragment key={idx}>
-                                <div>{naziv}</div>
-                                <div style={{ textAlign: "right" }}>{kol}</div>
-                                <div style={{ textAlign: "right" }}>
-                                  {Number(cena).toFixed(2)}
-                                </div>
-                                <div style={{ textAlign: "right" }}>
-                                  {Number(line).toFixed(2)}
-                                </div>
-                              </React.Fragment>
-                            );
-                          },
-                        )}
-                      </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
+          <div style={{ fontWeight: 700 }}>Ukupno za naplatu:</div>
+          <div style={{ fontWeight: 700 }}>
+            {Number(receipt?.ukupanIznos ?? totalToShow ?? total).toFixed(2)}
+          </div>
+        </div>
 
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          marginTop: 12,
-                        }}
-                      >
-                        <div style={{ fontWeight: 700 }}>
-                          Ukupno za naplatu:
-                        </div>
-                        <div style={{ fontWeight: 700 }}>
-                          {Number(
-                            receipt?.ukupno ??
-                              receipt?.total ??
-                              receipt?.iznos ??
-                              total,
-                          ).toFixed(2)}
-                        </div>
-                      </div>
+        <div style={{ marginTop: 12 }}>
+          <button className="btn" onClick={() => setReceipt(null)}>
+            Zatvori račun
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
-                      <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
-                        <button
-                          className="btn"
-                          onClick={() => setReceipt(null)}
-                        >
-                          Zatvori račun
-                        </button>
 
-                        {/* kasnije: kada napravite endpoint */}
-                        {/* <button className="btn btn-accent">Preuzmi PDF</button> */}
-                        {/* <button className="btn btn-accent" onClick={() => navigate("/racuni")}>Svi računi</button> */}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+
               {/* QR KOD RAČUNA (NADOGRADNJA)  */}
               {qrCode && (
                 <div style={{ marginTop: 16, textAlign: "center" }}>

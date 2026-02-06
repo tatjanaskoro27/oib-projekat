@@ -7,12 +7,12 @@ import { CreateFiscalReceiptDTO } from "../Domain/DTOs/CreateFiscalReceiptDTO";
 import { CreateDogadjajDTO } from "../Domain/DTOs/EventDTO";
 import * as QRCode from "qrcode";
 
-
 type Uloga = "MENADZER_PRODAJE" | "PRODAVAC";
 
-// lokalni tip (ne diraš DTO fajlove)
+// Podržavamo razne oblike item-a koji mogu doći sa fronta
 type ParsedItem = {
-  name: string;
+  perfumeId?: number;
+  name?: string;
   quantity: number;
 };
 
@@ -21,7 +21,7 @@ export class SalesService {
     private readonly perfumeRepo: Repository<Perfume>,
     private readonly saleRepo: Repository<Sale>,
     private readonly gatewayClient: GatewayClient,
-  ) { }
+  ) {}
 
   async getAllPerfumes(): Promise<Perfume[]> {
     return this.perfumeRepo.find();
@@ -32,24 +32,9 @@ export class SalesService {
     if (existing > 0) return { message: "Data already exists" };
 
     const perfumes = [
-      {
-        name: "Chanel No 5",
-        description: "Classic floral perfume",
-        price: 120.0,
-        stock: 10,
-      },
-      {
-        name: "Dior Sauvage",
-        description: "Fresh woody scent",
-        price: 95.5,
-        stock: 15,
-      },
-      {
-        name: "Gucci Bloom",
-        description: "Floral bouquet",
-        price: 105.0,
-        stock: 8,
-      },
+      { name: "Chanel No 5", description: "Classic floral perfume", price: 120.0, stock: 10 },
+      { name: "Dior Sauvage", description: "Fresh woody scent", price: 95.5, stock: 15 },
+      { name: "Gucci Bloom", description: "Floral bouquet", price: 105.0, stock: 8 },
     ];
 
     for (const p of perfumes) {
@@ -70,7 +55,6 @@ export class SalesService {
     storageResponse: any;
     qrCode: string;
   }> {
-    // helper: audit log ne sme da obori kupovinu
     const safeLog = async (event: CreateDogadjajDTO) => {
       try {
         await this.gatewayClient.logEvent(event);
@@ -84,74 +68,81 @@ export class SalesService {
       const userId = String((dto as any)?.userId ?? "").trim();
       if (!userId) throw new Error("Missing userId");
 
-      if (
-        !Array.isArray((dto as any)?.items) ||
-        (dto as any).items.length === 0
-      ) {
+      const rawItems = (dto as any)?.items;
+      if (!Array.isArray(rawItems) || rawItems.length === 0) {
         throw new Error("Missing items");
       }
 
-      // 1) Parse items: očekujemo name + quantity
-      const parsedItems: ParsedItem[] = ((dto as any).items as any[]).map(
-        (i: any) => {
-          const name = String(i?.name ?? "").trim();
-          if (!name) throw new Error("Missing perfume name");
+      // 1) Parse items (podržava: {perfumeId|id|name} + quantity/kolicina/qty)
+      const parsedItems: ParsedItem[] = rawItems.map((i: any) => {
+        const qty = Number(i?.quantity ?? i?.kolicina ?? i?.qty);
+        if (!Number.isFinite(qty) || qty <= 0) throw new Error("Invalid quantity");
 
-          const qty = Number(i?.quantity ?? i?.kolicina ?? i?.qty);
-          if (!Number.isFinite(qty) || qty <= 0)
-            throw new Error("Invalid quantity");
+        const perfumeIdRaw = i?.perfumeId ?? i?.id ?? i?.parfemId;
+        const perfumeId = perfumeIdRaw !== undefined && perfumeIdRaw !== null ? Number(perfumeIdRaw) : undefined;
 
-          return { name, quantity: qty };
-        },
-      );
+        const name = String(i?.name ?? i?.naziv ?? "").trim() || undefined;
 
-      // 2) Sum quantity
-      const trazenaKolicina = parsedItems.reduce(
-        (sum, it) => sum + it.quantity,
-        0,
-      );
-      if (!Number.isFinite(trazenaKolicina) || trazenaKolicina <= 0) {
-        throw new Error("Invalid quantity");
+        if (!perfumeId && !name) {
+          throw new Error("Missing perfume identifier (id or name)");
+        }
+
+        return { perfumeId: Number.isFinite(perfumeId as any) ? perfumeId : undefined, name, quantity: qty };
+      });
+
+      // 2) Sum quantity (za skladiste)
+      const trazenaKolicina = parsedItems.reduce((sum, it) => sum + it.quantity, 0);
+      if (!Number.isFinite(trazenaKolicina) || trazenaKolicina <= 0) throw new Error("Invalid quantity");
+
+      // 3) Load perfumes (po id i/ili po nazivu)
+      const ids = Array.from(new Set(parsedItems.map(i => i.perfumeId).filter((x): x is number => Number.isFinite(x as any))));
+      const names = Array.from(new Set(parsedItems.map(i => i.name).filter((x): x is string => !!x)));
+
+      const perfumesById = ids.length ? await this.perfumeRepo.findBy({ id: In(ids as any) }) : [];
+      const perfumesByName = names.length ? await this.perfumeRepo.findBy({ name: In(names) }) : [];
+
+      // merge unique by id
+      const perfumeMap = new Map<number, Perfume>();
+      for (const p of [...perfumesById, ...perfumesByName]) perfumeMap.set((p as any).id, p);
+
+      // validate existence for each item
+      for (const it of parsedItems) {
+        let found: Perfume | undefined;
+
+        if (it.perfumeId && perfumeMap.has(it.perfumeId)) {
+          found = perfumeMap.get(it.perfumeId);
+        } else if (it.name) {
+          found = Array.from(perfumeMap.values()).find(p => p.name === it.name);
+        }
+
+        if (!found) {
+          throw new Error(`Perfume not found: ${it.perfumeId ?? it.name ?? "?"}`);
+        }
+
+        // normalize item to id + name (da dalje sve bude stabilno)
+        it.perfumeId = (found as any).id;
+        it.name = found.name;
       }
-
-      // 3) Load perfumes by UNIQUE names (da duplikati ne ubiju check)
-      const uniqueNames = Array.from(new Set(parsedItems.map((i) => i.name)));
-      const perfumes = await this.perfumeRepo.findBy({ name: In(uniqueNames) });
-
-      if (perfumes.length !== uniqueNames.length) {
-        const found = new Set(perfumes.map((p) => p.name));
-        const missing = uniqueNames.filter((n) => !found.has(n));
-        throw new Error(`Some perfumes do not exist: ${missing.join(", ")}`);
-      }
-
-      const byName = new Map<string, Perfume>(perfumes.map((p) => [p.name, p]));
 
       // 4) Validate stock + total
       let total = 0;
       for (const it of parsedItems) {
-        const p = byName.get(it.name)!;
-
-        if (p.stock < it.quantity) {
-          throw new Error(`Not enough stock for perfume ${p.name}`);
-        }
+        const p = perfumeMap.get(it.perfumeId!)!;
+        if (p.stock < it.quantity) throw new Error(`Not enough stock for perfume ${p.name}`);
         total += Number(p.price) * it.quantity;
       }
       total = Number(total.toFixed(2));
 
-      // 5) Storage preko GW internal (ambalaže -> raspakivanje)
-      // Napomena: ako skladiste vraća detalje, mi ih samo prosledimo nazad.
-      const storageResponse =
-        await this.gatewayClient.requestPerfumesFromStorage(
-          trazenaKolicina,
-          uloga,
-        );
+      // 5) Poziv Skladišta preko GW internal (umanjenje ambalaže)
+      // (ako skladiste vrati detalje, mi samo prosledimo)
+      const storageResponse = await this.gatewayClient.requestPerfumesFromStorage(trazenaKolicina, uloga);
 
-      // 6) Fiskalni račun preko GW internal (analytics)
+      // 6) Fiskalni račun preko GW internal (NE DIRATI DTO fajl)
       const receiptDto: CreateFiscalReceiptDTO = {
         tipProdaje: ((dto as any).saleType as any) ?? "MALOPRODAJA",
         nacinPlacanja: ((dto as any).paymentType as any) ?? "GOTOVINA",
         stavke: parsedItems.map((it) => {
-          const p = byName.get(it.name)!;
+          const p = perfumeMap.get(it.perfumeId!)!;
           return {
             parfemNaziv: p.name,
             kolicina: it.quantity,
@@ -163,10 +154,11 @@ export class SalesService {
       const racun = await this.gatewayClient.createFiscalReceipt(receiptDto);
 
       // ---- QR KOD (NADOGRADNJA) ----
+      // ⚠️ NE DIRATI OVAJ DEO (tekst + QRCode.toDataURL(text))
       const qrPayload = {
         brojProizvoda: parsedItems.length,
         proizvodi: parsedItems.map((it) => {
-          const p = byName.get(it.name)!;
+          const p = perfumeMap.get(it.perfumeId!)!;
           return {
             sifraProizvoda: p.id,
             nazivProizvoda: p.name,
@@ -180,13 +172,13 @@ export class SalesService {
 
       const text = `RACUN\nUkupno: ${total}\nStavke: ${parsedItems.map(i => `${i.name} x${i.quantity}`).join(", ")}`;
       const qrCodeDataUrl = await QRCode.toDataURL(text);
+      // ---- KRAJ QR ----
 
-
-      // 7) Transaction: update stock + save sale (da bude atomic)
+      // 7) Transaction: update stock + save sale (atomic)
       const savedSale = await this.saleRepo.manager.transaction(async (trx) => {
         // smanji stock
         for (const it of parsedItems) {
-          const p = byName.get(it.name)!;
+          const p = perfumeMap.get(it.perfumeId!)!;
           p.stock -= it.quantity;
           await trx.getRepository(Perfume).save(p);
         }
@@ -194,19 +186,28 @@ export class SalesService {
         // upiši sale
         const sale = new Sale();
         sale.userId = userId;
-        sale.items = (dto as any).items as any; // čuvamo original što je došlo
+
+        // čuvamo normalizovane stavke (stabilnije nego raw dto.items)
+        sale.items = parsedItems.map((it) => ({
+          perfumeId: it.perfumeId,
+          name: it.name,
+          quantity: it.quantity,
+        })) as any;
+
         sale.totalAmount = total;
         sale.status = "completed";
+
+        // ako tvoj Sale entitet ima polje za racunId, mozes ovo otkomentarisati:
+        // sale.racunId = racun?.racunId ?? racun?.id ?? null;
 
         return await trx.getRepository(Sale).save(sale);
       });
 
-      // 8) Log success event (NE SME da obori response)
+      // 8) Audit log success (ne sme da obori response)
       await safeLog({
         tip: "INFO",
         opis: `Uspesna kupovina. SaleId=${savedSale.id}. RacunId=${racun?.racunId ?? racun?.id ?? "?"}`,
       });
-
 
       return {
         sale: savedSale,
@@ -215,12 +216,10 @@ export class SalesService {
         qrCode: qrCodeDataUrl,
       };
     } catch (err: any) {
-      // Log fail event (ignore errors)
       await safeLog({
         tip: "ERROR",
         opis: `Neuspesna kupovina: ${err?.message ?? "greska"}`,
       });
-
       throw err;
     }
   }
