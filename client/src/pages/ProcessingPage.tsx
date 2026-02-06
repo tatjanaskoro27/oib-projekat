@@ -35,6 +35,246 @@ const formatDate = (iso: string): string => {
 // privremeni status
 const statusLabel = (): string => "Skladišten";
 
+/* ================= Styles ================= */
+
+const styles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    background: "#f6f7f8",
+    padding: "22px 0",
+  },
+
+  window: {
+    width: "1100px",
+    maxWidth: "95%",
+    margin: "0 auto",
+    borderRadius: 18,
+    background: "white",
+    boxShadow: "0 12px 40px rgba(0,0,0,0.10)",
+    overflow: "hidden",
+    border: "1px solid rgba(0,0,0,0.06)",
+  },
+
+  topBar: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "14px 16px",
+    borderBottom: "1px solid rgba(0,0,0,0.06)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,1), rgba(255,255,255,0.96))",
+  },
+
+  tab: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(0,0,0,0.08)",
+    background: "white",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  tabActive: {
+    border: "1px solid rgba(16, 185, 129, 0.45)",
+    boxShadow: "0 6px 18px rgba(16,185,129,0.18)",
+  },
+
+  spacer: { flex: 1 },
+
+  content: { padding: 18 },
+
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: "14px 16px",
+    borderRadius: 14,
+    background: "rgba(16,185,129,0.10)",
+    border: "1px solid rgba(16,185,129,0.25)",
+  },
+
+  headerTitle: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    fontSize: 18,
+    fontWeight: 900,
+    color: "#064e3b",
+  },
+
+  headerSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    opacity: 0.85,
+    color: "#065f46",
+    fontWeight: 600,
+  },
+
+  pill: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 12px",
+    borderRadius: 999,
+    background: "white",
+    border: "1px solid rgba(0,0,0,0.08)",
+    fontWeight: 800,
+  },
+
+  actionRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap",
+    marginTop: 14,
+  },
+
+  primaryBtn: {
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: 12,
+    fontWeight: 900,
+    cursor: "pointer",
+    background: "linear-gradient(180deg, #22c55e, #16a34a)",
+    color: "white",
+    boxShadow: "0 10px 20px rgba(16,185,129,0.22)",
+  },
+
+  secondaryBtn: {
+    border: "1px solid rgba(0,0,0,0.10)",
+    padding: "10px 14px",
+    borderRadius: 12,
+    fontWeight: 800,
+    cursor: "pointer",
+    background: "white",
+  },
+
+  card: {
+    marginTop: 14,
+    padding: 16,
+    borderRadius: 14,
+    background: "white",
+    border: "1px solid rgba(0,0,0,0.08)",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+  },
+
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 12,
+  },
+
+  field: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    fontWeight: 800,
+    fontSize: 13,
+  },
+
+  input: {
+    height: 40,
+    borderRadius: 12,
+    border: "1px solid rgba(0,0,0,0.12)",
+    padding: "0 12px",
+    outline: "none",
+  },
+
+  select: {
+    height: 40,
+    borderRadius: 12,
+    border: "1px solid rgba(0,0,0,0.12)",
+    padding: "0 12px",
+    outline: "none",
+    background: "white",
+  },
+
+  hint: {
+    marginTop: 10,
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "rgba(16,185,129,0.08)",
+    border: "1px dashed rgba(16,185,129,0.35)",
+    color: "#065f46",
+    fontWeight: 800,
+  },
+
+  success: {
+    marginTop: 12,
+    padding: "10px 14px",
+    borderRadius: 12,
+    background: "rgba(16,185,129,0.12)",
+    border: "1px solid rgba(16,185,129,0.30)",
+    fontWeight: 900,
+    color: "#065f46",
+  },
+
+  error: {
+    marginTop: 12,
+    padding: "10px 14px",
+    borderRadius: 12,
+    background: "rgba(220, 38, 38, 0.10)",
+    border: "1px solid rgba(220, 38, 38, 0.25)",
+    fontWeight: 800,
+    color: "#991b1b",
+  },
+
+  tableWrap: {
+    marginTop: 14,
+    borderRadius: 14,
+    overflow: "hidden",
+    border: "1px solid rgba(0,0,0,0.08)",
+  },
+
+  table: {
+    width: "100%",
+    tableLayout: "fixed",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+    background: "white",
+  },
+
+  th: {
+    textAlign: "left",
+    padding: "12px 12px",
+    fontWeight: 900,
+    fontSize: 13,
+    background: "#fafafa",
+    borderBottom: "1px solid rgba(0,0,0,0.08)",
+    position: "sticky" as const,
+    top: 0,
+    zIndex: 1,
+  },
+
+  td: {
+    padding: "12px 12px",
+    borderBottom: "1px solid rgba(0,0,0,0.06)",
+    fontWeight: 700,
+  },
+
+  statusPill: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "7px 10px",
+    borderRadius: 999,
+    background: "rgba(16,185,129,0.12)",
+    border: "1px solid rgba(16,185,129,0.28)",
+    color: "#065f46",
+    fontWeight: 900,
+    fontSize: 12,
+  },
+
+  footer: {
+    marginTop: 10,
+    opacity: 0.75,
+    fontWeight: 700,
+  },
+};
+
 /* ================= Component ================= */
 
 export const ProcessingPage: React.FC = () => {
@@ -79,7 +319,7 @@ export const ProcessingPage: React.FC = () => {
       setError(
         e?.response?.data?.message ||
           e?.message ||
-          "Greška pri učitavanju parfema."
+          "Greška pri učitavanju parfema.",
       );
     } finally {
       setLoading(false);
@@ -100,7 +340,7 @@ export const ProcessingPage: React.FC = () => {
       setError(
         e?.response?.data?.message ||
           e?.message ||
-          "Greška pri učitavanju vrsta biljaka."
+          "Greška pri učitavanju vrsta biljaka.",
       );
     }
   };
@@ -136,12 +376,8 @@ export const ProcessingPage: React.FC = () => {
     }
 
     const dto: StartProcessingDTO = {
-      // ✅ šaljemo samo naziv postojeće biljke (nema kreiranja nove)
       plantName: plantName.trim(),
-
-      // ✅ unos naziva parfema
       perfumeName: perfumeName.trim(),
-
       perfumeType,
       bottleCount,
       bottleVolume,
@@ -153,24 +389,16 @@ export const ProcessingPage: React.FC = () => {
       const res = await api.startProcessing(token, dto);
       setResult(res);
 
-      // 🔔 SUCCESS poruka
       setSuccessMessage("Prerada uspješno završena");
+      setTimeout(() => setSuccessMessage(null), 3000);
 
-      // sakrij poruku nakon 3 sekunde
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-
-      // zatvori panel
       setShowStartPanel(false);
-
-      // osvježi listu parfema → novi se pojave u tabeli
       await loadPerfumes();
     } catch (e: any) {
       setError(
         e?.response?.data?.message ||
           e?.message ||
-          "Greška pri pokretanju prerade."
+          "Greška pri pokretanju prerade.",
       );
     } finally {
       setLoading(false);
@@ -178,88 +406,86 @@ export const ProcessingPage: React.FC = () => {
   };
 
   return (
-    <div className="overlay-blur-none" style={{ minHeight: "100vh" }}>
-      <div
-        className="window"
-        style={{ width: "1100px", maxWidth: "95%", margin: "30px auto" }}
-      >
-        <div className="window-content" style={{ padding: 0 }}>
-          {/* ===== Tabs ===== */}
-          <div className="ms-tabs">
-            <button
-              className="ms-tab"
-              type="button"
-              onClick={() => navigate("/production")}
-            >
-              🧪 Servis proizvodnje
-            </button>
+    <div style={styles.page}>
+      <div style={styles.window}>
+        {/* Top nav */}
+        <div style={styles.topBar}>
+          <button
+            style={styles.tab}
+            type="button"
+            onClick={() => navigate("/production")}
+          >
+            🧪 Servis proizvodnje
+          </button>
 
-            <button className="ms-tab active" type="button">
-              💧 Servis prerade
-            </button>
+          <button
+            style={{ ...styles.tab, ...styles.tabActive }}
+            type="button"
+            onClick={() => navigate("/processing")}
+          >
+            💧 Servis prerade
+          </button>
 
-            <div style={{ flex: 1 }} />
+          <div style={styles.spacer} />
 
-            <button
-              className="btn btn-standard"
-              onClick={() => navigate("/dashboard")}
-            >
-              ↩ Nazad na meni
-            </button>
-          </div>
+          <button
+            style={styles.secondaryBtn}
+            onClick={() => navigate("/dashboard")}
+          >
+            ↩ Nazad na meni
+          </button>
+        </div>
 
-          {/* ===== Header ===== */}
-          <div className="section-header-purple">
-            <div className="section-header-title">
-              <span className="section-header-icon">💧</span>
-              <span>Prerada biljaka u parfeme</span>
-            </div>
-          </div>
-
-          <div style={{ padding: 18 }}>
-            {/* SUCCESS message */}
-            {successMessage && (
-              <div
-                style={{
-                  marginBottom: 12,
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  background: "rgba(0, 200, 120, 0.15)",
-                  border: "1px solid rgba(0, 200, 120, 0.4)",
-                  fontWeight: 700,
-                }}
-              >
-                ✅ {successMessage}
+        <div style={styles.content}>
+          {/* Header */}
+          <div style={styles.header}>
+            <div>
+              <div style={styles.headerTitle}>
+                <span style={{ fontSize: 20 }}>💧</span>
+                <span>Prerada biljaka u parfeme</span>
               </div>
-            )}
-
-            {/* ===== Action bar ===== */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 12,
-                flexWrap: "wrap",
-              }}
-            >
-              <button
-                className="btn btn-accent"
-                onClick={() => setShowStartPanel((v) => !v)}
-              >
-                📦 Započni preradu
-              </button>
-
-              <div className="ms-pill">
-                Ukupno parfema: <b>{perfumes.length}</b>
+              <div style={styles.headerSubtitle}>
+                Pokreni preradu, pa proveri rezultate u tabeli.
               </div>
             </div>
 
-            {/* ===== Start panel ===== */}
-            {showStartPanel && (
-              <div className="card" style={{ marginTop: 14, padding: 16 }}>
-                <label>
+            <div style={styles.pill}>
+              Ukupno parfema: <b>{perfumes.length}</b>
+            </div>
+          </div>
+
+          {/* Success / Error */}
+          {successMessage && (
+            <div style={styles.success}>✅ {successMessage}</div>
+          )}
+          {error && <div style={styles.error}>⚠️ {error}</div>}
+
+          {/* Actions */}
+          <div style={styles.actionRow}>
+            <button
+              style={styles.primaryBtn}
+              onClick={() => setShowStartPanel((v) => !v)}
+            >
+              📦 Započni preradu
+            </button>
+
+            <button
+              style={styles.secondaryBtn}
+              onClick={loadPerfumes}
+              disabled={loading}
+            >
+              {loading ? "Učitavam..." : "↻ Osveži"}
+            </button>
+          </div>
+
+          {/* Start panel */}
+          {showStartPanel && (
+            <div style={styles.card}>
+              <div style={styles.grid}>
+                <label style={styles.field}>
                   Biljka (postojeće vrste)
                   <select
+                    style={styles.select}
                     value={plantName}
                     onChange={(e) => setPlantName(e.target.value)}
                   >
@@ -271,9 +497,10 @@ export const ProcessingPage: React.FC = () => {
                   </select>
                 </label>
 
-                <label>
+                <label style={styles.field}>
                   Naziv parfema
                   <input
+                    style={styles.input}
                     type="text"
                     value={perfumeName}
                     onChange={(e) => setPerfumeName(e.target.value)}
@@ -281,20 +508,24 @@ export const ProcessingPage: React.FC = () => {
                   />
                 </label>
 
-                <label>
+                <label style={styles.field}>
                   Tip
                   <select
+                    style={styles.select}
                     value={perfumeType}
-                    onChange={(e) => setPerfumeType(e.target.value as PerfumeType)}
+                    onChange={(e) =>
+                      setPerfumeType(e.target.value as PerfumeType)
+                    }
                   >
                     <option value="parfum">Parfem</option>
                     <option value="cologne">Kolonjska voda</option>
                   </select>
                 </label>
 
-                <label>
+                <label style={styles.field}>
                   Broj bočica
                   <input
+                    style={styles.input}
                     type="number"
                     min={1}
                     value={bottleCount}
@@ -302,9 +533,10 @@ export const ProcessingPage: React.FC = () => {
                   />
                 </label>
 
-                <label>
+                <label style={styles.field}>
                   Neto zapremina
                   <select
+                    style={styles.select}
                     value={bottleVolume}
                     onChange={(e) =>
                       setBottleVolume(Number(e.target.value) as BottleVolume)
@@ -315,82 +547,77 @@ export const ProcessingPage: React.FC = () => {
                   </select>
                 </label>
 
-                <div style={{ marginTop: 6, opacity: 0.85 }}>
-                  Potrebno: <b>{requiredMl}</b> ml → približno <b>{requiredPlants}</b>{" "}
-                  biljaka
-                </div>
-
-                <button
-                  className="btn btn-accent"
-                  onClick={startProcessing}
-                  disabled={loading}
-                  style={{ marginTop: 10 }}
-                >
-                  {loading ? "Radim..." : "Pokreni"}
-                </button>
+                <div />
               </div>
-            )}
 
-            {error && (
-              <div style={{ marginTop: 12, color: "crimson" }}>{error}</div>
-            )}
+              <div style={styles.hint}>
+                Potrebno: <b>{requiredMl}</b> ml → približno{" "}
+                <b>{requiredPlants}</b> biljaka
+              </div>
 
-            {/* ===== Table ===== */}
-            <div
-              style={{
-                marginTop: 14,
-                maxHeight: "380px",
-                overflowY: "auto",
-                borderRadius: 12,
-              }}
-            >
-              <table
-                className="win-table"
+              <button
                 style={{
-                  width: "100%",
-                  tableLayout: "fixed",
+                  ...styles.primaryBtn,
+                  marginTop: 12,
+                  opacity: loading ? 0.75 : 1,
+                  cursor: loading ? "not-allowed" : "pointer",
                 }}
+                onClick={startProcessing}
+                disabled={loading}
               >
+                {loading ? "Radim..." : "Pokreni"}
+              </button>
+            </div>
+          )}
+
+          {/* Table */}
+          <div style={styles.tableWrap}>
+            <div style={{ maxHeight: 380, overflowY: "auto" }}>
+              <table style={styles.table}>
                 <thead>
                   <tr>
-                    <th>Naziv parfema</th>
-                    <th>Tip</th>
-                    <th>Zapremina</th>
-                    <th>Serijski broj</th>
-                    <th>Rok trajanja</th>
-                    <th>Status</th>
+                    <th style={styles.th}>Naziv parfema</th>
+                    <th style={styles.th}>Tip</th>
+                    <th style={styles.th}>Zapremina</th>
+                    <th style={styles.th}>Serijski broj</th>
+                    <th style={styles.th}>Rok trajanja</th>
+                    <th style={styles.th}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {perfumes.map((p) => (
                     <tr key={p.id}>
-                      <td>{p.name}</td>
-                      <td>{typeLabel(p.type)}</td>
-                      <td>{formatMl(p.netoMl)}</td>
-                      <td>{p.serialNumber}</td>
-                      <td>{formatDate(p.expiryDate)}</td>
-                      <td>
-                        <span className="status-pill status-stored">
-                          {statusLabel()}
-                        </span>
+                      <td style={styles.td}>{p.name}</td>
+                      <td style={styles.td}>{typeLabel(p.type)}</td>
+                      <td style={styles.td}>{formatMl(p.netoMl)}</td>
+                      <td style={styles.td}>{p.serialNumber}</td>
+                      <td style={styles.td}>{formatDate(p.expiryDate)}</td>
+                      <td style={styles.td}>
+                        <span style={styles.statusPill}>{statusLabel()}</span>
                       </td>
                     </tr>
                   ))}
+
+                  {perfumes.length === 0 && !loading && (
+                    <tr>
+                      <td style={{ ...styles.td, opacity: 0.7 }} colSpan={6}>
+                        Nema parfema za prikaz.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
-
-            <div style={{ marginTop: 8, opacity: 0.8 }}>
-              Ukupno parfema: {perfumes.length}
-            </div>
-
-            {/* result (ako ti treba kasnije za debug) */}
-            {result && (
-              <div style={{ marginTop: 12, opacity: 0.85, fontSize: 12 }}>
-                {/* možeš ovo ukloniti ako ne želiš */}
-              </div>
-            )}
           </div>
+
+          <div style={styles.footer}>Ukupno parfema: {perfumes.length}</div>
+
+          {/* result (ako ti treba kasnije za debug) */}
+          {result && (
+            <div style={{ marginTop: 12, opacity: 0.6, fontSize: 12 }}>
+              {/* možeš ukloniti */}
+            </div>
+          )}
         </div>
       </div>
     </div>

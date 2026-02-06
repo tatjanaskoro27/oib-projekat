@@ -52,23 +52,44 @@ const statusLabelOf = (s: PlantStatus): "Posađena" | "Ubrana" | "Prerađena" =>
   return "Prerađena";
 };
 
-const statusPillStyle = (label: "Posađena" | "Ubrana" | "Prerađena"): React.CSSProperties => {
+const statusPillStyle = (
+  label: "Posađena" | "Ubrana" | "Prerađena",
+): React.CSSProperties => {
   const base: React.CSSProperties = {
-    padding: "4px 10px",
-    borderRadius: 8,
+    padding: "6px 10px",
+    borderRadius: 999,
     fontSize: 12,
     border: "1px solid rgba(0,0,0,0.08)",
     background: "rgba(255,255,255,0.75)",
-    display: "inline-block",
-    minWidth: 86,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 92,
     textAlign: "center",
     color: "rgba(0,0,0,0.82)",
-    fontWeight: 700,
+    fontWeight: 900,
   };
 
-  if (label === "Posađena") return { ...base, background: "rgba(47,163,107,0.16)", border: "1px solid rgba(47,163,107,0.30)" };
-  if (label === "Ubrana") return { ...base, background: "rgba(255,165,0,0.14)", border: "1px solid rgba(255,165,0,0.30)" };
-  return { ...base, background: "rgba(96,205,255,0.18)", border: "1px solid rgba(96,205,255,0.30)" };
+  if (label === "Posađena")
+    return {
+      ...base,
+      background: "rgba(34,197,94,0.12)",
+      border: "1px solid rgba(34,197,94,0.28)",
+      color: "#065f46",
+    };
+  if (label === "Ubrana")
+    return {
+      ...base,
+      background: "rgba(245,158,11,0.12)",
+      border: "1px solid rgba(245,158,11,0.28)",
+      color: "#92400e",
+    };
+  return {
+    ...base,
+    background: "rgba(59,130,246,0.10)",
+    border: "1px solid rgba(59,130,246,0.24)",
+    color: "#1e40af",
+  };
 };
 
 const logIcon = (t: TipDogadjaja): string => {
@@ -79,22 +100,33 @@ const logIcon = (t: TipDogadjaja): string => {
 
 const eventCardStyle = (t: TipDogadjaja): React.CSSProperties => {
   const base: React.CSSProperties = {
-    border: "1px solid rgba(0,0,0,0.06)",
-    borderRadius: 8,
-    padding: "6px 8px",
-    background: "rgba(255,255,255,0.85)",
-    boxShadow: "none",
+    border: "1px solid rgba(0,0,0,0.07)",
+    borderRadius: 12,
+    padding: "10px 10px",
+    background: "rgba(255,255,255,0.92)",
+    boxShadow: "0 10px 24px rgba(0,0,0,0.04)",
   };
 
   if (t === "WARNING") {
-    return { ...base, background: "rgba(255,165,0,0.08)", border: "1px solid rgba(255,165,0,0.18)" };
+    return {
+      ...base,
+      background: "rgba(245,158,11,0.08)",
+      border: "1px solid rgba(245,158,11,0.18)",
+    };
   }
   if (t === "ERROR") {
-    return { ...base, background: "rgba(255,80,80,0.08)", border: "1px solid rgba(255,80,80,0.18)" };
+    return {
+      ...base,
+      background: "rgba(239,68,68,0.08)",
+      border: "1px solid rgba(239,68,68,0.18)",
+    };
   }
-  return { ...base, background: "rgba(47,163,107,0.08)", border: "1px solid rgba(47,163,107,0.18)" };
+  return {
+    ...base,
+    background: "rgba(34,197,94,0.08)",
+    border: "1px solid rgba(34,197,94,0.18)",
+  };
 };
-
 
 const hhmm = (iso: string): string => {
   const d = new Date(iso);
@@ -125,13 +157,15 @@ const groupPlantsToRows = (plants: PlantDTO[]): PlantRowGrouped[] => {
       });
     } else {
       const newQty = existing.qty + 1;
-      existing.strengthAvg = (existing.strengthAvg * existing.qty + strength) / newQty;
+      existing.strengthAvg =
+        (existing.strengthAvg * existing.qty + strength) / newQty;
       existing.qty = newQty;
       existing.ids.push(p.id);
     }
   }
 
-  const order = (s: PlantStatus): number => (s === PlantStatus.PLANTED ? 0 : s === PlantStatus.HARVESTED ? 1 : 2);
+  const order = (s: PlantStatus): number =>
+    s === PlantStatus.PLANTED ? 0 : s === PlantStatus.HARVESTED ? 1 : 2;
 
   return Array.from(map.values()).sort((a, b) => {
     const od = order(a.status) - order(b.status);
@@ -141,7 +175,8 @@ const groupPlantsToRows = (plants: PlantDTO[]): PlantRowGrouped[] => {
 };
 
 const flatPlantsToRows = (plants: PlantDTO[]): PlantRowFlat[] => {
-  const order = (s: PlantStatus): number => (s === PlantStatus.PLANTED ? 0 : s === PlantStatus.HARVESTED ? 1 : 2);
+  const order = (s: PlantStatus): number =>
+    s === PlantStatus.PLANTED ? 0 : s === PlantStatus.HARVESTED ? 1 : 2;
 
   return plants
     .map((p) => ({
@@ -167,6 +202,184 @@ const sortDogadjajiNewestFirst = (items: DogadjajDTO[]): DogadjajDTO[] => {
   });
 };
 
+/* -------------- Minimal UI styles -------------- */
+
+const ui: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    background: "#f6f7f8",
+    padding: 18,
+    boxSizing: "border-box",
+  },
+  shell: {
+    width: "100%",
+    height: "calc(100vh - 36px)",
+    background: "white",
+    border: "1px solid rgba(0,0,0,0.06)",
+    borderRadius: 18,
+    boxShadow: "0 12px 42px rgba(0,0,0,0.10)",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  topBar: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "14px 14px",
+    borderBottom: "1px solid rgba(0,0,0,0.06)",
+    background: "linear-gradient(180deg, #ffffff, rgba(255,255,255,0.94))",
+  },
+
+  tab: {
+    border: "1px solid rgba(0,0,0,0.08)",
+    background: "white",
+    borderRadius: 12,
+    padding: "10px 12px",
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+  tabActive: {
+    border: "1px solid rgba(34,197,94,0.42)",
+    background: "rgba(34,197,94,0.10)",
+    boxShadow: "0 8px 22px rgba(34,197,94,0.18)",
+  },
+
+  content: { padding: 14, flex: 1, minHeight: 0 },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 380px",
+    gap: 12,
+    height: "100%",
+    minHeight: 0,
+  },
+
+  card: {
+    background: "white",
+    border: "1px solid rgba(0,0,0,0.08)",
+    borderRadius: 16,
+    boxShadow: "0 10px 26px rgba(0,0,0,0.06)",
+    overflow: "hidden",
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  cardHeader: {
+    padding: "12px 14px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    borderBottom: "1px solid rgba(0,0,0,0.06)",
+    background: "rgba(255,255,255,0.96)",
+    fontWeight: 900,
+    color: "rgba(0,0,0,0.86)",
+  },
+
+  btnPrimary: {
+    border: "none",
+    borderRadius: 12,
+    padding: "10px 12px",
+    fontWeight: 900,
+    cursor: "pointer",
+    color: "white",
+    background: "linear-gradient(180deg, #22c55e, #16a34a)",
+    boxShadow: "0 10px 22px rgba(34,197,94,0.22)",
+  },
+
+  btnGhost: {
+    border: "1px solid rgba(0,0,0,0.10)",
+    borderRadius: 12,
+    padding: "10px 12px",
+    fontWeight: 900,
+    cursor: "pointer",
+    background: "white",
+  },
+
+  toolbar: {
+    padding: 12,
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+  },
+
+  filters: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 14,
+    background: "rgba(0,0,0,0.02)",
+    border: "1px solid rgba(0,0,0,0.06)",
+  },
+
+  input: {
+    height: 40,
+    borderRadius: 12,
+    border: "1px solid rgba(0,0,0,0.12)",
+    padding: "0 12px",
+    outline: "none",
+    background: "white",
+  },
+
+  tableWrap: {
+    padding: "0 12px 12px 12px",
+    flex: 1,
+    minHeight: 0,
+  },
+
+  tableBox: {
+    height: "100%",
+    borderRadius: 14,
+    overflow: "hidden",
+    border: "1px solid rgba(0,0,0,0.08)",
+    background: "white",
+  },
+
+  th: {
+    textAlign: "left",
+    padding: 12,
+    fontSize: 13,
+    fontWeight: 900,
+    color: "rgba(0,0,0,0.78)",
+    background: "#fafafa",
+    borderBottom: "1px solid rgba(0,0,0,0.08)",
+    position: "sticky" as const,
+    top: 0,
+    zIndex: 1,
+  },
+
+  td: {
+    padding: 12,
+    borderTop: "1px solid rgba(0,0,0,0.06)",
+    color: "rgba(0,0,0,0.82)",
+    fontWeight: 700,
+  },
+
+  toast: {
+    marginBottom: 12,
+    padding: "10px 14px",
+    borderRadius: 12,
+    border: "1px solid rgba(34,197,94,0.28)",
+    background: "rgba(34,197,94,0.12)",
+    fontWeight: 900,
+    color: "#065f46",
+  },
+
+  err: {
+    marginTop: 10,
+    padding: "10px 14px",
+    borderRadius: 12,
+    border: "1px solid rgba(239,68,68,0.22)",
+    background: "rgba(239,68,68,0.10)",
+    fontWeight: 900,
+    color: "#991b1b",
+  },
+};
+
 /* -------------- Component -------------- */
 
 export const ProductionPage: React.FC = () => {
@@ -183,51 +396,48 @@ export const ProductionPage: React.FC = () => {
   const [rawDogadjaji, setRawDogadjaji] = useState<DogadjajDTO[]>([]);
   const [eventsError, setEventsError] = useState<string | null>(null);
 
-  // Plant types (postojeće vrste)
   const [plantTypes, setPlantTypes] = useState<PlantTypeSummaryDTO[]>([]);
   const [typesError, setTypesError] = useState<string | null>(null);
 
-  const [selectedGroupedIndex, setSelectedGroupedIndex] = useState<number | null>(null);
-  const [selectedFlatIndex, setSelectedFlatIndex] = useState<number | null>(null);
+  const [selectedGroupedIndex, setSelectedGroupedIndex] = useState<
+    number | null
+  >(null);
+  const [selectedFlatIndex, setSelectedFlatIndex] = useState<number | null>(
+    null,
+  );
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [plantsError, setPlantsError] = useState<string | null>(null);
 
-  // toast poruka (3s)
   const [toast, setToast] = useState<string | null>(null);
 
-  // Filter state
   const [search, setSearch] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<"all" | PlantStatus>("all");
   const [sortBy, setSortBy] = useState<GetPlantsQueryDTO["sortBy"]>("name");
   const [sortDir, setSortDir] = useState<GetPlantsQueryDTO["sortDir"]>("ASC");
 
-  // View mode
   const [viewMode, setViewMode] = useState<"grouped" | "all">("grouped");
 
-  // Panels (Plant + Strength)
   const [showPlantPanel, setShowPlantPanel] = useState(false);
   const [showStrengthPanel, setShowStrengthPanel] = useState(false);
 
-  // Plant form
   const [plantMode, setPlantMode] = useState<"existing" | "new">("existing");
   const [selectedTypeName, setSelectedTypeName] = useState<string>("");
 
-  // pretraga vrsta (za scroll listu)
   const [typeSearch, setTypeSearch] = useState<string>("");
 
-  // Nova vrsta (ručni unos)
   const [plantName, setPlantName] = useState("");
   const [latinName, setLatinName] = useState("");
   const [originCountry, setOriginCountry] = useState("");
 
-  // Jačina ulja (opciono): prazno => random 1.00–5.00 na backendu
   const [oilStrengthInput, setOilStrengthInput] = useState<string>("");
 
-  // Strength form (percent multiplier)
   const [percent, setPercent] = useState<number>(100);
 
-  const selectedType = useMemo(() => plantTypes.find((t) => t.name === selectedTypeName) ?? null, [plantTypes, selectedTypeName]);
+  const selectedType = useMemo(
+    () => plantTypes.find((t) => t.name === selectedTypeName) ?? null,
+    [plantTypes, selectedTypeName],
+  );
 
   const filteredTypes = useMemo(() => {
     const q = typeSearch.trim().toLowerCase();
@@ -268,7 +478,8 @@ export const ProductionPage: React.FC = () => {
       setSelectedGroupedIndex(null);
       setSelectedFlatIndex(null);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Greška pri učitavanju biljaka.";
+      const msg =
+        e instanceof Error ? e.message : "Greška pri učitavanju biljaka.";
       setPlantsError(msg);
     } finally {
       setIsLoading(false);
@@ -284,7 +495,8 @@ export const ProductionPage: React.FC = () => {
       const events = await dogadjajiAPI.getDogadjaji(token);
       setRawDogadjaji(sortDogadjajiNewestFirst(events));
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Greška pri učitavanju događaja.";
+      const msg =
+        e instanceof Error ? e.message : "Greška pri učitavanju događaja.";
       setEventsError(msg);
     }
   };
@@ -302,7 +514,8 @@ export const ProductionPage: React.FC = () => {
         setSelectedTypeName(types[0].name);
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Greška pri učitavanju vrsta biljaka.";
+      const msg =
+        e instanceof Error ? e.message : "Greška pri učitavanju vrsta biljaka.";
       setTypesError(msg);
     }
   };
@@ -324,10 +537,11 @@ export const ProductionPage: React.FC = () => {
     return () => window.clearInterval(id);
   }, [token]);
 
-  const selectedGrouped = selectedGroupedIndex !== null ? groupedRows[selectedGroupedIndex] : null;
-  const selectedFlat = selectedFlatIndex !== null ? flatRows[selectedFlatIndex] : null;
+  const selectedGrouped =
+    selectedGroupedIndex !== null ? groupedRows[selectedGroupedIndex] : null;
+  const selectedFlat =
+    selectedFlatIndex !== null ? flatRows[selectedFlatIndex] : null;
 
-  // ✅ akcije su omogućene
   const disabledAction = false;
 
   /* ---------------- Actions ---------------- */
@@ -335,7 +549,6 @@ export const ProductionPage: React.FC = () => {
   const handleCreatePlant = async () => {
     if (!token) return;
 
-    // Jačina ulja: prazno => backend random (1.00–5.00)
     const strengthRaw = oilStrengthInput.trim();
     const strength = strengthRaw ? Number(strengthRaw) : undefined;
 
@@ -403,7 +616,8 @@ export const ProductionPage: React.FC = () => {
       setTypeSearch("");
       await loadAll();
     } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || "Greška pri sadnji biljke.";
+      const msg =
+        e?.response?.data?.message || e?.message || "Greška pri sadnji biljke.";
       setPlantsError(msg);
     } finally {
       setIsLoading(false);
@@ -439,12 +653,17 @@ export const ProductionPage: React.FC = () => {
 
     try {
       setIsLoading(true);
-      await Promise.all(ids.map((id) => productionAPI.updateOilStrength(token, id, dto)));
+      await Promise.all(
+        ids.map((id) => productionAPI.updateOilStrength(token, id, dto)),
+      );
       showToast(`Jačina uspješno promijenjena (× ${p}%)`);
       setShowStrengthPanel(false);
       await loadAll();
     } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || "Greška pri promjeni jačine.";
+      const msg =
+        e?.response?.data?.message ||
+        e?.message ||
+        "Greška pri promjeni jačine.";
       setPlantsError(msg);
     } finally {
       setIsLoading(false);
@@ -452,169 +671,75 @@ export const ProductionPage: React.FC = () => {
   };
 
   return (
-    <div className="page-fill" style={{ width: "100%", height: "100vh" }}>
-      {/* window full-screen */}
-      <div
-        className="window"
-        style={{
-          width: "100%",
-          height: "100%",
-          margin: 0,
-          borderRadius: 0,
-          display: "flex",
-          flexDirection: "column",
-          maxWidth: "none",
-          maxHeight: "none",
-        }}
-      >
-        {/* Top tabs + back */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "12px 12px 0 12px",
-          }}
-        >
-          <div style={{ display: "flex", gap: 6 }}>
-            <button
-              type="button"
-              className="btn-standard"
-              style={{ padding: "8px 12px" }}
-              onClick={() => navigate("/production")}
-            >
-              🌿 Servis proizvodnje
-            </button>
-            <button
-              type="button"
-              className="btn-standard"
-              style={{ padding: "8px 12px", opacity: 0.85 }}
-              onClick={() => navigate("/processing")}
-            >
-              🧪 Servis prerade
-            </button>
-          </div>
+    <div style={ui.page}>
+      <div style={ui.shell}>
+        {/* Top bar */}
+        <div style={ui.topBar}>
+          <button
+            type="button"
+            style={{ ...ui.tab, ...ui.tabActive }}
+            onClick={() => navigate("/production")}
+          >
+            🌿 Servis proizvodnje
+          </button>
+
+          <button
+            type="button"
+            style={ui.tab}
+            onClick={() => navigate("/processing")}
+          >
+            💧 Servis prerade
+          </button>
 
           <div style={{ flex: 1 }} />
 
           <button
             type="button"
-            className="btn-standard"
-            style={{ padding: "8px 12px" }}
+            style={ui.btnGhost}
             onClick={() => navigate("/dashboard")}
           >
             ← Nazad na meni
           </button>
         </div>
 
-        {/* Content */}
-        <div
-          className="window-content"
-          style={{
-            padding: 12,
-            flex: 1,
-            boxSizing: "border-box",
-            minHeight: 0,
-            background: "transparent",
-          }}
-        >
-          {/* toast */}
-          {toast && (
-            <div
-              style={{
-                marginBottom: 10,
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "1px solid rgba(47,163,107,0.35)",
-                background: "rgba(47,163,107,0.12)",
-                fontWeight: 800,
-                color: "rgba(0,0,0,0.82)",
-              }}
-            >
-              ✅ {toast}
-            </div>
-          )}
+        <div style={ui.content}>
+          {toast && <div style={ui.toast}>✅ {toast}</div>}
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(0, 1fr) 360px",
-              gap: 12,
-              height: "100%",
-              minHeight: 0,
-            }}
-          >
+          <div style={ui.grid}>
             {/* LEFT */}
-            <div
-              className="acrylic"
-              style={{
-                borderRadius: 16,
-                overflow: "visible", // IMPORTANT (da se ništa ne odsiječe)
-                display: "flex",
-                flexDirection: "column",
-                minHeight: 0,
-              }}
-            >
-              {/* Header */}
-              <div
-                style={{
-                  background: "rgba(255,255,255,0.92)",
-                  padding: "12px 14px",
-                  fontWeight: 800,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  borderBottom: "1px solid rgba(0,0,0,0.06)",
-                  color: "rgba(0,0,0,0.86)",
-                }}
-              >
+            <div style={ui.card}>
+              <div style={ui.cardHeader}>
                 <span>Upravljanje biljkama</span>
-                <button
-                  type="button"
-                  className="btn-standard"
-                  style={{ padding: "6px 10px" }}
-                  onClick={() => void loadAll()}
-                >
-                  ⟳ Osveži
-                </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    style={ui.btnGhost}
+                    onClick={() => void loadAll()}
+                  >
+                    ⟳ Osveži
+                  </button>
+                </div>
               </div>
 
-              {/* Toolbar */}
-              <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 8,
-                    alignItems: "center",
-                    padding: 10,
-                    borderRadius: 12,
-                    background: "rgba(255,255,255,0.65)",
-                    border: "1px solid rgba(0,0,0,0.06)",
-                  }}
-                >
-
-
+              <div style={ui.toolbar}>
+                <div style={ui.filters}>
                   <input
-                    className="input"
-                    style={{ flex: "1 1 280px", minWidth: 240 }}
+                    style={{ ...ui.input, flex: "1 1 280px", minWidth: 240 }}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Pretraga (naziv / latin / zemlja)…"
                   />
 
-
                   <select
-                    className="input"
-                    style={{ flex: "0 0 160px", minWidth: 140 }}
-
+                    style={{ ...ui.input, flex: "0 0 160px", minWidth: 150 }}
                     value={statusFilter}
                     onChange={(e) => {
                       const v = e.target.value;
                       if (v === "all") setStatusFilter("all");
-                      else if (v === PlantStatus.PLANTED) setStatusFilter(PlantStatus.PLANTED);
-                      else if (v === PlantStatus.HARVESTED) setStatusFilter(PlantStatus.HARVESTED);
+                      else if (v === PlantStatus.PLANTED)
+                        setStatusFilter(PlantStatus.PLANTED);
+                      else if (v === PlantStatus.HARVESTED)
+                        setStatusFilter(PlantStatus.HARVESTED);
                       else setStatusFilter(PlantStatus.PROCESSED);
                     }}
                   >
@@ -625,48 +750,54 @@ export const ProductionPage: React.FC = () => {
                   </select>
 
                   <select
-                    className="input"
-                    style={{ flex: "0 0 160px", minWidth: 140 }}
-
-                    value={sortBy ?? "createdAt"}
+                    style={{ ...ui.input, flex: "0 0 160px", minWidth: 150 }}
+                    value={sortBy ?? "name"}
                     onChange={(e) => {
-                      const v = e.target.value;
-                      if (v === "createdAt" || v === "oilStrength" || v === "name") setSortBy(v);
+                      const v = e.target.value as any;
+                      if (
+                        v === "createdAt" ||
+                        v === "oilStrength" ||
+                        v === "name"
+                      )
+                        setSortBy(v);
                     }}
                   >
-                    <option value="oilStrength">Sort: jačina</option>
                     <option value="name">Sort: naziv</option>
+                    <option value="oilStrength">Sort: jačina</option>
                   </select>
 
                   <select
-                    className="input"
-                    style={{ flex: "0 0 160px", minWidth: 140 }}
-
-                    value={sortDir ?? "DESC"}
+                    style={{ ...ui.input, flex: "0 0 120px", minWidth: 120 }}
+                    value={sortDir ?? "ASC"}
                     onChange={(e) => {
                       const v = e.target.value;
                       if (v === "ASC" || v === "DESC") setSortDir(v);
                     }}
                   >
-                    <option value="DESC">DESC</option>
                     <option value="ASC">ASC</option>
+                    <option value="DESC">DESC</option>
                   </select>
 
                   <button
                     type="button"
-                    className="btn-standard"
-                    style={{ height: 34, padding: "0 12px", fontWeight: 600 }}
+                    style={ui.btnGhost}
                     onClick={() => void loadAll()}
                   >
-                    Primijeni filtere
+                    Primijeni
                   </button>
-
                 </div>
 
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
                   <button
                     type="button"
-                    className="btn-accent"
+                    style={ui.btnPrimary}
                     disabled={disabledAction}
                     onClick={() => setShowPlantPanel((v) => !v)}
                   >
@@ -675,7 +806,7 @@ export const ProductionPage: React.FC = () => {
 
                   <button
                     type="button"
-                    className="btn-standard"
+                    style={ui.btnGhost}
                     disabled={disabledAction}
                     onClick={() => setShowStrengthPanel((v) => !v)}
                   >
@@ -684,12 +815,17 @@ export const ProductionPage: React.FC = () => {
 
                   <div style={{ flex: 1 }} />
 
-                  <div style={{ display: "flex", gap: 6, alignItems: "center", opacity: 0.95 }}>
-                    <span style={{ fontSize: 12, opacity: 0.75, color: "rgba(0,0,0,0.75)" }}>Prikaz:</span>
+                  <div
+                    style={{ display: "flex", gap: 6, alignItems: "center" }}
+                  >
+                    <span style={{ fontSize: 12, opacity: 0.7 }}>Prikaz:</span>
                     <button
                       type="button"
-                      className="btn-standard"
-                      style={{ padding: "6px 10px", opacity: viewMode === "grouped" ? 1 : 0.75 }}
+                      style={{
+                        ...ui.btnGhost,
+                        padding: "8px 10px",
+                        opacity: viewMode === "grouped" ? 1 : 0.75,
+                      }}
                       onClick={() => {
                         setViewMode("grouped");
                         setSelectedFlatIndex(null);
@@ -699,8 +835,11 @@ export const ProductionPage: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      className="btn-standard"
-                      style={{ padding: "6px 10px", opacity: viewMode === "all" ? 1 : 0.75 }}
+                      style={{
+                        ...ui.btnGhost,
+                        padding: "8px 10px",
+                        opacity: viewMode === "all" ? 1 : 0.75,
+                      }}
                       onClick={() => {
                         setViewMode("all");
                         setSelectedGroupedIndex(null);
@@ -715,160 +854,236 @@ export const ProductionPage: React.FC = () => {
                 {showPlantPanel && (
                   <div
                     style={{
-                      border: "1px solid rgba(0,0,0,0.08)",
-                      borderRadius: 12,
-                      padding: 12,
-                      background: "rgba(255,255,255,0.85)",
-                      color: "rgba(0,0,0,0.85)",
+                      ...ui.filters,
+                      background: "rgba(34,197,94,0.06)",
                     }}
                   >
+                    <div style={{ fontWeight: 900, width: "100%" }}>
+                      Zasadi biljku
+                    </div>
+
+                    {typesError && (
+                      <div style={ui.err}>Greška (vrste): {typesError}</div>
+                    )}
+
                     <div
                       style={{
                         display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: 10,
-                        marginBottom: 10,
+                        gap: 12,
+                        flexWrap: "wrap",
+                        width: "100%",
                       }}
                     >
-                      <div style={{ fontWeight: 900 }}>Zasadi biljku</div>
-                      <button type="button" className="btn-standard" style={{ padding: "6px 10px" }} onClick={() => void loadPlantTypes()}>
-                        ⟳ Vrste
-                      </button>
-                    </div>
-
-                    {typesError && <div style={{ marginBottom: 10, color: "#b00020", fontWeight: 700 }}>Greška (vrste): {typesError}</div>}
-
-                    {/* MODE */}
-                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                        <input type="radio" checked={plantMode === "existing"} onChange={() => setPlantMode("existing")} />
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          checked={plantMode === "existing"}
+                          onChange={() => setPlantMode("existing")}
+                        />
                         Postojeća vrsta
                       </label>
-                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                        <input type="radio" checked={plantMode === "new"} onChange={() => setPlantMode("new")} />
-                        Nova vrsta (ručni unos)
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          checked={plantMode === "new"}
+                          onChange={() => setPlantMode("new")}
+                        />
+                        Nova vrsta
                       </label>
+                      <div style={{ flex: 1 }} />
+                      <button
+                        type="button"
+                        style={ui.btnGhost}
+                        onClick={() => void loadPlantTypes()}
+                      >
+                        ⟳ Vrste
+                      </button>
                     </div>
 
                     {plantMode === "existing" && (
                       <div
                         style={{
+                          width: "100%",
                           display: "grid",
-                          gridTemplateColumns: "minmax(380px, 1fr) 260px auto",
+                          gridTemplateColumns: "minmax(320px, 1fr) 240px auto",
                           gap: 10,
                           alignItems: "end",
                         }}
                       >
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            Pretraga vrste
-                            <input
-                              className="input"
-                              value={typeSearch}
-                              onChange={(e) => setTypeSearch(e.target.value)}
-                              placeholder="npr. lavanda / lavandula / francuska"
-                            />
-                          </label>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 10,
+                          }}
+                        >
+                          <input
+                            style={ui.input}
+                            value={typeSearch}
+                            onChange={(e) => setTypeSearch(e.target.value)}
+                            placeholder="Pretraga vrste (lavanda / lavandula / francuska)…"
+                          />
 
                           <div
                             style={{
                               border: "1px solid rgba(0,0,0,0.08)",
-                              borderRadius: 10,
+                              borderRadius: 12,
                               padding: 10,
-                              background: "rgba(255,255,255,0.92)",
+                              background: "white",
                               maxHeight: 220,
                               overflow: "auto",
                             }}
                           >
-                            <div style={{ fontWeight: 900, marginBottom: 8, opacity: 0.9 }}>Dostupne vrste</div>
-
                             {filteredTypes.length === 0 ? (
-                              <div style={{ opacity: 0.75 }}>Nema rezultata za unos.</div>
+                              <div style={{ opacity: 0.75 }}>
+                                Nema rezultata.
+                              </div>
                             ) : (
-                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 10,
+                                }}
+                              >
                                 {filteredTypes.map((t) => (
-                                  <label key={t.name} style={{ display: "flex", gap: 10, cursor: "pointer" }}>
+                                  <label
+                                    key={t.name}
+                                    style={{
+                                      display: "flex",
+                                      gap: 10,
+                                      cursor: "pointer",
+                                    }}
+                                  >
                                     <input
                                       type="radio"
                                       checked={selectedTypeName === t.name}
-                                      onChange={() => setSelectedTypeName(t.name)}
+                                      onChange={() =>
+                                        setSelectedTypeName(t.name)
+                                      }
                                     />
                                     <div style={{ lineHeight: 1.25 }}>
-                                      <div style={{ fontWeight: 900 }}>{t.name}</div>
-                                      <div style={{ opacity: 0.85, fontStyle: "italic", fontSize: 12 }}>{t.latinName}</div>
-                                      <div style={{ opacity: 0.8, fontSize: 12 }}>{t.originCountry}</div>
+                                      <div style={{ fontWeight: 900 }}>
+                                        {t.name}
+                                      </div>
+                                      <div
+                                        style={{
+                                          opacity: 0.8,
+                                          fontStyle: "italic",
+                                          fontSize: 12,
+                                        }}
+                                      >
+                                        {t.latinName}
+                                      </div>
+                                      <div
+                                        style={{ opacity: 0.75, fontSize: 12 }}
+                                      >
+                                        {t.originCountry}
+                                      </div>
                                     </div>
                                   </label>
                                 ))}
                               </div>
                             )}
                           </div>
-
-                          <div style={{ fontSize: 12, opacity: 0.85, lineHeight: 1.35 }}>
-                            {selectedType ? (
-                              <>
-                                Odabrano: <b>{selectedType.name}</b> — <span style={{ fontStyle: "italic" }}>{selectedType.latinName}</span>, {selectedType.originCountry}
-                              </>
-                            ) : (
-                              <>Odaberi jednu vrstu iz liste.</>
-                            )}
-                          </div>
                         </div>
 
-                        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          Jačina ulja (opciono)
+                        <label
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 6,
+                            fontWeight: 900,
+                            fontSize: 13,
+                          }}
+                        >
+                          Jačina (opciono)
                           <input
-                            className="input"
+                            style={ui.input}
                             type="number"
                             step="0.01"
                             min={1}
                             max={5}
                             value={oilStrengthInput}
-                            onChange={(e) => setOilStrengthInput(e.target.value)}
-                            placeholder="prazno = random 1.00–5.00"
+                            onChange={(e) =>
+                              setOilStrengthInput(e.target.value)
+                            }
+                            placeholder="prazno = random"
                           />
                         </label>
 
-                        <button type="button" className="btn-accent" onClick={() => void handleCreatePlant()} disabled={isLoading || plantTypes.length === 0}>
-                          {isLoading ? "..." : "Zasadi biljku"}
+                        <button
+                          type="button"
+                          style={ui.btnPrimary}
+                          onClick={() => void handleCreatePlant()}
+                          disabled={isLoading || plantTypes.length === 0}
+                        >
+                          {isLoading ? "..." : "Zasadi"}
                         </button>
                       </div>
                     )}
 
                     {plantMode === "new" && (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 260px auto", gap: 10, alignItems: "end" }}>
-                        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          Opšti naziv *
-                          <input className="input" value={plantName} onChange={(e) => setPlantName(e.target.value)} placeholder="npr. Lavanda" />
-                        </label>
+                      <div
+                        style={{
+                          width: "100%",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr 1fr 240px auto",
+                          gap: 10,
+                          alignItems: "end",
+                        }}
+                      >
+                        <input
+                          style={ui.input}
+                          value={plantName}
+                          onChange={(e) => setPlantName(e.target.value)}
+                          placeholder="Opšti naziv *"
+                        />
+                        <input
+                          style={ui.input}
+                          value={latinName}
+                          onChange={(e) => setLatinName(e.target.value)}
+                          placeholder="Latinski naziv *"
+                        />
+                        <input
+                          style={ui.input}
+                          value={originCountry}
+                          onChange={(e) => setOriginCountry(e.target.value)}
+                          placeholder="Zemlja porijekla *"
+                        />
 
-                        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          Latinski naziv *
-                          <input className="input" value={latinName} onChange={(e) => setLatinName(e.target.value)} placeholder="npr. Lavandula angustifolia" />
-                        </label>
+                        <input
+                          style={ui.input}
+                          type="number"
+                          step="0.01"
+                          min={1}
+                          max={5}
+                          value={oilStrengthInput}
+                          onChange={(e) => setOilStrengthInput(e.target.value)}
+                          placeholder="Jačina (opciono)"
+                        />
 
-                        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          Zemlja porijekla *
-                          <input className="input" value={originCountry} onChange={(e) => setOriginCountry(e.target.value)} placeholder="npr. Francuska" />
-                        </label>
-
-                        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          Jačina ulja (opciono)
-                          <input
-                            className="input"
-                            type="number"
-                            step="0.01"
-                            min={1}
-                            max={5}
-                            value={oilStrengthInput}
-                            onChange={(e) => setOilStrengthInput(e.target.value)}
-                            placeholder="prazno = random 1.00–5.00"
-                          />
-                        </label>
-
-                        <button type="button" className="btn-accent" onClick={() => void handleCreatePlant()} disabled={isLoading}>
-                          {isLoading ? "..." : "Zasadi biljku"}
+                        <button
+                          type="button"
+                          style={ui.btnPrimary}
+                          onClick={() => void handleCreatePlant()}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? "..." : "Zasadi"}
                         </button>
                       </div>
                     )}
@@ -877,51 +1092,62 @@ export const ProductionPage: React.FC = () => {
 
                 {/* Panel: Jačina */}
                 {showStrengthPanel && (
-                  <div
-                    style={{
-                      border: "1px solid rgba(0,0,0,0.08)",
-                      borderRadius: 12,
-                      padding: 12,
-                      background: "rgba(255,255,255,0.85)",
-                      color: "rgba(0,0,0,0.85)",
-                    }}
-                  >
-                    <div style={{ fontWeight: 900, marginBottom: 8 }}>Promijeni jačinu ulja za željeni procenat</div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "260px 1fr auto", gap: 10, alignItems: "end" }}>
-                      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        Procenat (0–100)
-                        <input className="input" type="number" min={0} max={100} value={percent} onChange={(e) => setPercent(Number(e.target.value))} />
-                      </label>
-
-                      <div style={{ fontSize: 12, opacity: 0.85, lineHeight: 1.4 }}>
-                        Primjenjuje se na selektovanu biljku (u “Sve biljke”) ili na sve u selektovanoj grupi (u “Grupisano”).
-                      </div>
-
-                      <button type="button" className="btn-standard" onClick={() => void handleUpdateStrength()} disabled={isLoading}>
-                        {isLoading ? "..." : "Primijeni"}
-                      </button>
+                  <div style={ui.filters}>
+                    <div style={{ fontWeight: 900, width: "100%" }}>
+                      Promijeni jačinu ulja (%)
                     </div>
+
+                    <input
+                      style={{ ...ui.input, width: 220 }}
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={percent}
+                      onChange={(e) => setPercent(Number(e.target.value))}
+                      placeholder="0–100"
+                    />
+
+                    <div style={{ fontSize: 12, opacity: 0.75, flex: 1 }}>
+                      Primjenjuje se na selektovanu biljku (Sve biljke) ili na
+                      grupu (Grupisano).
+                    </div>
+
+                    <button
+                      type="button"
+                      style={ui.btnGhost}
+                      onClick={() => void handleUpdateStrength()}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "..." : "Primijeni"}
+                    </button>
                   </div>
                 )}
 
-                {isLoading && <div style={{ opacity: 0.8, color: "rgba(0,0,0,0.75)" }}>Učitavam…</div>}
-                {plantsError && <div style={{ color: "#b00020", fontWeight: 700 }}>Greška: {plantsError}</div>}
+                {isLoading && <div style={{ opacity: 0.75 }}>Učitavam…</div>}
+                {plantsError && <div style={ui.err}>Greška: {plantsError}</div>}
               </div>
 
-              {/* Table area (scroll) */}
-              <div style={{ padding: "0 12px 12px 12px", flex: 1, minHeight: 0 }}>
-                <div style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, overflow: "hidden", height: "100%", background: "rgba(255,255,255,0.85)" }}>
+              {/* Table */}
+              <div style={ui.tableWrap}>
+                <div style={ui.tableBox}>
                   <div style={{ height: "100%", overflow: "auto" }}>
                     {viewMode === "grouped" ? (
-                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                        <thead style={{ background: "rgba(255,255,255,0.92)", position: "sticky", top: 0, zIndex: 1 }}>
+                      <table
+                        style={{ width: "100%", borderCollapse: "collapse" }}
+                      >
+                        <thead>
                           <tr>
-                            <th style={{ textAlign: "left", padding: 10, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>Naziv</th>
-                            <th style={{ textAlign: "left", padding: 10, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>Latinski naziv</th>
-                            <th style={{ textAlign: "right", padding: 10, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>Jačina (avg)</th>
-                            <th style={{ textAlign: "right", padding: 10, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>Količina</th>
-                            <th style={{ textAlign: "center", padding: 10, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>Stanje</th>
+                            <th style={ui.th}>Naziv</th>
+                            <th style={ui.th}>Latinski naziv</th>
+                            <th style={{ ...ui.th, textAlign: "right" }}>
+                              Jačina (avg)
+                            </th>
+                            <th style={{ ...ui.th, textAlign: "right" }}>
+                              Količina
+                            </th>
+                            <th style={{ ...ui.th, textAlign: "center" }}>
+                              Stanje
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -933,19 +1159,45 @@ export const ProductionPage: React.FC = () => {
                                 onClick={() => setSelectedGroupedIndex(i)}
                                 style={{
                                   cursor: "pointer",
-                                  background: isSel ? "rgba(96,205,255,0.14)" : "transparent",
+                                  background: isSel
+                                    ? "rgba(34,197,94,0.08)"
+                                    : "transparent",
                                 }}
                               >
-                                <td style={{ padding: 10, borderTop: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.82)", fontWeight: 700 }}>{r.name}</td>
-                                <td style={{ padding: 10, borderTop: "1px solid rgba(0,0,0,0.06)", opacity: 0.85, fontStyle: "italic", color: "rgba(0,0,0,0.78)" }}>
+                                <td style={{ ...ui.td, fontWeight: 900 }}>
+                                  {r.name}
+                                </td>
+                                <td
+                                  style={{
+                                    ...ui.td,
+                                    opacity: 0.85,
+                                    fontStyle: "italic",
+                                  }}
+                                >
                                   {r.latinName}
                                 </td>
-                                <td style={{ padding: 10, borderTop: "1px solid rgba(0,0,0,0.06)", textAlign: "right", color: r.strengthAvg > 4 ? "#b00020" : "rgba(0,0,0,0.82)", fontWeight: 800 }}>
+                                <td
+                                  style={{
+                                    ...ui.td,
+                                    textAlign: "right",
+                                    fontWeight: 900,
+                                  }}
+                                >
                                   {Number(r.strengthAvg).toFixed(2)}
                                 </td>
-                                <td style={{ padding: 10, borderTop: "1px solid rgba(0,0,0,0.06)", textAlign: "right", color: "rgba(0,0,0,0.82)", fontWeight: 800 }}>{r.qty}</td>
-                                <td style={{ padding: 10, borderTop: "1px solid rgba(0,0,0,0.06)", textAlign: "center" }}>
-                                  <span style={statusPillStyle(r.statusLabel)}>{r.statusLabel}</span>
+                                <td
+                                  style={{
+                                    ...ui.td,
+                                    textAlign: "right",
+                                    fontWeight: 900,
+                                  }}
+                                >
+                                  {r.qty}
+                                </td>
+                                <td style={{ ...ui.td, textAlign: "center" }}>
+                                  <span style={statusPillStyle(r.statusLabel)}>
+                                    {r.statusLabel}
+                                  </span>
                                 </td>
                               </tr>
                             );
@@ -953,7 +1205,10 @@ export const ProductionPage: React.FC = () => {
 
                           {!isLoading && groupedRows.length === 0 && (
                             <tr>
-                              <td colSpan={5} style={{ padding: 12, opacity: 0.75, color: "rgba(0,0,0,0.75)" }}>
+                              <td
+                                colSpan={5}
+                                style={{ padding: 14, opacity: 0.75 }}
+                              >
                                 Nema podataka.
                               </td>
                             </tr>
@@ -961,14 +1216,20 @@ export const ProductionPage: React.FC = () => {
                         </tbody>
                       </table>
                     ) : (
-                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                        <thead style={{ background: "rgba(255,255,255,0.92)", position: "sticky", top: 0, zIndex: 1 }}>
+                      <table
+                        style={{ width: "100%", borderCollapse: "collapse" }}
+                      >
+                        <thead>
                           <tr>
-                            <th style={{ textAlign: "left", padding: 10, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>ID</th>
-                            <th style={{ textAlign: "left", padding: 10, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>Naziv</th>
-                            <th style={{ textAlign: "left", padding: 10, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>Latinski naziv</th>
-                            <th style={{ textAlign: "right", padding: 10, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>Jačina</th>
-                            <th style={{ textAlign: "center", padding: 10, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>Stanje</th>
+                            <th style={ui.th}>ID</th>
+                            <th style={ui.th}>Naziv</th>
+                            <th style={ui.th}>Latinski naziv</th>
+                            <th style={{ ...ui.th, textAlign: "right" }}>
+                              Jačina
+                            </th>
+                            <th style={{ ...ui.th, textAlign: "center" }}>
+                              Stanje
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -980,19 +1241,45 @@ export const ProductionPage: React.FC = () => {
                                 onClick={() => setSelectedFlatIndex(i)}
                                 style={{
                                   cursor: "pointer",
-                                  background: isSel ? "rgba(96,205,255,0.14)" : "transparent",
+                                  background: isSel
+                                    ? "rgba(34,197,94,0.08)"
+                                    : "transparent",
                                 }}
                               >
-                                <td style={{ padding: 10, borderTop: "1px solid rgba(0,0,0,0.06)", opacity: 0.9, color: "rgba(0,0,0,0.82)", fontWeight: 800 }}>{r.id}</td>
-                                <td style={{ padding: 10, borderTop: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.82)", fontWeight: 700 }}>{r.name}</td>
-                                <td style={{ padding: 10, borderTop: "1px solid rgba(0,0,0,0.06)", opacity: 0.85, fontStyle: "italic", color: "rgba(0,0,0,0.78)" }}>
+                                <td
+                                  style={{
+                                    ...ui.td,
+                                    fontWeight: 900,
+                                    opacity: 0.9,
+                                  }}
+                                >
+                                  {r.id}
+                                </td>
+                                <td style={{ ...ui.td, fontWeight: 900 }}>
+                                  {r.name}
+                                </td>
+                                <td
+                                  style={{
+                                    ...ui.td,
+                                    opacity: 0.85,
+                                    fontStyle: "italic",
+                                  }}
+                                >
                                   {r.latinName}
                                 </td>
-                                <td style={{ padding: 10, borderTop: "1px solid rgba(0,0,0,0.06)", textAlign: "right", color: r.strength > 4 ? "#b00020" : "rgba(0,0,0,0.82)", fontWeight: 800 }}>
+                                <td
+                                  style={{
+                                    ...ui.td,
+                                    textAlign: "right",
+                                    fontWeight: 900,
+                                  }}
+                                >
                                   {Number(r.strength).toFixed(2)}
                                 </td>
-                                <td style={{ padding: 10, borderTop: "1px solid rgba(0,0,0,0.06)", textAlign: "center" }}>
-                                  <span style={statusPillStyle(r.statusLabel)}>{r.statusLabel}</span>
+                                <td style={{ ...ui.td, textAlign: "center" }}>
+                                  <span style={statusPillStyle(r.statusLabel)}>
+                                    {r.statusLabel}
+                                  </span>
                                 </td>
                               </tr>
                             );
@@ -1000,7 +1287,10 @@ export const ProductionPage: React.FC = () => {
 
                           {!isLoading && flatRows.length === 0 && (
                             <tr>
-                              <td colSpan={5} style={{ padding: 12, opacity: 0.75, color: "rgba(0,0,0,0.75)" }}>
+                              <td
+                                colSpan={5}
+                                style={{ padding: 14, opacity: 0.75 }}
+                              >
                                 Nema podataka.
                               </td>
                             </tr>
@@ -1014,46 +1304,69 @@ export const ProductionPage: React.FC = () => {
             </div>
 
             {/* RIGHT - Events */}
-            <div className="acrylic" style={{ borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 0 }}>
-              <div
-                style={{
-                  background: "rgba(255,255,255,0.92)",
-                  padding: "12px 14px",
-                  fontWeight: 800,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  borderBottom: "1px solid rgba(0,0,0,0.06)",
-                  color: "rgba(0,0,0,0.86)",
-                }}
-              >
+            <div style={ui.card}>
+              <div style={ui.cardHeader}>
                 <span>Dnevnik proizvodnje</span>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span style={{ opacity: 0.75, fontSize: 12 }}>Ukupno: {rawDogadjaji.length}</span>
-                  <button type="button" className="btn-standard" style={{ padding: "6px 10px" }} onClick={() => void loadDogadjaji()}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ opacity: 0.7, fontSize: 12 }}>
+                    Ukupno: {rawDogadjaji.length}
+                  </span>
+                  <button
+                    type="button"
+                    style={ui.btnGhost}
+                    onClick={() => void loadDogadjaji()}
+                  >
                     ⟳
                   </button>
                 </div>
               </div>
 
-              {eventsError && <div style={{ padding: 12, color: "#b00020", fontWeight: 700 }}>Greška: {eventsError}</div>}
+              {eventsError && <div style={ui.err}>Greška: {eventsError}</div>}
 
-              <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 6, overflow: "auto", minHeight: 0 }}>
+              <div
+                style={{
+                  padding: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  overflow: "auto",
+                  minHeight: 0,
+                }}
+              >
                 {rawDogadjaji.slice(0, 50).map((d) => (
                   <div key={d.id} style={eventCardStyle(d.tip)}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
-                      <div style={{ fontWeight: 600, fontSize: 12 }}>{logIcon(d.tip)}</div>
-                      <div style={{ opacity: 0.70, fontSize: 11, color: "rgba(0,0,0,0.70)" }}>{hhmm(d.datumVreme)}</div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={{ fontWeight: 900, fontSize: 12 }}>
+                        {logIcon(d.tip)}
+                      </div>
+                      <div style={{ opacity: 0.7, fontSize: 12 }}>
+                        {hhmm(d.datumVreme)}
+                      </div>
                     </div>
-                    <div style={{ marginTop: 4, opacity: 0.90, fontWeight: 500, fontSize: 12, color: "rgba(0,0,0,0.82)" }}>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        opacity: 0.92,
+                        fontWeight: 700,
+                        fontSize: 12,
+                        color: "rgba(0,0,0,0.82)",
+                      }}
+                    >
                       {d.opis}
                     </div>
                   </div>
                 ))}
 
-
-                {rawDogadjaji.length === 0 && <div style={{ opacity: 0.75, color: "rgba(0,0,0,0.75)" }}>Nema događaja.</div>}
+                {rawDogadjaji.length === 0 && (
+                  <div style={{ opacity: 0.75 }}>Nema događaja.</div>
+                )}
               </div>
             </div>
           </div>
