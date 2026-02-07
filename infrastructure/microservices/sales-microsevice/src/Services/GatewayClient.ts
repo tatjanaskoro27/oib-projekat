@@ -129,12 +129,27 @@ export class GatewayClient {
   }
 
   async requestPerfumeStateFromStorage(names: string[], uloga: Uloga) {
-    const body = { items: names.map((n) => ({ name: n, quantity: 1 })) };
-    const res = await this.client.post("/internal/skladiste/slanje", body, {
-      headers: { "x-uloga": uloga, "x-mode": "STANJE" },
-    });
-    return (res.data?.poslato ?? []) as Array<{ name: string; quantity: number }>;
-  }
+  const body = { items: names.map((n) => ({ name: n, quantity: 1 })) };
+
+  const res = await this.client.post("/internal/skladiste/slanje", body, {
+    headers: { "x-uloga": uloga, "x-mode": "STANJE" },
+  });
+
+  const raw = (res.data?.poslato ?? []) as any[];
+
+  // ✅ NORMALIZUJ: prihvati i (name/quantity) i (naziv/kolicina)
+  const normalized = Array.isArray(raw)
+    ? raw.map((x: any) => ({
+        name: String(x?.name ?? x?.naziv ?? "").trim(),
+        quantity: Number(x?.quantity ?? x?.kolicina ?? 0),
+      }))
+    : [];
+
+  return normalized.filter(
+    (x) => x.name.length > 0 && Number.isFinite(x.quantity) && x.quantity >= 0,
+  ) as Array<{ name: string; quantity: number }>;
+}
+
 
   async requestPerfumesFromStorageByItems(items: Array<{ name: string; quantity: number }>, uloga: Uloga) {
     const body = { items };

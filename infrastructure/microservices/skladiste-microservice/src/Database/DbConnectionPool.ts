@@ -3,6 +3,9 @@ import { DataSource } from "typeorm";
 import dotenv from "dotenv";
 import { Skladiste } from "../Domain/models/Skladiste";
 import { Ambalaza } from "../Domain/models/Ambalaza";
+import { AmbalazaStavka } from "../Domain/models/AmbalazaStavka"; // prilagodi putanju
+
+
 
 
 dotenv.config();
@@ -17,5 +20,5 @@ export const Db = new DataSource({
   ssl: { rejectUnauthorized: false },
   synchronize: true,
   logging: false,
-  entities: [Skladiste, Ambalaza],
+  entities: [Skladiste, Ambalaza, AmbalazaStavka],
 });

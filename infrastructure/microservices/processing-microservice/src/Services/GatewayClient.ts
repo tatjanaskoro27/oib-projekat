@@ -3,7 +3,6 @@ import { AvailableCountResponseDTO } from "../Domain/DTOs/AvailableCountResponse
 import { HarvestPlantsResponseDTO } from "../Domain/DTOs/HarvestPlantsResponseDTO";
 import { CreateDogadjajDTO } from "../Domain/DTOs/EventDTO";
 import { PlantTypeSummaryDTO } from "../Domain/DTOs/PlantTypeSummaryDTO";
-import { PrijemAmbalazeDTO } from "../Domain/DTOs/PrijemAmbalazeDTO";
 
 type WarehouseDTO = {
   id: number;
@@ -81,16 +80,23 @@ export class GatewayClient {
   }
 
   // ✅ NOVO: internal prijem ambalaze u skladiste
-  async receivePackage(
-    skladisteId: number,
-    body: { naziv: string; adresaPosiljaoca: string; items: { name: string; quantity: number }[] }
-  ) {
+    // ✅ NOVO: internal prijem ambalaze u skladiste (BEZ JSON-a, realni parfemi)
+    // ✅ NOVO: prijem ambalaze u skladiste (BEZ JSON-a i bez quantity)
+  async receivePackage(skladisteId: number, items: { perfumeId: string; naziv: string }[]) {
+  try {
     const res = await this.client.post(
       `/internal/skladiste/skladista/${skladisteId}/prijem`,
-      body
+      { items }
     );
     return res.data;
+  } catch (e: any) {
+    console.log("RECEIVE PACKAGE ERROR:", e?.response?.status, e?.response?.data);
+    throw e;
   }
+}
+
+
+
 }
 
   

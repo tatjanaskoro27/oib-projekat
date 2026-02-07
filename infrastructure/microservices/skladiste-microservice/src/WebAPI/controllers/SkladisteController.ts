@@ -73,8 +73,8 @@ export class SkladisteController {
         throw new Error("Neispravan skladisteId.");
       }
 
-      const dto = validirajPrijemAmbalaze(req.body);
-      const amb = await this.servis.prijemAmbalaze(skladisteId, dto);
+      const parfemi = validirajPrijemAmbalaze(req.body);
+      const amb = await this.servis.prijemAmbalaze(skladisteId, parfemi);
       return res.status(201).json(amb);
     } catch (e) {
       return res.status(400).json({ message: (e as Error).message });

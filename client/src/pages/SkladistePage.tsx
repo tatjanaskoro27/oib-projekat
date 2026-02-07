@@ -9,19 +9,22 @@ type WarehouseDTO = {
   maksimalanBrojAmbalaza: number;
 };
 
-type PerfumeInPack = {
-  name: string;
-  quantity: number;
+type PackageItemDTO = {
+  perfumeId: string;
+  naziv: string;
 };
 
 type PackageDTO = {
   id: number;
   naziv: string;
   adresaPosiljaoca: string;
-  perfumesJson: string;
   status: "SPAKOVANA" | "POSLATA" | "USKLADISTENA" | "ISPORUCENA";
   skladiste: WarehouseDTO | null;
+
+  // ✅ NOVO: realne stavke iz baze (TypeORM relations)
+  stavke?: PackageItemDTO[];
 };
+
 
 const GATEWAY_BASE = import.meta.env.VITE_GATEWAY_URL ?? "http://localhost:4000";
 
@@ -46,25 +49,8 @@ const inputBase: React.CSSProperties = {
   background: "rgba(255,255,255,0.95)",
 };
 
-// ----------- helpers -----------
-function safeParsePerfumes(json?: string): PerfumeInPack[] {
-  try {
-    const arr = JSON.parse(json || "[]");
-    if (!Array.isArray(arr)) return [];
-    return arr
-      .map((p: any) => ({
-        name: String(p?.name ?? "").trim(),
-        quantity: Number(p?.quantity ?? 0),
-      }))
-      .filter((p) => p.name.length > 0 && Number.isFinite(p.quantity) && p.quantity > 0);
-  } catch {
-    return [];
-  }
-}
 
-function countPerfumes(json?: string) {
-  return safeParsePerfumes(json).reduce((s, x) => s + x.quantity, 0);
-}
+
 
 function statusOrder(s: PackageDTO["status"]) {
   if (s === "SPAKOVANA") return 1;
@@ -219,8 +205,13 @@ export default function SkladistePage() {
 
     let list = packages.filter((p) => {
       const whText = p.skladiste ? `${p.skladiste.naziv} ${p.skladiste.lokacija}` : "";
-      const txt = `${p.naziv} ${p.adresaPosiljaoca} ${p.status} ${whText} ${p.perfumesJson}`;
+      const itemsText = Array.isArray(p.stavke)
+  ? p.stavke.map((s) => `${s.naziv} ${s.perfumeId}`).join(" ")
+  : "";
+
+      const txt = `${p.naziv} ${p.adresaPosiljaoca} ${p.status} ${whText} ${itemsText}`;
       return txt.toLowerCase().includes(needle);
+
     });
 
     if (sort === "naziv") {
@@ -490,7 +481,8 @@ export default function SkladistePage() {
                 ) : (
                   filtered.map((p) => {
                     const wh = p.skladiste ? `${p.skladiste.naziv} (${p.skladiste.lokacija})` : "—";
-                    const totalPerfumes = countPerfumes(p.perfumesJson);
+                    const totalPerfumes = Array.isArray(p.stavke) ? p.stavke.length : 0;
+
 
                     return (
                       <tr key={p.id} style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }}>

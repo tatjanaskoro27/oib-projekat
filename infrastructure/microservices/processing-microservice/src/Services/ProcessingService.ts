@@ -115,12 +115,8 @@ export class ProcessingService implements IProcessingService {
       opis: `Uspjesno preradjeno ${finalPerfumes.length} bocica parfema naziva "${dto.perfumeName}"`,
     });
      // ✅ NOVO: spakuj i pošalji u skladište kao ambalažu (agregat)
-    await this.packAndSendToWarehouse({
-      name: dto.perfumeName,
-      quantity: dto.bottleCount,
-      senderAddress: process.env.PROCESSING_SENDER_ADDRESS ?? "N/A",
-      packagePrefix: process.env.PROCESSING_PACKAGE_PREFIX ?? "Ambalaza",
-    });
+    await this.packAndSendToWarehouse(finalPerfumes);
+
     return finalPerfumes;
   }
 
@@ -180,12 +176,7 @@ export class ProcessingService implements IProcessingService {
     return out;
   }
 
-  private async packAndSendToWarehouse(input: {
-    name: string;
-    quantity: number;
-    senderAddress: string;
-    packagePrefix: string;
-  }) {
+    private async packAndSendToWarehouse(perfumes: Perfume[]) {
     const warehouses = await this.gateway.getWarehouses();
     if (!Array.isArray(warehouses) || warehouses.length === 0) {
       await this.gateway.logEvent({
@@ -195,7 +186,7 @@ export class ProcessingService implements IProcessingService {
       return;
     }
 
-    // biramo skladište sa najviše slobodnog kapaciteta
+    // biramo skladište sa najviše slobodnog kapaciteta (po broju ambalaza)
     const best = warehouses
       .map((w) => {
         const used = Array.isArray(w.ambalaze) ? w.ambalaze.length : 0;
@@ -212,18 +203,18 @@ export class ProcessingService implements IProcessingService {
       return;
     }
 
-    const naziv = `${input.packagePrefix}-${Date.now()}`;
-    const body = {
-      naziv,
-      adresaPosiljaoca: input.senderAddress,
-      items: [{ name: input.name, quantity: input.quantity }],
-    };
+    // ✅ realne stavke: svaki parfem je 1 stavka (perfumeId + naziv)
+    const items = perfumes.map((p) => ({
+      perfumeId: String(p.id),
+      naziv: String(p.name),
+    }));
 
-    await this.gateway.receivePackage(best.w.id, body);
+    await this.gateway.receivePackage(best.w.id, items);
 
     await this.gateway.logEvent({
       tip: "INFO",
-      opis: `Processing poslao ambalazu "${naziv}" u skladiste ${best.w.id} (stavka: ${input.name} x${input.quantity})`,
+      opis: `Processing poslao ${items.length} parfema u skladiste ${best.w.id} (naziv: "${perfumes?.[0]?.name ?? "N/A"}")`,
     });
   }
+
 }

@@ -16,7 +16,7 @@ import { ServisSkladista } from "./Services/ServisSkladista";
 import { IStrategijaSkladista } from "./Domain/services/IStrategijaSkladista";
 import { StrategijaDistributivnogCentra } from "./Services/StrategijaDistributivnogCentra";
 import { StrategijaMagacinskogCentra } from "./Services/StrategijaMagacinskogCentra";
-
+import { AmbalazaStavka } from "./Domain/models/AmbalazaStavka";
 import { SkladisteController } from "./WebAPI/controllers/SkladisteController";
 
 dotenv.config({ quiet: true });
@@ -43,21 +43,23 @@ initialize_database();
 // ORM repositories
 const skladisteRepo: Repository<Skladiste> = Db.getRepository(Skladiste);
 const ambalazaRepo: Repository<Ambalaza> = Db.getRepository(Ambalaza);
+const stavkaRepo: Repository<AmbalazaStavka> = Db.getRepository(AmbalazaStavka);
 
 // strategije
 const strategijaDistributivnogCentra: IStrategijaSkladista = new StrategijaDistributivnogCentra();
 const strategijaMagacinskogCentra: IStrategijaSkladista = new StrategijaMagacinskogCentra();
 
 // servisi
-const servisSkladista: IServisSkladista = new ServisSkladista(
+const servis: IServisSkladista = new ServisSkladista(
   skladisteRepo,
   ambalazaRepo,
+  stavkaRepo,
   strategijaDistributivnogCentra,
   strategijaMagacinskogCentra
 );
 
 // kontroler
-const controller = new SkladisteController(servisSkladista);
+const controller = new SkladisteController(servis);
 
 // rute
 app.get("/health", (_req, res) => res.json({ status: "SKLADISTE UP" }));
