@@ -914,14 +914,17 @@ export const ProductionPage: React.FC = () => {
                       </button>
                     </div>
 
+                    {/* ✅ FIX: responsive layout (only look) */}
                     {plantMode === "existing" && (
                       <div
                         style={{
                           width: "100%",
-                          display: "grid",
-                          gridTemplateColumns: "minmax(320px, 1fr) 240px auto",
+                          display: "flex",
+                          flexWrap: "wrap",
                           gap: 10,
-                          alignItems: "end",
+                          alignItems: "flex-end",
+                          maxWidth: "100%",
+                          overflowX: "hidden",
                         }}
                       >
                         <div
@@ -929,10 +932,13 @@ export const ProductionPage: React.FC = () => {
                             display: "flex",
                             flexDirection: "column",
                             gap: 10,
+                            flex: "1 1 320px",
+                            minWidth: 260,
+                            maxWidth: "100%",
                           }}
                         >
                           <input
-                            style={ui.input}
+                            style={{ ...ui.input, width: "100%" }}
                             value={typeSearch}
                             onChange={(e) => setTypeSearch(e.target.value)}
                             placeholder="Pretraga vrste (lavanda / lavandula / francuska)…"
@@ -946,6 +952,8 @@ export const ProductionPage: React.FC = () => {
                               background: "white",
                               maxHeight: 220,
                               overflow: "auto",
+                              width: "100%",
+                              boxSizing: "border-box",
                             }}
                           >
                             {filteredTypes.length === 0 ? (
@@ -1009,11 +1017,13 @@ export const ProductionPage: React.FC = () => {
                             gap: 6,
                             fontWeight: 900,
                             fontSize: 13,
+                            flex: "0 1 240px",
+                            minWidth: 200,
                           }}
                         >
                           Jačina (opciono)
                           <input
-                            style={ui.input}
+                            style={{ ...ui.input, width: "100%" }}
                             type="number"
                             step="0.01"
                             min={1}
@@ -1028,7 +1038,7 @@ export const ProductionPage: React.FC = () => {
 
                         <button
                           type="button"
-                          style={ui.btnPrimary}
+                          style={{ ...ui.btnPrimary, whiteSpace: "nowrap" }}
                           onClick={() => void handleCreatePlant()}
                           disabled={isLoading || plantTypes.length === 0}
                         >
@@ -1037,37 +1047,60 @@ export const ProductionPage: React.FC = () => {
                       </div>
                     )}
 
+                    {/* ✅ FIX: responsive layout (only look) */}
                     {plantMode === "new" && (
                       <div
                         style={{
                           width: "100%",
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr 1fr 240px auto",
+                          display: "flex",
+                          flexWrap: "wrap",
                           gap: 10,
-                          alignItems: "end",
+                          alignItems: "flex-end",
+                          maxWidth: "100%",
+                          overflowX: "hidden",
                         }}
                       >
                         <input
-                          style={ui.input}
+                          style={{
+                            ...ui.input,
+                            width: "100%",
+                            flex: "1 1 220px",
+                            minWidth: 200,
+                          }}
                           value={plantName}
                           onChange={(e) => setPlantName(e.target.value)}
                           placeholder="Opšti naziv *"
                         />
                         <input
-                          style={ui.input}
+                          style={{
+                            ...ui.input,
+                            width: "100%",
+                            flex: "1 1 220px",
+                            minWidth: 200,
+                          }}
                           value={latinName}
                           onChange={(e) => setLatinName(e.target.value)}
                           placeholder="Latinski naziv *"
                         />
                         <input
-                          style={ui.input}
+                          style={{
+                            ...ui.input,
+                            width: "100%",
+                            flex: "1 1 220px",
+                            minWidth: 200,
+                          }}
                           value={originCountry}
                           onChange={(e) => setOriginCountry(e.target.value)}
                           placeholder="Zemlja porijekla *"
                         />
 
                         <input
-                          style={ui.input}
+                          style={{
+                            ...ui.input,
+                            width: "100%",
+                            flex: "0 1 240px",
+                            minWidth: 200,
+                          }}
                           type="number"
                           step="0.01"
                           min={1}
@@ -1079,7 +1112,7 @@ export const ProductionPage: React.FC = () => {
 
                         <button
                           type="button"
-                          style={ui.btnPrimary}
+                          style={{ ...ui.btnPrimary, whiteSpace: "nowrap" }}
                           onClick={() => void handleCreatePlant()}
                           disabled={isLoading}
                         >

@@ -550,10 +550,7 @@ export const ProcessingPage: React.FC = () => {
                 <div />
               </div>
 
-              <div style={styles.hint}>
-                Potrebno: <b>{requiredMl}</b> ml → približno{" "}
-                <b>{requiredPlants}</b> biljaka
-              </div>
+              {/* ✅ uklonjen hint "Potrebno: ..." */}
 
               <button
                 style={{
