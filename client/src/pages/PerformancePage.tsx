@@ -67,12 +67,18 @@ function efficiencyPercent(success?: number, errors?: number) {
 function pickLatestPerAlgorithm(items: IzvestajPerformanse[]) {
   const map = new Map<string, IzvestajPerformanse>();
   for (const it of items) {
-    const key = (it.algoritam ?? safeParseRezultati(it.rezultatiJson)?.algorithm ?? "Nepoznato").toString();
+    const key = (
+      it.algoritam ??
+      safeParseRezultati(it.rezultatiJson)?.algorithm ??
+      "Nepoznato"
+    ).toString();
+
     const prev = map.get(key);
     if (!prev) {
       map.set(key, it);
       continue;
     }
+
     const prevDate = prev.datumKreiranja ? Date.parse(prev.datumKreiranja) : NaN;
     const curDate = it.datumKreiranja ? Date.parse(it.datumKreiranja) : NaN;
 
@@ -110,9 +116,27 @@ function SvgBarChart({
           <div style={ui.mutedSmall}>Nema dovoljno podataka za grafikon.</div>
         ) : (
           <>
-            <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-              <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="rgba(2,6,23,0.22)" strokeWidth="1" />
-              <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke="rgba(2,6,23,0.22)" strokeWidth="1" />
+            <svg
+              width="100%"
+              viewBox={`0 0 ${w} ${h}`}
+              preserveAspectRatio="none"
+            >
+              <line
+                x1={pad}
+                y1={h - pad}
+                x2={w - pad}
+                y2={h - pad}
+                stroke="rgba(2,6,23,0.22)"
+                strokeWidth="1"
+              />
+              <line
+                x1={pad}
+                y1={pad}
+                x2={pad}
+                y2={h - pad}
+                stroke="rgba(2,6,23,0.22)"
+                strokeWidth="1"
+              />
 
               {data.map((b, i) => {
                 const x = pad + i * bw + 6;
@@ -161,7 +185,15 @@ function SvgBarChart({
   );
 }
 
-function MetricCard({ title, value, sub }: { title: string; value: string; sub?: string }) {
+function MetricCard({
+  title,
+  value,
+  sub,
+}: {
+  title: string;
+  value: string;
+  sub?: string;
+}) {
   return (
     <div style={ui.statCard}>
       <div style={ui.statLabel}>{title}</div>
@@ -171,7 +203,7 @@ function MetricCard({ title, value, sub }: { title: string; value: string; sub?:
   );
 }
 
-/** UI stilovi (analytics fazon) – samo vizuelno, bez promene logike */
+/** UI stilovi – bez promene logike */
 const ui: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
@@ -208,14 +240,13 @@ const ui: Record<string, React.CSSProperties> = {
     fontSize: 22,
     fontWeight: 950,
   },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 13,
-    color: "rgba(15,23,42,0.62)",
-    maxWidth: 720,
-  },
 
-  topRight: { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" },
+  topRight: {
+    display: "flex",
+    gap: 10,
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
 
   btn: {
     border: "1px solid rgba(2,6,23,0.12)",
@@ -266,7 +297,11 @@ const ui: Record<string, React.CSSProperties> = {
     gap: 12,
   },
   field: { display: "grid", gap: 6 },
-  label: { fontSize: 12, fontWeight: 950, color: "rgba(15,23,42,0.60)" },
+  label: {
+    fontSize: 12,
+    fontWeight: 950,
+    color: "rgba(15,23,42,0.60)",
+  },
   input: {
     width: "100%",
     background: "#fff",
@@ -291,8 +326,18 @@ const ui: Record<string, React.CSSProperties> = {
     border: "1px solid rgba(2,6,23,0.08)",
     boxShadow: "0 10px 24px rgba(2,6,23,0.06)",
   },
-  statLabel: { fontSize: 12, fontWeight: 950, color: "rgba(15,23,42,0.64)", marginBottom: 6 },
-  statValue: { fontSize: 22, fontWeight: 950, color: "#0f172a", letterSpacing: "0.2px" },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: 950,
+    color: "rgba(15,23,42,0.64)",
+    marginBottom: 6,
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: 950,
+    color: "#0f172a",
+    letterSpacing: "0.2px",
+  },
 
   grid2: {
     marginTop: 12,
@@ -302,7 +347,11 @@ const ui: Record<string, React.CSSProperties> = {
     alignItems: "stretch",
   },
 
-  mutedSmall: { fontSize: 12, color: "rgba(15,23,42,0.62)", fontWeight: 750 },
+  mutedSmall: {
+    fontSize: 12,
+    color: "rgba(15,23,42,0.62)",
+    fontWeight: 750,
+  },
   chartLabels: {
     display: "flex",
     gap: 8,
@@ -328,9 +377,6 @@ const ui: Record<string, React.CSSProperties> = {
     background: "rgba(15,23,42,0.02)",
     borderBottom: "1px solid rgba(2,6,23,0.08)",
     fontWeight: 950,
-    position: "sticky" as const,
-    top: 0,
-    zIndex: 1,
   },
   td: {
     padding: "10px 10px",
@@ -392,13 +438,18 @@ export const PerformancePage = () => {
     setLoadingList(true);
     setListError("");
     try {
-      const r = await fetch(`${gatewayUrl}/performance/izvestaji${buildQuery()}`, {
-        headers: { Authorization: `Bearer ${auth!.token}` },
-      });
+      const r = await fetch(
+        `${gatewayUrl}/performance/izvestaji${buildQuery()}`,
+        {
+          headers: { Authorization: `Bearer ${auth!.token}` },
+        },
+      );
 
       if (!r.ok) {
         const txt = await r.text().catch(() => "");
-        throw new Error(`Neuspešno učitavanje izveštaja (${r.status}). ${txt}`);
+        throw new Error(
+          `Neuspešno učitavanje izveštaja (${r.status}). ${txt}`,
+        );
       }
 
       const data = (await r.json()) as IzvestajPerformanse[];
@@ -451,7 +502,7 @@ export const PerformancePage = () => {
       }
 
       const data = await r.json();
-      setSimResult(data);
+      setSimResult(data); 
 
       await ucitajIzvestaje();
     } catch (e: any) {
@@ -543,15 +594,18 @@ export const PerformancePage = () => {
       .filter((d) => d.label && d.value >= 0);
   }, [latestPerAlg]);
 
-  const detailsParsed = useMemo(() => safeParseRezultati(details?.rezultatiJson), [details?.rezultatiJson]);
+  const detailsParsed = useMemo(
+    () => safeParseRezultati(details?.rezultatiJson),
+    [details?.rezultatiJson],
+  );
 
   const detailInput = detailsParsed?.input ?? {};
   const detailOutput = detailsParsed?.output ?? {};
 
-  const eff = useMemo(() => clamp(efficiencyPercent(detailOutput.success, detailOutput.errors), 0, 100), [
-    detailOutput.success,
-    detailOutput.errors,
-  ]);
+  const eff = useMemo(
+    () => clamp(efficiencyPercent(detailOutput.success, detailOutput.errors), 0, 100),
+    [detailOutput.success, detailOutput.errors],
+  );
 
   const latencyOk = useMemo(() => {
     const cur = detailOutput.latencyAvgMs;
@@ -574,12 +628,10 @@ export const PerformancePage = () => {
   return (
     <div style={ui.page}>
       <div style={ui.shell}>
-        {/* TOP HEADER (kao analytics) */}
         <div style={ui.top}>
           <div>
             <div style={ui.kicker}>Dashboard</div>
             <h1 style={ui.h1}>Analiza performansi</h1>
-            <div style={ui.subtitle}>Pokreni simulaciju, pregledaj izveštaje, uporedi algoritme i preuzmi PDF.</div>
           </div>
 
           <div style={ui.topRight}>
@@ -612,7 +664,12 @@ export const PerformancePage = () => {
               {simLoading ? "Simulacija u toku..." : "Podesi parametre i pokreni"}
             </div>
 
-            <div style={{ ...ui.fieldGrid, gridTemplateColumns: isNarrow ? "1fr 1fr" : ui.fieldGrid.gridTemplateColumns }}>
+            <div
+              style={{
+                ...ui.fieldGrid,
+                gridTemplateColumns: isNarrow ? "1fr 1fr" : ui.fieldGrid.gridTemplateColumns,
+              }}
+            >
               <div style={ui.field}>
                 <span style={ui.label}>Algoritam</span>
                 <select value={algoritam} onChange={(e) => setAlgoritam(e.target.value)} style={ui.input as any}>
@@ -668,33 +725,7 @@ export const PerformancePage = () => {
               </button>
             </div>
 
-            {simResult ? (
-              <div style={{ ...ui.card, marginTop: 12 }}>
-                <div style={{ ...ui.cardHead, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <span>Rezultat simulacije</span>
-                  <button style={ui.btn} onClick={() => setSimResult(null)}>
-                    Sakrij
-                  </button>
-                </div>
-
-                <div style={ui.cardBody}>
-                  <pre
-                    style={{
-                      margin: 0,
-                      overflowX: "auto",
-                      fontSize: 12,
-                      color: "rgba(2,6,23,0.86)",
-                      background: "rgba(15,23,42,0.03)",
-                      border: "1px solid rgba(2,6,23,0.08)",
-                      borderRadius: 12,
-                      padding: 12,
-                    }}
-                  >
-                    {JSON.stringify(simResult, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            ) : null}
+            {simResult ? null : null}
           </div>
         </div>
 
@@ -769,7 +800,6 @@ export const PerformancePage = () => {
               <table style={ui.table}>
                 <thead>
                   <tr>
-                    <th style={{ ...ui.th, width: 70 }}>ID</th>
                     <th style={ui.th}>Naziv</th>
                     <th style={{ ...ui.th, width: 140 }}>Algoritam</th>
                     <th style={{ ...ui.th, width: 120 }}>Latency</th>
@@ -791,7 +821,6 @@ export const PerformancePage = () => {
                           background: idx % 2 === 0 ? "rgba(15,23,42,0.02)" : "#fff",
                         }}
                       >
-                        <td style={ui.td}>{i.id}</td>
                         <td style={ui.td}>{i.nazivIzvestaja ?? "-"}</td>
                         <td style={ui.td}>{i.algoritam ?? parsed?.algorithm ?? "-"}</td>
                         <td style={ui.td}>{formatNumber(lat)} ms</td>
@@ -812,7 +841,7 @@ export const PerformancePage = () => {
 
                   {!loadingList && izvestaji.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ ...ui.td, color: "rgba(15,23,42,0.62)" }}>
+                      <td colSpan={5} style={{ ...ui.td, color: "rgba(15,23,42,0.62)" }}>
                         Nema izveštaja za izabrane filtere.
                       </td>
                     </tr>
@@ -839,7 +868,7 @@ export const PerformancePage = () => {
 
             {selectedId ? (
               <button style={{ ...ui.btn, ...ui.btnPrimary }} onClick={() => downloadPdf(selectedId)} disabled={!canCallApi}>
-                Preuzmi PDF (ID {selectedId})
+                Preuzmi PDF
               </button>
             ) : null}
           </div>
@@ -877,25 +906,9 @@ export const PerformancePage = () => {
                   </div>
                 </div>
 
-                <details style={{ marginTop: 12 }}>
-                  <summary style={{ cursor: "pointer", color: "rgba(15,23,42,0.62)", fontSize: 13, fontWeight: 850 }}>
-                    Prikaži sirove podatke (debug)
-                  </summary>
-                  <pre style={{ marginTop: 8, overflowX: "auto", fontSize: 12, color: "rgba(2,6,23,0.86)" }}>
-                    {JSON.stringify(details, null, 2)}
-                  </pre>
-                  <pre style={{ marginTop: 8, overflowX: "auto", fontSize: 12, color: "rgba(2,6,23,0.86)" }}>
-                    {JSON.stringify(detailsParsed, null, 2)}
-                  </pre>
-                </details>
               </>
             ) : null}
           </div>
-        </div>
-
-        {/* footer napomena – ostaje, samo lepša */}
-        <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: "rgba(15,23,42,0.60)" }}>
-          Napomena: PDF download radi preko <b>gateway</b> rute <code>/performance/izvestaji/:id/pdf</code>.
         </div>
       </div>
     </div>
