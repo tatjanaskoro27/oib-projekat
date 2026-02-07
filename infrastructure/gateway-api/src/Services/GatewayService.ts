@@ -85,7 +85,7 @@ export class GatewayService implements IGatewayService {
     this.analyticsClient = axios.create({
       baseURL: analyticsBaseURL,
       headers: { "Content-Type": "application/json" },
-      timeout: 5000,
+      timeout: 30000,
     });
 
     this.productionClient = axios.create({
@@ -97,7 +97,7 @@ export class GatewayService implements IGatewayService {
     this.processingClient = axios.create({
       baseURL: processingBaseURL,
       headers: { "Content-Type": "application/json" },
-      timeout: 5000,
+      timeout: 30000,
     });
 
     this.dogadjajiClient = axios.create({
@@ -109,14 +109,14 @@ export class GatewayService implements IGatewayService {
     this.salesClient = axios.create({
       baseURL: salesBaseURL,
       headers: { "Content-Type": "application/json" },
-      timeout: 5000,
+      timeout: 30000,
     });
 
 
     this.skladisteClient = axios.create({
       baseURL: skladisteBaseURL,
       headers: { "Content-Type": "application/json" },
-      timeout: 10000,
+      timeout: 30000,
     });
 
   }
@@ -385,9 +385,37 @@ export class GatewayService implements IGatewayService {
   const res = await this.skladisteClient.get("/skladista");
   return res.data;
 }
-
 async getAmbalaze(): Promise<any> {
   const res = await this.skladisteClient.get("/ambalaze");
+  return res.data;
+}
+
+
+// ✅ INTERNAL: lista skladista (za Processing da izabere gde šalje)
+public async internalGetSkladista() {
+  const res = await this.skladisteClient.get("/skladista");
+  return res.data;
+}
+
+// ✅ INTERNAL: processing catalog (za Sales da dobije meta + cenu/opis)
+public async internalGetProcessingCatalog() {
+  const res = await this.processingClient.get("/processing/catalog");
+  return res.data;
+}
+
+// ✅ INTERNAL: slanje ka skladistu (STANJE/ISPORUKA), prosleđuje header-e
+public async internalSkladisteSlanje(body: any, uloga: string, mode: string) {
+  const res = await this.skladisteClient.post("/slanje", body, {
+    headers: {
+      "x-uloga": uloga,
+      "x-mode": mode,
+    },
+  });
+  return res.data;
+}
+
+async internalStartProcessing(dto: any): Promise<any> {
+  const res = await this.processingClient.post("/processing/start", dto);
   return res.data;
 }
 

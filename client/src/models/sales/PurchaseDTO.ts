@@ -1,10 +1,9 @@
 export type PurchaseItemDTO = {
-  perfumeId: string;
+  name: string;       // ✅ backend koristi naziv
   quantity: number;
 };
 
 export type PurchaseRequestDTO = {
-  // backend očekuje "id" (user id) – zato ga šaljemo ovako
   userId: number;
   items: PurchaseItemDTO[];
   saleType: "MALOPRODAJA" | "VELEPRODAJA";

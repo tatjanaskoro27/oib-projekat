@@ -3,8 +3,10 @@ import { IServisSkladista } from "../../Domain/services/IServisSkladista";
 
 import { validirajKreiranjeSkladista } from "../validators/KreirajSkladisteValidator";
 import { validirajPrijemAmbalaze } from "../validators/PrijemAmbalazeValidator";
-
 import { validirajSlanje } from "../validators/SlanjeAmbalazeValidator";
+
+// ✅ DODAJ OVAJ IMPORT (prilagodi putanju ako ti je drugačija)
+import { StatusAmbalaze } from "../../Domain/enums/StatusAmbalaze";
 
 export class SkladisteController {
   private readonly router: Router;
@@ -29,14 +31,29 @@ export class SkladisteController {
     return this.router;
   }
 
+  // ✅ OVDE: filtriraj POSLATA da UI vidi realno stanje
   private async svaSkladista(req: Request, res: Response) {
-    const data = await this.servis.svaSkladista();
-    return res.json(data);
+    const data: any[] = await this.servis.svaSkladista();
+
+    const filtered = data.map((s) => ({
+      ...s,
+      ambalaze: Array.isArray(s.ambalaze)
+        ? s.ambalaze.filter((a: any) => a.status === StatusAmbalaze.USKLADISTENA)
+        : s.ambalaze,
+    }));
+
+    return res.json(filtered);
   }
 
+  // ✅ OVDE: po želji isto filtriraj /ambalaze (da ne vidiš POSLATA u listi)
   private async sveAmbalaze(_req: Request, res: Response) {
-    const data = await this.servis.sveAmbalaze();
-    return res.json(data);
+    const data: any[] = await this.servis.sveAmbalaze();
+
+    const filtered = Array.isArray(data)
+      ? data.filter((a: any) => a.status === StatusAmbalaze.USKLADISTENA)
+      : data;
+
+    return res.json(filtered);
   }
 
   private async kreirajSkladiste(req: Request, res: Response) {
@@ -64,22 +81,27 @@ export class SkladisteController {
     }
   }
 
-  // ✅ KLJUČNO: uskladi sa Gateway-om
-  private async posalji(req: Request, res: Response) {
+  // ✅ KLJUČNO: uskladi sa Gateway-om (NE DIRAJ OVO)
+  // u src/WebAPI/controllers/SkladisteController.ts
+private async posalji(req: Request, res: Response) {
   try {
-    const uloga = (req.header("x-uloga") || "PRODAVAC") as
-      | "MENADZER_PRODAJE"
-      | "PRODAVAC";
+    const ulogaHeader = req.header("x-uloga");
+    if (!ulogaHeader) throw new Error("Nedostaje header x-uloga.");
 
-    // ✅ 1) PRVO: stari format { items: [...] } + x-mode
+    const uloga = ulogaHeader as "MENADZER_PRODAJE" | "PRODAVAC";
+
+    // format { items: [...] } + x-mode
     if (Array.isArray(req.body?.items)) {
-      const mode = ((req.header("x-mode") || "ISPORUKA") as "STANJE" | "ISPORUKA");
+      const modeHeader = req.header("x-mode");
+      if (!modeHeader) throw new Error("Nedostaje header x-mode (STANJE ili ISPORUKA).");
+
+      const mode = modeHeader as "STANJE" | "ISPORUKA";
       const dto = validirajSlanje(req.body);
       const poslato = await this.servis.posaljiParfeme(dto.items, uloga, mode);
       return res.json({ uloga, mode, poslato });
     }
 
-    // ✅ 2) ONDA: novi format { trazenaKolicina }
+    // format { trazenaKolicina }
     const trazenaKolicina = Number(req.body?.trazenaKolicina);
     if (!Number.isFinite(trazenaKolicina) || trazenaKolicina <= 0) {
       throw new Error("trazenaKolicina mora biti > 0");

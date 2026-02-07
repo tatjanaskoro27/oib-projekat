@@ -4,6 +4,12 @@ import { IProcessingService } from "../Domain/services/IProcessingService";
 import { StartProcessingDTO } from "../Domain/DTOs/StartProcessingDTO";
 import { GetPerfumesDTO } from "../Domain/DTOs/GetPerfumesDTO";
 import { GatewayClient } from "../Services/GatewayClient";
+import { CatalogItemDTO } from "../Domain/DTOs/CatalogItemDTO";
+
+const toNum = (v: any, fallback = 0) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
 
 export class ProcessingService implements IProcessingService {
   private readonly gateway = new GatewayClient();
@@ -108,7 +114,13 @@ export class ProcessingService implements IProcessingService {
       tip: "INFO",
       opis: `Uspjesno preradjeno ${finalPerfumes.length} bocica parfema naziva "${dto.perfumeName}"`,
     });
-
+     // ✅ NOVO: spakuj i pošalji u skladište kao ambalažu (agregat)
+    await this.packAndSendToWarehouse({
+      name: dto.perfumeName,
+      quantity: dto.bottleCount,
+      senderAddress: process.env.PROCESSING_SENDER_ADDRESS ?? "N/A",
+      packagePrefix: process.env.PROCESSING_PACKAGE_PREFIX ?? "Ambalaza",
+    });
     return finalPerfumes;
   }
 
@@ -117,6 +129,101 @@ export class ProcessingService implements IProcessingService {
       where: { type: dto.perfumeType },
       order: { createdAt: "DESC" },
       take: dto.count,
+    });
+  }
+
+  
+  // ✅ NOVO: katalog (meta + price), BEZ fajlova
+  async getCatalog(): Promise<CatalogItemDTO[]> {
+    // izvučemo sve parfeme i agregiramo po (name,type,netoMl)
+    const all = await this.perfumeRepo.find();
+
+    const key = (p: Perfume) =>
+      `${String(p.name).trim().toLowerCase()}|${String(p.type).trim().toLowerCase()}|${Number(p.netoMl)}`;
+
+    const map = new Map<string, { name: string; type: string; netoMl: number; count: number }>();
+
+    for (const p of all) {
+      const k = key(p);
+      const cur = map.get(k);
+      if (!cur) {
+        map.set(k, { name: p.name, type: p.type, netoMl: p.netoMl, count: 1 });
+      } else {
+        cur.count += 1;
+      }
+    }
+
+    // Cena = pravilo iz ENV (bez hardcode kataloga)
+    const base = toNum(process.env.PRICE_BASE, 50); // npr 50
+    const perMl = toNum(process.env.PRICE_PER_ML, 0.4); // npr 0.4
+    const parfumMult = toNum(process.env.PRICE_PARFUM_MULT, 1.3); // npr 1.3
+    const cologneMult = toNum(process.env.PRICE_COLOGNE_MULT, 1.0); // npr 1.0
+    const descPrefix = process.env.DESCRIPTION_PREFIX ?? "Parfem";
+
+    const out: CatalogItemDTO[] = [];
+    for (const v of map.values()) {
+      const t = String(v.type).toLowerCase();
+      const mult = t === "parfum" ? parfumMult : cologneMult;
+      const price = Number((mult * (base + v.netoMl * perMl)).toFixed(2));
+
+      out.push({
+        name: v.name,
+        type: v.type,
+        netoMl: v.netoMl,
+        description: `${descPrefix} ${v.name}`,
+        price,
+      });
+    }
+
+    // stabilno sortiranje
+    out.sort((a, b) => a.name.localeCompare(b.name));
+    return out;
+  }
+
+  private async packAndSendToWarehouse(input: {
+    name: string;
+    quantity: number;
+    senderAddress: string;
+    packagePrefix: string;
+  }) {
+    const warehouses = await this.gateway.getWarehouses();
+    if (!Array.isArray(warehouses) || warehouses.length === 0) {
+      await this.gateway.logEvent({
+        tip: "ERROR",
+        opis: `Nema dostupnih skladista za prijem ambalaze.`,
+      });
+      return;
+    }
+
+    // biramo skladište sa najviše slobodnog kapaciteta
+    const best = warehouses
+      .map((w) => {
+        const used = Array.isArray(w.ambalaze) ? w.ambalaze.length : 0;
+        const max = Number(w.maksimalanBrojAmbalaza);
+        return { w, free: max - used };
+      })
+      .sort((a, b) => b.free - a.free)[0];
+
+    if (!best || best.free <= 0) {
+      await this.gateway.logEvent({
+        tip: "ERROR",
+        opis: `Sva skladista su puna. Ne mogu da posaljem ambalazu.`,
+      });
+      return;
+    }
+
+    const naziv = `${input.packagePrefix}-${Date.now()}`;
+    const body = {
+      naziv,
+      adresaPosiljaoca: input.senderAddress,
+      items: [{ name: input.name, quantity: input.quantity }],
+    };
+
+    await this.gateway.receivePackage(best.w.id, body);
+
+    await this.gateway.logEvent({
+      tip: "INFO",
+      opis: `Processing poslao ambalazu "${naziv}" u skladiste ${best.w.id} (stavka: ${input.name} x${input.quantity})`,
     });
   }
 }

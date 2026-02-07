@@ -85,10 +85,7 @@ export class ServisSkladista implements IServisSkladista {
 
 private async calcState(): Promise<Map<string, number>> {
   const dostupne = await this.ambalazaRepo.find({
-    where: [
-      { status: StatusAmbalaze.USKLADISTENA },
-      { status: StatusAmbalaze.POSLATA },
-    ],
+    where: { status: StatusAmbalaze.USKLADISTENA },
     order: { id: "ASC" },
   });
 
@@ -105,47 +102,26 @@ private async calcState(): Promise<Map<string, number>> {
 
 
 
- async posaljiAmbalaze(
-  trazenaKolicina: number,
-  uloga: "MENADZER_PRODAJE" | "PRODAVAC"
-  ): Promise<Ambalaza[]> {
-  const strategija = this.strategijaZaUlogu(uloga);
-  const limitPoSlanju = strategija.maxAmbalazaPoSlanju();
 
+ async posaljiAmbalaze(broj: number): Promise<Ambalaza[]> {
+  // UZIMAMO SAMO USKLADISTENA
   const dostupne = await this.ambalazaRepo.find({
-  where: [
-    { status: StatusAmbalaze.USKLADISTENA },
-    { status: StatusAmbalaze.POSLATA },
-  ],
-  relations: ["skladiste"],
+  where: { status: StatusAmbalaze.USKLADISTENA },
   order: { id: "ASC" },
 });
 
 
-  const kolikoHocu = Math.floor(Number(trazenaKolicina));
-  if (!Number.isFinite(kolikoHocu) || kolikoHocu <= 0) {
-    throw new Error("trazenaKolicina mora biti broj > 0.");
+  if (dostupne.length < broj) {
+    throw new Error("Nema dovoljno ambalaže u skladištu");
   }
 
-  if (dostupne.length === 0) return [];
-
-  const zaSlanje = dostupne.slice(0, kolikoHocu);
-  const poslato: Ambalaza[] = [];
-
-  for (let i = 0; i < zaSlanje.length; i += limitPoSlanju) {
-    const batch = zaSlanje.slice(i, i + limitPoSlanju);
-
-    await sleep(strategija.kasnjenjeMs());
-
-    for (const a of batch) {
-      a.status = StatusAmbalaze.POSLATA;
-    }
-
-    await this.ambalazaRepo.save(batch);
-    poslato.push(...batch);
+  for (const a of dostupne) {
+    a.status = StatusAmbalaze.POSLATA;
   }
 
-  return poslato;
+  await this.ambalazaRepo.save(dostupne);
+
+  return dostupne;
 }
 
 

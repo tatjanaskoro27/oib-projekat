@@ -1,16 +1,20 @@
 import axios, { AxiosInstance } from "axios";
-import { CreateDogadjajDTO } from "../Domain/DTOs/EventDTO";
 import { CreateFiscalReceiptDTO } from "../Domain/DTOs/CreateFiscalReceiptDTO";
+import { PackAndSendRequestDTO } from "../Domain/DTOs/PackAndSendRequestDTO";
 
 type Uloga = "MENADZER_PRODAJE" | "PRODAVAC";
 
 export class GatewayClient {
   private readonly client: AxiosInstance;
 
-  // Putanje preko env-a (da ne hardkodujemo rute – timski projekat)
-  private readonly storageSendPath: string;
+  // putanje preko env-a (da nema hardcode)
   private readonly analyticsCreateReceiptPath: string;
   private readonly dogadjajiPath: string;
+
+  private readonly processingGetPath: string;
+  private readonly processingPackSendPath: string;
+  private readonly processingStartPath: string;
+
 
   constructor() {
     const baseURL = process.env.GATEWAY_INTERNAL_API;
@@ -19,18 +23,22 @@ export class GatewayClient {
     const internalKey = process.env.INTERNAL_API_KEY;
     if (!internalKey) throw new Error("INTERNAL_API_KEY nije podešen u .env");
 
-    /**
-     * DEFAULT rute (ako env nije setovan).
-     * Ove default-ove stavi da budu najbliži onome što gateway tipično ima:
-     * - skladiste: /internal/skladiste/... (action)
-     * - analytics: /internal/analytics/... (racuni)
-     */
-    this.storageSendPath =
-      process.env.STORAGE_SEND_PATH ?? "/internal/skladiste/slanje";
     this.analyticsCreateReceiptPath =
       process.env.ANALYTICS_CREATE_RECEIPT_PATH ?? "/internal/analytics/racuni";
-    this.dogadjajiPath =
-      process.env.DOGADJAJI_PATH ?? "/internal/dogadjaji";
+
+    this.dogadjajiPath = process.env.DOGADJAJI_PATH ?? "/internal/dogadjaji";
+
+    // internal processing
+    this.processingGetPath =
+      process.env.PROCESSING_AVAILABLE_PATH ?? "/internal/processing/get";
+
+    this.processingStartPath =
+    process.env.PROCESSING_START_PATH ?? "/internal/processing/start";
+
+    // ako ga koristiš negde (može ostati)
+    this.processingPackSendPath =
+      process.env.GATEWAY_PROCESSING_PACK_SEND_PATH ??
+      "/internal/processing/packing/send";
 
     this.client = axios.create({
       baseURL,
@@ -42,61 +50,108 @@ export class GatewayClient {
     });
   }
 
-  /**
-   * Skladište: zahtev da se obezbedi/umanji ambalaža za prodaju.
-   * Napomena: payload je { trazenaKolicina } kao što već koristiš.
-   *
-   * ULOGA HEADER:
-   * - Ako ti gateway/skladiste eksplicitno traži x-uloga, ostavi.
-   * - Ako ne traži, ovaj header neće smetati (najčešće se ignoriše).
-   */
-  async requestPerfumesFromStorage(
-    trazenaKolicina: number,
-    uloga?: Uloga,
-  ): Promise<any> {
-    try {
-      const res = await this.client.post(
-        this.storageSendPath,
-        { trazenaKolicina },
-        uloga ? { headers: { "x-uloga": uloga } } : undefined,
-      );
-      return res.data;
-    } catch (e: any) {
-      const msg =
-        e?.response?.data?.message ??
-        e?.response?.data ??
-        e?.message ??
-        "Storage request failed";
-      throw new Error(`Skladište greška: ${msg}`);
-    }
-  }
-
-  /**
-   * Analytics: kreiranje fiskalnog računa (NE DIRAMO QR deo, ovo je samo racun).
-   */
+  // --------------------
+  // ANALYTICS
+  // --------------------
   async createFiscalReceipt(dto: CreateFiscalReceiptDTO): Promise<any> {
     try {
       const res = await this.client.post(this.analyticsCreateReceiptPath, dto);
       return res.data;
     } catch (e: any) {
+      const status = e?.response?.status;
+      const data = e?.response?.data;
+
       const msg =
-        e?.response?.data?.message ??
-        e?.response?.data ??
+        (data?.message ?? data?.error) ??
+        (typeof data === "string"
+          ? data
+          : data
+            ? JSON.stringify(data)
+            : null) ??
         e?.message ??
         "Create receipt failed";
-      throw new Error(`Analytics greška: ${msg}`);
+
+      throw new Error(`Analytics greška (${status ?? "?"}): ${msg}`);
     }
   }
 
-  /**
-   * Događaji / audit
-   */
-  async logEvent(dto: CreateDogadjajDTO): Promise<void> {
-    try {
-      await this.client.post(this.dogadjajiPath, dto);
-    } catch (e: any) {
-      // audit ne sme da obori kupovinu
-      console.warn("⚠️ logEvent failed (ignored):", e?.message ?? e);
-    }
+  // --------------------
+  // DOGADJAJI
+  // --------------------
+  async logEvent(dto: { tip: "INFO" | "WARNING" | "ERROR"; opis: string }) {
+    // audit log ne treba da obori tok, ali ovde je ok da pustiš da baci ako želiš
+    const res = await this.client.post(this.dogadjajiPath, dto);
+    return res.data;
+  }
+
+  // --------------------
+  // PROCESSING (preko gateway internal)
+  // --------------------
+  async getAvailablePerfumesFromProcessing(perfumeType = "parfum", count = 1000): Promise<any[]> {
+    const res = await this.client.post(this.processingGetPath, { perfumeType, count });
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+ async startProcessing(body: {
+  perfumeName: string;
+  perfumeType: string;
+  bottleVolume: number;
+  bottleCount: number;
+}): Promise<any> {
+  const res = await this.client.post(this.processingStartPath, body);
+  return res.data;
+}
+
+
+  async getProcessingCatalog(): Promise<
+    Array<{ name: string; description: string; price: number; type: string; netoMl: number }>
+  > {
+    const res = await this.client.get("/internal/processing/catalog");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async packAndSendToProcessing(dto: PackAndSendRequestDTO): Promise<any> {
+    const res = await this.client.post(this.processingPackSendPath, dto);
+    return res.data;
+  }
+
+  // --------------------
+  // SKLADISTE (preko gateway internal)
+  // --------------------
+  async requestPerfumesFromStorage(trazenaKolicina: number, uloga: Uloga) {
+    // koristiš već postojeću internal rutu u gateway-u
+    const res = await this.client.post(
+      "/internal/skladiste/poslji-ambalaze",
+      { trazenaKolicina },
+      { headers: { "x-uloga": uloga } },
+    );
+    return res.data;
+  }
+
+  async requestPerfumeStateFromStorage(names: string[], uloga: Uloga) {
+    const body = { items: names.map((n) => ({ name: n, quantity: 1 })) };
+    const res = await this.client.post("/internal/skladiste/slanje", body, {
+      headers: { "x-uloga": uloga, "x-mode": "STANJE" },
+    });
+    return (res.data?.poslato ?? []) as Array<{ name: string; quantity: number }>;
+  }
+
+  async requestPerfumesFromStorageByItems(items: Array<{ name: string; quantity: number }>, uloga: Uloga) {
+    const body = { items };
+    const res = await this.client.post("/internal/skladiste/slanje", body, {
+      headers: { "x-uloga": uloga, "x-mode": "ISPORUKA" },
+    });
+    return res.data;
+  }
+
+  // kompatibilno sa starim imenima ako ih negde koristiš
+  async skladisteStanje(names: string[], uloga: Uloga) {
+    return this.requestPerfumeStateFromStorage(names, uloga);
+  }
+  async skladisteIsporuka(items: Array<{ name: string; quantity: number }>, uloga: Uloga) {
+    const res = await this.client.post("/internal/skladiste/slanje", { items }, {
+      headers: { "x-uloga": uloga, "x-mode": "ISPORUKA" },
+    });
+    return (res.data?.poslato ?? []) as Array<{ name: string; quantity: number }>;
   }
 }

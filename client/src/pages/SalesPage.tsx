@@ -132,9 +132,10 @@ export const SalesPage: React.FC = () => {
   }
 
   const items = cart.map((x) => ({
-    name: x.perfume.name,
-    quantity: x.quantity,
-  })) as any;
+  name: x.perfume.name,      // ✅ NAZIV
+  quantity: x.quantity,
+})) as any;
+
 
   const dto: PurchaseRequestDTO = {
     userId,
@@ -500,7 +501,7 @@ export const SalesPage: React.FC = () => {
             lastItems.map((s, idx) => {
               const line = Number(s.kol) * Number(s.cena);
               return (
-                <React.Fragment key={idx}>
+                <React.Fragment key={`${s.naziv}-${idx}`}>
                   <div>{s.naziv}</div>
                   <div style={{ textAlign: "right" }}>{s.kol}</div>
                   <div style={{ textAlign: "right" }}>{Number(s.cena).toFixed(2)}</div>

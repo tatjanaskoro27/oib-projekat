@@ -1,7 +1,6 @@
 import { Router, Request, Response } from "express";
 import {
-  PurchaseRequestDTO,
-  PurchaseItemDTO,
+  PurchaseRequestDTO
 } from "../Domain/DTOs/PurchaseRequestDTO";
 import { SalesService } from "../Services/SalesService";
 
@@ -18,7 +17,6 @@ export class SalesController {
 
   private initializeRoutes() {
     this.router.get("/sales/perfumes", this.getPerfumes.bind(this));
-    this.router.post("/sales/seed", this.seed.bind(this));
     this.router.post("/sales/purchase", this.purchase.bind(this));
   }
 
@@ -31,14 +29,7 @@ export class SalesController {
     }
   }
 
-  private async seed(req: Request, res: Response) {
-    try {
-      const result = await this.salesService.seedPerfumes();
-      return res.status(200).json(result);
-    } catch (err) {
-      return res.status(500).json({ error: (err as Error).message });
-    }
-  }
+  
 
   private async purchase(req: Request, res: Response) {
     try {

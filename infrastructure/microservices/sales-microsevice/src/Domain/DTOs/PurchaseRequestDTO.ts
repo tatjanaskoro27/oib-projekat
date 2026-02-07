@@ -1,11 +1,10 @@
-export type PurchaseItemDTO = {
-  perfumeId: string;
-  quantity: number;
-};
-
-export type PurchaseRequestDTO = {
+// src/Domain/DTOs/PurchaseRequestDTO.ts
+export interface PurchaseRequestDTO {
   userId: string;
-  items: PurchaseItemDTO[];
-  saleType?: string;     // kasnije: MALOPRODAJA / VELEPRODAJA
-  paymentType?: string;  // kasnije: GOTOVINA / KARTICA / ...
-};
+  saleType: "MALOPRODAJA" | "VELEPRODAJA";
+  paymentType: "GOTOVINA" | "UPLATA_NA_RACUN" | "KARTICNO_PLACANJE";
+  items: Array<{
+    name: string;
+    quantity: number;
+  }>;
+}

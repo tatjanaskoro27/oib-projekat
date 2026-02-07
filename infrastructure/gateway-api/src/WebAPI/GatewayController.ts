@@ -102,10 +102,26 @@ export class GatewayController {
     this.router.post("/internal/dogadjaji", internalAuth, this.internalCreateDogadjaj.bind(this));
 
     // Sales
-    this.router.get("/sales/perfumes", authenticate, authorize("manager", "seller"), this.getSalesPerfumes.bind(this));
-    this.router.post("/sales/purchase", authenticate, authorize("manager", "seller"), this.salesPurchase.bind(this));
+    this.router.get("/sales/perfumes", authenticate, authorize("admin","manager", "seller"), this.getSalesPerfumes.bind(this));
+    this.router.post("/sales/purchase", authenticate, authorize("admin","manager", "seller"), this.salesPurchase.bind(this));
 
     this.router.post("/internal/skladiste/poslji-ambalaze", internalAuth, this.internalSendAmbalaze.bind(this));
+    // ✅ INTERNAL skladiste (server-to-server): prijem ambalaze
+    this.router.post("/internal/skladiste/skladista/:id/prijem", internalAuth, this.internalPrijemAmbalaze.bind(this));
+    this.router.post("/internal/processing/get", internalAuth, this.internalGetProcessingPerfumes.bind(this));
+    this.router.post("/internal/processing/packing/send",internalAuth,this.internalProcessingPackAndSend.bind(this));
+    // INTERNAL skladiste lista (server-to-server)
+    this.router.get("/internal/skladiste/skladista", internalAuth, this.internalGetSkladista.bind(this));
+
+    // INTERNAL processing catalog (server-to-server)
+    this.router.get("/internal/processing/catalog", internalAuth, this.internalGetProcessingCatalog.bind(this));
+
+    // INTERNAL skladiste slanje parfema (server-to-server) - STANJE/ISPORUKA
+    this.router.post("/internal/skladiste/slanje", internalAuth, this.internalSkladisteSlanje.bind(this));
+    
+    // ✅ INTERNAL processing start (server-to-server)
+    this.router.post("/internal/processing/start", internalAuth, this.internalStartProcessing.bind(this));
+
     // INTERNAL analytics racuni (server-to-server)
     this.router.post("/internal/analytics/racuni", internalAuth, this.internalCreateRacun.bind(this));
 
@@ -124,6 +140,8 @@ export class GatewayController {
       authorize("admin", "seller"),
       this.proxyPerformance.bind(this)
     );
+
+    
 
   }
 
@@ -703,9 +721,16 @@ export class GatewayController {
 
       const data = await this.gatewayService.internalSendAmbalaze(trazenaKolicina, uloga);
       return res.json(data);
-    } catch (err) {
-      return res.status(400).json({ message: (err as Error).message });
-    }
+    } catch (err: any) {
+  const status = err?.response?.status ?? 500;
+  const data =
+    err?.response?.data !== undefined
+      ? err.response.data
+      : { message: err?.message || "Internal send ambalaze error" };
+
+  return res.status(status).json(data);
+}
+
   }
 
   private async internalCreateRacun(req: Request, res: Response) {
@@ -823,6 +848,129 @@ export class GatewayController {
     }
   }
 
+  private async internalPrijemAmbalaze(req: Request, res: Response) {
+  try {
+    const id = String(req.params.id ?? "").trim();
+    if (!id) {
+      return res.status(400).json({ message: "Skladiste id je obavezan." });
+    }
+
+    const base = String(process.env.SKLADISTE_SERVICE_API || "").replace(/\/$/, "");
+    if (!base) {
+      return res.status(500).json({ message: "SKLADISTE_SERVICE_API nije podešen u .env" });
+    }
+
+    // ✅ skladiste mikroservis ruta: /api/v1/skladista/:id/prijem
+    const url = `${base}/skladista/${id}/prijem`;
+
+    const response = await axios.request({
+      method: "POST",
+      url,
+      data: req.body,
+      headers: {
+        "content-type": req.headers["content-type"] || "application/json",
+      },
+      validateStatus: () => true,
+    });
+
+    return res.status(response.status).json(response.data);
+  } catch (err: any) {
+    const status = err?.response?.status ?? 500;
+    const data =
+      err?.response?.data !== undefined
+        ? err.response.data
+        : { message: err?.message || "Gateway internal prijem error" };
+
+    return res.status(status).json(data);
+  }
+}
+  async internalGetProcessingPerfumes(req: Request, res: Response): Promise<void> {
+  try {
+    const data = await this.gatewayService.getPerfumes(req.body);
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+}
+
+  private async internalProcessingPackAndSend(req: Request, res: Response) {
+  try {
+    const base = String(process.env.PROCESSING_SERVICE_API || "").replace(/\/$/, "");
+    if (!base) {
+      return res.status(500).json({ message: "PROCESSING_SERVICE_API nije podešen u .env" });
+    }
+
+    // ✅ processing mikroservis ruta: /api/v1/packing/send
+    const url = `${base}/packing/send`;
+
+    const response = await axios.request({
+      method: "POST",
+      url,
+      data: req.body,
+      headers: {
+        "content-type": req.headers["content-type"] || "application/json",
+      },
+      validateStatus: () => true,
+    });
+
+    return res.status(response.status).json(response.data);
+  } catch (err: any) {
+    const status = err?.response?.status ?? 500;
+    const data =
+      err?.response?.data !== undefined
+        ? err.response.data
+        : { message: err?.message || "Gateway internal processing packing error" };
+
+    return res.status(status).json(data);
+  }
+}
+
+  private async internalGetSkladista(req: Request, res: Response) {
+  try {
+    const data = await this.gatewayService.internalGetSkladista();
+    return res.status(200).json(data);
+  } catch (e: any) {
+    return res.status(400).json({ message: e?.message ?? "Error" });
+  }
+}
+
+private async internalGetProcessingCatalog(req: Request, res: Response) {
+  try {
+    const data = await this.gatewayService.internalGetProcessingCatalog();
+    return res.status(200).json(data);
+  } catch (e: any) {
+    return res.status(400).json({ message: e?.message ?? "Error" });
+  }
+}
+
+private async internalSkladisteSlanje(req: Request, res: Response) {
+  try {
+    const uloga = String(req.header("x-uloga") || "");
+    const mode = String(req.header("x-mode") || "");
+    if (!uloga) return res.status(400).json({ message: "Missing x-uloga" });
+    if (!mode) return res.status(400).json({ message: "Missing x-mode" });
+
+    const data = await this.gatewayService.internalSkladisteSlanje(req.body, uloga, mode);
+    return res.status(200).json(data);
+  } catch (e: any) {
+    return res.status(400).json({ message: e?.message ?? "Error" });
+  }
+}
+
+private async internalStartProcessing(req: Request, res: Response): Promise<void> {
+  try {
+    const data = await this.gatewayService.internalStartProcessing(req.body);
+    res.status(201).json(data);
+  } catch (err: any) {
+    const status = err?.response?.status ?? 400;
+    const data =
+      err?.response?.data !== undefined
+        ? err.response.data
+        : { message: err?.message || "Internal processing start error" };
+
+    res.status(status).json(data);
+  }
+}
 
 
 }

@@ -18,6 +18,7 @@ export class ProcessingController {
   private initializeRoutes(): void {
     this.router.post("/processing/start", this.startProcessing.bind(this));
     this.router.post("/processing/get", this.getPerfumes.bind(this));
+    this.router.get("/processing/catalog", this.getCatalog.bind(this));
   }
 
   private async startProcessing(req: Request, res: Response): Promise<void> {
@@ -53,6 +54,17 @@ export class ProcessingController {
       res.status(400).json({ message: (err as Error).message });
     }
   }
+
+   private async getCatalog(_req: Request, res: Response): Promise<void> {
+    try {
+      const catalog = await this.processingService.getCatalog();
+      res.status(200).json(catalog);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  }
+
+
 
   public getRouter(): Router {
     return this.router;
