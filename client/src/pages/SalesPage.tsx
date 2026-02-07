@@ -76,7 +76,7 @@ export const SalesPage: React.FC = () => {
     setError(null);
     setQrCode(null);
 
-    if (!p.available || p.stock <= 0) {
+    if (p.stock <= 0) {
       setError("Ovaj parfem trenutno nije dostupan.");
       return;
     }
@@ -215,49 +215,125 @@ export const SalesPage: React.FC = () => {
     ? receiptTotal
     : Number(calcTotalFromItems);
 
-  return (
-    <div className="overlay-blur-none" style={{ minHeight: "100vh" }}>
-      <div
-        className="window"
-        style={{ width: "1100px", maxWidth: "95%", margin: "30px auto" }}
-      >
-        <div className="window-content" style={{ padding: 24 }}>
-          {/* HEADER */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 22 }}>Prodaja</h2>
+return (
+  <div className="overlay-blur-none" style={{ minHeight: "100vh" }}>
+    <div
+      className="window"
+      style={{
+        width: "1320px",
+        maxWidth: "98%",
+        margin: "20px auto",
+      }}
+    >
+      <div className="window-content" style={{ padding: 22 }}>
+        {/* TOP BAR */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              className="btn"
+              onClick={() => navigate("/warehouse")}
+              disabled={loading}
+              style={{
+                borderRadius: 12,
+                padding: "10px 14px",
+                fontWeight: 900,
+              }}
+              title="Otvori skladište"
+            >
+              📦 Skladište
+            </button>
+
+            <button
+              className="btn btn-accent"
+              onClick={() => navigate("/sales")}
+              disabled={loading}
+              style={{
+                borderRadius: 12,
+                padding: "10px 14px",
+                fontWeight: 900,
+              }}
+              title="Prodaja"
+            >
+              🛒 Prodaja
+            </button>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <button
+              className="btn"
+              onClick={loadPerfumes}
+              disabled={loading || !token}
+              style={{ borderRadius: 12, padding: "10px 14px", fontWeight: 900 }}
+              title="Osveži katalog"
+            >
+              🔄 Osveži
+            </button>
 
             <button
               className="btn"
               onClick={() => navigate("/dashboard")}
               disabled={loading}
+              style={{ borderRadius: 12, padding: "10px 14px", fontWeight: 900 }}
             >
-              Nazad na meni
+              ↩ Nazad na meni
             </button>
           </div>
+        </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              flexWrap: "wrap",
-              marginTop: 18,
-            }}
-          >
-            <label
+        {/* INFO */}
+        <div
+          style={{
+            borderRadius: 16,
+            background: "rgba(40,167,69,0.10)",
+            border: "1px solid rgba(40,167,69,0.18)",
+            padding: 14,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 900 }}>🛒 Prodaja parfema</div>
+              <div style={{ opacity: 0.75, marginTop: 4, fontSize: 13 }}>
+                Dodaj parfeme u korpu, izaberi tip prodaje i način plaćanja, pa izvrši kupovinu.
+              </div>
+            </div>
+
+            <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                minWidth: 220,
+                alignSelf: "center",
+                padding: "8px 12px",
+                borderRadius: 999,
+                fontWeight: 900,
+                background: "rgba(0,0,0,0.06)",
+                border: "1px solid rgba(0,0,0,0.08)",
+                whiteSpace: "nowrap",
               }}
             >
+              Ukupno parfema: {perfumes.length}
+            </div>
+          </div>
+        </div>
+
+        {/* FILTERS */}
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+            marginTop: 12,
+            alignItems: "end",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 240 }}>
               Tip prodaje
               <select
                 value={saleType}
@@ -265,68 +341,83 @@ export const SalesPage: React.FC = () => {
                   setSaleType(e.target.value as PurchaseRequestDTO["saleType"])
                 }
                 disabled={loading}
+                style={{ borderRadius: 12, padding: "10px 12px" }}
               >
                 <option value="MALOPRODAJA">MALOPRODAJA</option>
                 <option value="VELEPRODAJA">VELEPRODAJA</option>
               </select>
             </label>
 
-            <label
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                minWidth: 220,
-              }}
-            >
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 240 }}>
               Način plaćanja
               <select
                 value={paymentType}
                 onChange={(e) =>
-                  setPaymentType(
-                    e.target.value as PurchaseRequestDTO["paymentType"],
-                  )
+                  setPaymentType(e.target.value as PurchaseRequestDTO["paymentType"])
                 }
                 disabled={loading}
+                style={{ borderRadius: 12, padding: "10px 12px" }}
               >
                 <option value="GOTOVINA">GOTOVINA</option>
                 <option value="UPLATA">UPLATA</option>
                 <option value="KARTICA">KARTICA</option>
               </select>
             </label>
-
-            <div style={{ display: "flex", alignItems: "end" }}>
-              <button
-                className="btn"
-                onClick={loadPerfumes}
-                disabled={loading || !token}
-              >
-                Osveži katalog
-              </button>
-            </div>
           </div>
+        </div>
 
-          {error && (
-            <div style={{ marginTop: 14, color: "crimson" }}>{error}</div>
-          )}
+        {error && (
+          <div style={{ marginTop: 12, color: "crimson", fontWeight: 700 }}>{error}</div>
+        )}
 
+        {/* GRID */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(560px, 1.6fr) minmax(440px, 1fr)",
+            gap: 16,
+            marginTop: 14,
+            alignItems: "start",
+          }}
+        >
+          {/* KATALOG */}
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "1.2fr 0.8fr",
-              gap: 16,
-              marginTop: 18,
+              borderRadius: 16,
+              border: "1px solid rgba(0,0,0,0.10)",
+              background: "rgba(255,255,255,0.95)",
+              overflow: "hidden",
+              boxShadow: "0 10px 22px rgba(0,0,0,0.06)",
             }}
           >
-            {/* KATALOG */}
-            <div>
-              <h3 style={{ margin: "8px 0 12px" }}>Katalog</h3>
+            <div
+              style={{
+                padding: 12,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 10,
+                background: "rgba(18,185,90,0.12)",
+                borderBottom: "1px solid rgba(0,0,0,0.08)",
+                fontWeight: 900,
+              }}
+            >
+              <div>🧾 Katalog</div>
+              <div style={{ fontSize: 12.5, opacity: 0.8 }}>
+                {loading ? "Učitavam..." : `Ukupno: ${perfumes.length}`}
+              </div>
+            </div>
 
-              <div style={{ maxHeight: 420, overflowY: "auto", paddingRight: 6 }}>
+            <div style={{ padding: 12 }}>
+              <div
+                style={{
+                  maxHeight: "calc(100vh - 260px)",
+                  overflowY: "auto",
+                  paddingRight: 6,
+                }}
+              >
                 {perfumes.length === 0 && (
-                  <div style={{ opacity: 0.8 }}>
-                    {loading ? "Učitavam..." : "Nema parfema."}
-                  </div>
+                  <div style={{ opacity: 0.8 }}>{loading ? "Učitavam..." : "Nema parfema."}</div>
                 )}
 
                 {perfumes.map((p: SalesPerfumeDTO) => (
@@ -335,19 +426,20 @@ export const SalesPage: React.FC = () => {
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      gap: 12,
-                      padding: 12,
-                      borderRadius: 10,
-                      background: "rgba(0,0,0,0.10)",
+                      gap: 16,
+                      padding: 14,
+                      borderRadius: 14,
+                      background: "rgba(0,0,0,0.04)",
+                      border: "1px solid rgba(0,0,0,0.06)",
                       marginBottom: 10,
                     }}
                   >
-                    <div>
-                      <div style={{ fontWeight: 700 }}>{p.name}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 900 }}>{p.name}</div>
                       <div style={{ opacity: 0.85, marginTop: 4, fontSize: 13 }}>
                         {p.description}
                       </div>
-                      <div style={{ opacity: 0.85, marginTop: 6, fontSize: 13 }}>
+                      <div style={{ opacity: 0.85, marginTop: 8, fontSize: 13 }}>
                         Cena: <b>{Number(p.price).toFixed(2)}</b> | Na stanju:{" "}
                         <b>{p.stock}</b> | Status:{" "}
                         <b>{p.available ? "dostupan" : "nedostupan"}</b>
@@ -359,6 +451,7 @@ export const SalesPage: React.FC = () => {
                         className="btn btn-accent"
                         onClick={() => addToCart(p)}
                         disabled={loading || !p.available || p.stock <= 0}
+                        style={{ borderRadius: 12, padding: "10px 16px", fontWeight: 900 }}
                       >
                         Dodaj
                       </button>
@@ -367,38 +460,68 @@ export const SalesPage: React.FC = () => {
                 ))}
               </div>
             </div>
+          </div>
 
-            {/* KORPA */}
+          {/* KORPA */}
+          <div
+            style={{
+              borderRadius: 16,
+              border: "1px solid rgba(0,0,0,0.10)",
+              background: "rgba(255,255,255,0.95)",
+              overflow: "hidden",
+              boxShadow: "0 10px 22px rgba(0,0,0,0.06)",
+              position: "sticky",
+              top: 14,
+            }}
+          >
             <div
               style={{
-                maxHeight: "calc(100vh - 220px)",
-                overflowY: "auto",
-                paddingRight: 6,
+                padding: 12,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 10,
+                background: "rgba(50,120,255,0.12)",
+                borderBottom: "1px solid rgba(0,0,0,0.08)",
+                fontWeight: 900,
               }}
             >
+              <div>🧺 Korpa ({cart.length})</div>
+              <div style={{ fontSize: 13, opacity: 0.9 }}>
+                Ukupno: <b>{total.toFixed(2)}</b>
+              </div>
+            </div>
+
+            <div style={{ padding: 12, maxHeight: "calc(100vh - 170px)", overflowY: "auto" }}>
               <div
                 style={{
-                  background: "rgba(0,0,0,0.10)",
+                  background: "rgba(0,0,0,0.06)",
+                  border: "1px solid rgba(0,0,0,0.08)",
                   padding: 12,
-                  borderRadius: 10,
+                  borderRadius: 14,
                 }}
               >
-                {cart.length === 0 && (
-                  <div style={{ opacity: 0.8 }}>Korpa je prazna.</div>
-                )}
+                {cart.length === 0 && <div style={{ opacity: 0.8 }}>Korpa je prazna.</div>}
 
                 {cart.map((x: CartItem) => (
                   <div
                     key={x.perfume.id}
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
+                      display: "grid",
+                      gridTemplateColumns: "1fr 110px 44px",
+                      alignItems: "center",
                       gap: 10,
                       marginBottom: 10,
+                      padding: 10,
+                      borderRadius: 14,
+                      background: "rgba(255,255,255,0.85)",
+                      border: "1px solid rgba(0,0,0,0.08)",
                     }}
                   >
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600 }}>{x.perfume.name}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 900, overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {x.perfume.name}
+                      </div>
                       <div style={{ opacity: 0.75, fontSize: 12 }}>
                         Cena: {Number(x.perfume.price).toFixed(2)}
                       </div>
@@ -412,7 +535,12 @@ export const SalesPage: React.FC = () => {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         updateQty(x.perfume.id, Number(e.target.value))
                       }
-                      style={{ width: 90 }}
+                      style={{
+                        width: "100%",
+                        borderRadius: 12,
+                        padding: "8px 10px",
+                        textAlign: "center",
+                      }}
                       disabled={loading}
                     />
 
@@ -420,21 +548,17 @@ export const SalesPage: React.FC = () => {
                       className="btn"
                       onClick={() => removeFromCart(x.perfume.id)}
                       disabled={loading}
+                      style={{ borderRadius: 12, fontWeight: 900, padding: "10px 0" }}
+                      title="Ukloni"
                     >
-                      X
+                      ✕
                     </button>
                   </div>
                 ))}
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginTop: 12,
-                  }}
-                >
-                  <div style={{ fontWeight: 700 }}>Ukupno:</div>
-                  <div style={{ fontWeight: 700 }}>{total.toFixed(2)}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
+                  <div style={{ fontWeight: 900 }}>Ukupno:</div>
+                  <div style={{ fontWeight: 900 }}>{total.toFixed(2)}</div>
                 </div>
 
                 <div style={{ marginTop: 12 }}>
@@ -442,7 +566,7 @@ export const SalesPage: React.FC = () => {
                     className="btn btn-accent"
                     onClick={purchase}
                     disabled={loading || cart.length === 0}
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", borderRadius: 12, padding: "12px 14px", fontWeight: 900 }}
                   >
                     {loading ? "Obrađujem..." : "Kupi"}
                   </button>
@@ -450,100 +574,104 @@ export const SalesPage: React.FC = () => {
               </div>
 
               {/* FISKALNI RAČUN */}
-{receipt && (
-  <div style={{ marginTop: 16 }}>
-    <h4 style={{ marginBottom: 10 }}>Fiskalni račun</h4>
+              {receipt && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontWeight: 900, marginBottom: 10 }}>Fiskalni račun</div>
 
-    <div
-      style={{
-        background: "rgba(0,0,0,0.15)",
-        padding: 12,
-        borderRadius: 10,
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ opacity: 0.9 }}>
-          <div><b>Tip prodaje:</b> {saleType}</div>
-          <div><b>Način plaćanja:</b> {paymentType}</div>
-        </div>
-
-        <div style={{ textAlign: "right", opacity: 0.9 }}>
-          <div><b>Broj računa:</b> {receipt?.racunId ?? receipt?.id ?? "-"}</div>
-          <div>
-            <b>Ukupan iznos:</b>{" "}
-            {Number(receipt?.ukupanIznos ?? receipt?.ukupno ?? total).toFixed(2)}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 12 }}>
-        <div style={{ fontWeight: 700, marginBottom: 6 }}>Stavke</div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 90px 120px 120px",
-            gap: 8,
-            fontSize: 13,
-            opacity: 0.95,
-          }}
-        >
-          <div style={{ fontWeight: 700 }}>Naziv</div>
-          <div style={{ fontWeight: 700, textAlign: "right" }}>Kol.</div>
-          <div style={{ fontWeight: 700, textAlign: "right" }}>Cena</div>
-          <div style={{ fontWeight: 700, textAlign: "right" }}>Ukupno</div>
-
-          {lastItems.length === 0 ? (
-            <div style={{ gridColumn: "1 / -1", opacity: 0.75 }}>
-              Nema stavki za prikaz.
-            </div>
-          ) : (
-            lastItems.map((s, idx) => {
-              const line = Number(s.kol) * Number(s.cena);
-              return (
-                <React.Fragment key={`${s.naziv}-${idx}`}>
-                  <div>{s.naziv}</div>
-                  <div style={{ textAlign: "right" }}>{s.kol}</div>
-                  <div style={{ textAlign: "right" }}>{Number(s.cena).toFixed(2)}</div>
-                  <div style={{ textAlign: "right" }}>{Number(line).toFixed(2)}</div>
-                </React.Fragment>
-              );
-            })
-          )}
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
-          <div style={{ fontWeight: 700 }}>Ukupno za naplatu:</div>
-          <div style={{ fontWeight: 700 }}>
-            {Number(receipt?.ukupanIznos ?? totalToShow ?? total).toFixed(2)}
-          </div>
-        </div>
-
-        <div style={{ marginTop: 12 }}>
-          <button className="btn" onClick={() => setReceipt(null)}>
-            Zatvori račun
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-
-
-
-              {/* QR KOD RAČUNA (NADOGRADNJA)  */}
-              {qrCode && (
-                <div style={{ marginTop: 16, textAlign: "center" }}>
-                  <h4 style={{ marginBottom: 10 }}>QR kod računa</h4>
                   <div
                     style={{
-                      background: "rgba(0,0,0,0.15)",
+                      background: "rgba(0,0,0,0.08)",
+                      border: "1px solid rgba(0,0,0,0.10)",
                       padding: 12,
-                      borderRadius: 10,
-                      display: "inline-block",
+                      borderRadius: 14,
                     }}
                   >
-                    <img src={qrCode} alt="QR kod" style={{ width: 180 }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                      <div style={{ opacity: 0.9 }}>
+                        <div><b>Tip prodaje:</b> {saleType}</div>
+                        <div><b>Način plaćanja:</b> {paymentType}</div>
+                      </div>
+
+                      <div style={{ textAlign: "right", opacity: 0.9 }}>
+                        <div><b>Broj računa:</b> {receipt?.racunId ?? receipt?.id ?? "-"}</div>
+                        <div>
+                          <b>Ukupan iznos:</b>{" "}
+                          {Number(receipt?.ukupanIznos ?? receipt?.ukupno ?? total).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontWeight: 800, marginBottom: 6 }}>Stavke</div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 70px 100px 110px",
+                          gap: 8,
+                          fontSize: 13,
+                          opacity: 0.95,
+                        }}
+                      >
+                        <div style={{ fontWeight: 800 }}>Naziv</div>
+                        <div style={{ fontWeight: 800, textAlign: "right" }}>Kol.</div>
+                        <div style={{ fontWeight: 800, textAlign: "right" }}>Cena</div>
+                        <div style={{ fontWeight: 800, textAlign: "right" }}>Ukupno</div>
+
+                        {lastItems.length === 0 ? (
+                          <div style={{ gridColumn: "1 / -1", opacity: 0.75 }}>
+                            Nema stavki za prikaz.
+                          </div>
+                        ) : (
+                          lastItems.map((s, idx) => {
+                            const line = Number(s.kol) * Number(s.cena);
+                            return (
+                              <React.Fragment key={`${s.naziv}-${idx}`}>
+                                <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{s.naziv}</div>
+                                <div style={{ textAlign: "right" }}>{s.kol}</div>
+                                <div style={{ textAlign: "right" }}>{Number(s.cena).toFixed(2)}</div>
+                                <div style={{ textAlign: "right" }}>{Number(line).toFixed(2)}</div>
+                              </React.Fragment>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
+                        <div style={{ fontWeight: 800 }}>Ukupno za naplatu:</div>
+                        <div style={{ fontWeight: 800 }}>
+                          {Number(receipt?.ukupanIznos ?? totalToShow ?? total).toFixed(2)}
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 12 }}>
+                        <button
+                          className="btn"
+                          onClick={() => setReceipt(null)}
+                          style={{ borderRadius: 12, width: "100%", fontWeight: 900 }}
+                        >
+                          Zatvori račun
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* QR KOD (NE DIRAM LOGIKU) */}
+              {qrCode && (
+                <div style={{ marginTop: 16, textAlign: "center" }}>
+                  <div style={{ fontWeight: 900, marginBottom: 10 }}>QR kod računa</div>
+                  <div
+                    style={{
+                      background: "rgba(0,0,0,0.08)",
+                      padding: 14,
+                      borderRadius: 14,
+                      display: "inline-block",
+                      border: "1px solid rgba(0,0,0,0.10)",
+                    }}
+                  >
+                    <img src={qrCode} alt="QR kod" style={{ width: 220, maxWidth: "100%", height: "auto" }} />
                   </div>
                 </div>
               )}
@@ -552,5 +680,8 @@ export const SalesPage: React.FC = () => {
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
+
+
+}

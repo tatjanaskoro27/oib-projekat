@@ -1,3 +1,4 @@
+import { In } from "typeorm";
 import { Repository } from "typeorm";
 import { IServisSkladista } from "../Domain/services/IServisSkladista";
 import { IStrategijaSkladista } from "../Domain/services/IStrategijaSkladista";
@@ -79,7 +80,11 @@ export class ServisSkladista implements IServisSkladista {
   if (mode === "STANJE") {
     const stavke = await this.stavkaRepo.find({
       relations: ["ambalaza"],
-      where: { ambalaza: { status: StatusAmbalaze.USKLADISTENA } },
+      where: {
+            ambalaza: {
+            status: In([StatusAmbalaze.USKLADISTENA, StatusAmbalaze.POSLATA]),
+              },
+            },
     });
 
     return items.map((i) => ({
@@ -116,20 +121,36 @@ export class ServisSkladista implements IServisSkladista {
 }
 
 
-  async posaljiAmbalaze(
-    trazenaKolicina: number,
-    uloga: "MENADZER_PRODAJE" | "PRODAVAC"
-  ): Promise<Ambalaza[]> {
-    const dostupne = await this.ambalazaRepo.find({
-      where: { status: StatusAmbalaze.USKLADISTENA },
-      take: trazenaKolicina,
-    });
+ async posaljiAmbalaze(
+  trazenaKolicina: number,
+  uloga: "MENADZER_PRODAJE" | "PRODAVAC"
+): Promise<Ambalaza[]> {
 
-    if (dostupne.length < trazenaKolicina) {
-      throw new Error("Nema dovoljno ambalaža u skladištu");
-    }
+  const strategija = this.strategijaZaUlogu(uloga);
 
-    dostupne.forEach((a) => (a.status = StatusAmbalaze.POSLATA));
-    return this.ambalazaRepo.save(dostupne);
+  // ✅ limit po specifikaciji: 3 ili 1
+  const max = strategija.maxAmbalazaPoSlanju();
+  if (trazenaKolicina > max) {
+    throw new Error(
+      `Uloga ${uloga} može poslati najviše ${max} ambalaža u jednom slanju.`
+    );
   }
+
+  // ✅ vreme nabavke po specifikaciji: 0.5s ili 2.5s
+  await sleep(strategija.kasnjenjeMs());
+
+  const dostupne = await this.ambalazaRepo.find({
+    where: { status: StatusAmbalaze.USKLADISTENA },
+    take: trazenaKolicina,
+    relations: ["stavke"],
+  });
+
+  if (dostupne.length < trazenaKolicina) {
+    throw new Error("Nema dovoljno ambalaža u skladištu");
+  }
+
+  dostupne.forEach((a) => (a.status = StatusAmbalaze.POSLATA));
+  return this.ambalazaRepo.save(dostupne);
+}
+
 }
