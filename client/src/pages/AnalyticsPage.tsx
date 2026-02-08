@@ -10,7 +10,6 @@ import {
 
 import { useNavigate } from "react-router-dom";
 
-
 type Props = {
   analyticsAPI: IAnalyticsAPI;
 };
@@ -19,9 +18,14 @@ function iso(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function fmtRsd(n: number) {
+function fmtEur(n: number) {
   const x = Number(n || 0);
-  return x.toLocaleString("sr-RS") + " RSD";
+  return x.toLocaleString("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function clamp(n: number) {
@@ -58,7 +62,6 @@ function fillMissingDays(
 
   return out;
 }
-
 
 function LineChart({
   title,
@@ -243,7 +246,7 @@ function BarChart({
         </svg>
       </div>
 
-      <div style={foot}>Max: {fmtRsd(maxV)}</div>
+      <div style={foot}>Max: {fmtEur(maxV)}</div>
     </div>
   );
 }
@@ -251,7 +254,6 @@ function BarChart({
 export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
   const { token } = useAuth();
   const navigate = useNavigate();
-
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
@@ -267,7 +269,9 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
   const [ukupnoPrihod, setUkupnoPrihod] = useState<number>(0);
   const [ukupnoKomada, setUkupnoKomada] = useState<number>(0);
   const [trend, setTrend] = useState<TrendProdajeItem[]>([]);
-  const [mesecnaPrihod, setMesecnaPrihod] = useState<MesecnaProdajaItem[]>([]);
+  const [mesecnaPrihod, setMesecnaPrihod] = useState<MesecnaProdajaItem[]>(
+    []
+  );
 
   const [top10Kolicina, setTop10Kolicina] = useState<Top10KolicinaItem[]>([]);
   const [top10Prihod, setTop10Prihod] = useState<Top10PrihodItem[]>([]);
@@ -304,9 +308,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
       setUkupnoKomada(clamp(rKomada.ukupnoKomada));
 
       setTrend(rTrend ?? []);
-      setMesecnaPrihod(
-        (rMesecna ?? []).slice().sort((a, b) => a.mesec - b.mesec)
-      );
+      setMesecnaPrihod((rMesecna ?? []).slice().sort((a, b) => a.mesec - b.mesec));
 
       setTop10Kolicina(rTopK ?? []);
       setTop10Prihod(rTopP ?? []);
@@ -325,12 +327,10 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canLoad, godina, start, end]);
 
-
   const trendChart = useMemo(() => {
     if (!start || !end) return [];
     return fillMissingDays(start, end, trend ?? []);
   }, [start, end, trend]);
-
 
   const mesecnaChart = (mesecnaPrihod ?? []).map((m) => ({
     label: String(m.mesec),
@@ -339,8 +339,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
 
   const topRows = useMemo(() => {
     const mapK = new Map<string, number>();
-    for (const k of top10Kolicina ?? [])
-      mapK.set(k.parfemNaziv, clamp(k.kolicina));
+    for (const k of top10Kolicina ?? []) mapK.set(k.parfemNaziv, clamp(k.kolicina));
 
     const allNames = new Set<string>();
     (top10Prihod ?? []).forEach((x) => allNames.add(x.parfemNaziv));
@@ -349,9 +348,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
     const rows = Array.from(allNames).map((name) => ({
       name,
       quantity: mapK.get(name) ?? 0,
-      revenue: clamp(
-        (top10Prihod ?? []).find((p) => p.parfemNaziv === name)?.prihod ?? 0
-      ),
+      revenue: clamp((top10Prihod ?? []).find((p) => p.parfemNaziv === name)?.prihod ?? 0),
     }));
 
     rows.sort((a, b) => b.revenue - a.revenue);
@@ -385,7 +382,6 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
       setErr(e?.message ?? "Greška pri preuzimanju PDF izveštaja");
     }
   };
-
 
   const s = {
     page: {
@@ -439,8 +435,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
       fontWeight: 950,
       cursor: "pointer",
       boxShadow: "0 8px 18px rgba(2,6,23,0.06)",
-      transition:
-        "transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease",
+      transition: "transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease",
     } as React.CSSProperties,
     btnPrimary: {
       background: "#16a34a",
@@ -541,22 +536,22 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
       gap: 12,
     } as React.CSSProperties,
     stat: (_grad: string) =>
-    ({
-      padding: 14,
-      borderRadius: 16,
-      background: "#fff",
-      border: "1px solid rgba(2,6,23,0.08)",
-      boxShadow: "0 10px 24px rgba(2,6,23,0.06)",
-      position: "relative",
-      overflow: "hidden",
-    } as React.CSSProperties),
+      ({
+        padding: 14,
+        borderRadius: 16,
+        background: "#fff",
+        border: "1px solid rgba(2,6,23,0.08)",
+        boxShadow: "0 10px 24px rgba(2,6,23,0.06)",
+        position: "relative",
+        overflow: "hidden",
+      } as React.CSSProperties),
     statOverlay: (grad: string) =>
-    ({
-      position: "absolute",
-      inset: 0,
-      opacity: 0.08,
-      background: grad,
-    } as React.CSSProperties),
+      ({
+        position: "absolute",
+        inset: 0,
+        opacity: 0.08,
+        background: grad,
+      } as React.CSSProperties),
     statLabel: {
       position: "relative",
       fontSize: 12,
@@ -653,8 +648,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
     } as React.CSSProperties,
   };
 
-  const isNarrow =
-    typeof window !== "undefined" ? window.innerWidth < 980 : false;
+  const isNarrow = typeof window !== "undefined" ? window.innerWidth < 980 : false;
   const statsCols = isNarrow ? "repeat(2, 1fr)" : "repeat(4, 1fr)";
   const gridCols = isNarrow ? "1fr" : "1fr 1fr";
   const filterCols = isNarrow ? "1fr 1fr" : "160px 200px 200px 1fr";
@@ -669,11 +663,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
           </div>
 
           <div style={s.topRight}>
-            <button
-              style={s.btn}
-              onClick={() => navigate(-1)}
-              title="Nazad"
-            >
+            <button style={s.btn} onClick={() => navigate(-1)} title="Nazad">
               ⬅ Nazad na meni
             </button>
 
@@ -689,7 +679,6 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
               Export PDF
             </button>
           </div>
-
         </div>
 
         <div style={{ ...s.card, marginTop: 12 }}>
@@ -732,8 +721,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
             >
               <div style={s.pill}>
                 <span style={s.pillDot} />
-                PDF export:{" "}
-                <code style={{ fontWeight: 950 }}>/analytics/izvestaj/pdf</code>
+                PDF export: <code style={{ fontWeight: 950 }}>/analytics/izvestaj/pdf</code>
               </div>
             </div>
           </div>
@@ -754,7 +742,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
             />
             <div style={s.statLabel}>Ukupan prihod</div>
             <div style={s.statValue}>
-              {loading ? "..." : fmtRsd(Number(ukupnoPrihod || 0))}
+              {loading ? "..." : fmtEur(Number(ukupnoPrihod || 0))}
             </div>
           </div>
 
@@ -766,9 +754,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
             />
             <div style={s.statLabel}>Ukupno komada</div>
             <div style={s.statValue}>
-              {loading
-                ? "..."
-                : Number(ukupnoKomada || 0).toLocaleString("sr-RS")}
+              {loading ? "..." : Number(ukupnoKomada || 0).toLocaleString("sr-RS")}
             </div>
           </div>
 
@@ -790,7 +776,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
             />
             <div style={s.statLabel}>Ukupan prihod Top10</div>
             <div style={s.statValue}>
-              {loading ? "..." : fmtRsd(Number(top10PrihodUkupno || 0))}
+              {loading ? "..." : fmtEur(Number(top10PrihodUkupno || 0))}
             </div>
           </div>
         </div>
@@ -799,9 +785,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <LineChart title="Trend prihoda (period)" items={trendChart} />
 
-            {!loading &&
-              trendChart.length > 0 &&
-              trendChart.every((x) => x.value === 0) ? (
+            {!loading && trendChart.length > 0 && trendChart.every((x) => x.value === 0) ? (
               <div style={s.noData}>Nema prodaje u izabranom periodu.</div>
             ) : null}
           </div>
@@ -813,7 +797,6 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
             ) : null}
           </div>
         </div>
-
 
         <div style={{ ...s.grid2, gridTemplateColumns: gridCols }}>
           <div style={{ ...s.card, ...s.cardFill }}>
@@ -830,8 +813,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
                   </div>
                   <div style={s.listRow}>
                     <span style={s.bullet} />
-                    Ukupan prihod u sistemu:{" "}
-                    <b>{fmtRsd(Number(ukupnoPrihod || 0))}</b>
+                    Ukupan prihod u sistemu: <b>{fmtEur(Number(ukupnoPrihod || 0))}</b>
                   </div>
                 </div>
               )}
@@ -846,14 +828,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
                 <table style={s.table}>
                   <thead>
                     <tr>
-                      <th
-                        style={{
-                          ...s.th,
-                          position: "sticky",
-                          top: 0,
-                          zIndex: 1,
-                        }}
-                      >
+                      <th style={{ ...s.th, position: "sticky", top: 0, zIndex: 1 }}>
                         Parfem
                       </th>
                       <th
@@ -884,10 +859,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
                   <tbody>
                     {topRows.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={3}
-                          style={{ ...s.td, ...s.muted, padding: "12px 10px" }}
-                        >
+                        <td colSpan={3} style={{ ...s.td, ...s.muted, padding: "12px 10px" }}>
                           Nema podataka.
                         </td>
                       </tr>
@@ -896,8 +868,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
                         <tr
                           key={r.name}
                           style={{
-                            background:
-                              idx % 2 === 0 ? "rgba(15,23,42,0.02)" : "#fff",
+                            background: idx % 2 === 0 ? "rgba(15,23,42,0.02)" : "#fff",
                           }}
                         >
                           <td style={s.td}>
@@ -908,7 +879,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
                             {Number(r.quantity || 0).toLocaleString("sr-RS")}
                           </td>
                           <td style={{ ...s.td, ...s.right }}>
-                            {fmtRsd(Number(r.revenue || 0))}
+                            {fmtEur(Number(r.revenue || 0))}
                           </td>
                         </tr>
                       ))
@@ -919,22 +890,16 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
 
               <div style={s.sum}>
                 Ukupan prihod Top10:{" "}
-                <b style={{ color: "#0f172a" }}>
-                  {fmtRsd(Number(top10PrihodUkupno || 0))}
-                </b>
+                <b style={{ color: "#0f172a" }}>{fmtEur(Number(top10PrihodUkupno || 0))}</b>
               </div>
             </div>
           </div>
         </div>
 
-        <div style={s.foot}>
-
-        </div>
+        <div style={s.foot}></div>
 
         {isNarrow ? (
-          <div style={s.responsiveNote}>
-            (Responsive) Na manjim ekranima layout prelazi u 1 kolonu.
-          </div>
+          <div style={s.responsiveNote}>(Responsive) Na manjim ekranima layout prelazi u 1 kolonu.</div>
         ) : null}
       </div>
     </div>
