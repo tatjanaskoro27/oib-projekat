@@ -5,5 +5,5 @@ export interface PerfumeDTO {
   netoMl: 150 | 250;
   serialNumber: string;
   plantId: number;
-  expiryDate: string; // dolazi kao ISO string (iz TypeORM)
+  expiryDate: string;
 }

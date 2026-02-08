@@ -14,8 +14,6 @@ import type {
 import type { ProcessingResultDTO } from "../models/processing/ProcessingResultDTO";
 import type { PlantTypeSummaryDTO } from "../models/production/PlantTypeSummaryDTO";
 
-/* ================= Helpers ================= */
-
 const typeLabel = (t: PerfumeDTO["type"]): string => {
   if (t === "parfum") return "Parfem";
   return "Kolonjska voda";
@@ -32,10 +30,7 @@ const formatDate = (iso: string): string => {
   return `${dd}.${mm}.${yyyy}`;
 };
 
-// privremeni status
 const statusLabel = (): string => "Skladišten";
-
-/* ================= Styles ================= */
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
@@ -274,8 +269,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
   },
 };
-
-/* ================= Component ================= */
 
 export const ProcessingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -550,8 +543,6 @@ export const ProcessingPage: React.FC = () => {
                 <div />
               </div>
 
-              {/* ✅ uklonjen hint "Potrebno: ..." */}
-
               <button
                 style={{
                   ...styles.primaryBtn,
@@ -609,10 +600,8 @@ export const ProcessingPage: React.FC = () => {
 
           <div style={styles.footer}>Ukupno parfema: {perfumes.length}</div>
 
-          {/* result (ako ti treba kasnije za debug) */}
           {result && (
             <div style={{ marginTop: 12, opacity: 0.6, fontSize: 12 }}>
-              {/* možeš ukloniti */}
             </div>
           )}
         </div>
