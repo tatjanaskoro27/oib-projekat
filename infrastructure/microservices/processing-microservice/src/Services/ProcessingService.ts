@@ -60,7 +60,7 @@ export class ProcessingService implements IProcessingService {
 
         await this.gateway.logEvent({
           tip: "WARNING",
-          opis: `Jacina ulja ubrane biljke ${hp.id} iznosi ${hp.oilStrength} (>4.0)`,
+          opis: `Jacina ulja ubrane biljke ${hp.name} iznosi ${hp.oilStrength} (>4.0)`,
         });
 
         const newPlant = await this.gateway.plantOne({
@@ -70,11 +70,6 @@ export class ProcessingService implements IProcessingService {
         });
 
         await this.gateway.updateOilStrength(newPlant.id, percent);
-
-        await this.gateway.logEvent({
-          tip: "INFO",
-          opis: `Prilagodjena jacina ulja za biljku ${newPlant.id}, procenat: ${percent}`,
-        });
       }
     }
 

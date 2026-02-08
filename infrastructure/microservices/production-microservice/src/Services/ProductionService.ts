@@ -59,7 +59,7 @@ export class ProductionService implements IProductionService {
 
     await this.events.logEvent({
       tip: "INFO",
-      opis: `Promjenjena jacina ulja za biljku ${plantId} na ${saved.oilStrength} (percent=${percent})`,
+      opis: `Promjenjena jacina ulja za biljku sa ${plant.oilStrength} na ${saved.oilStrength} (percent=${percent})`,
     });
 
     return saved;
@@ -167,9 +167,7 @@ export class ProductionService implements IProductionService {
 
     await this.events.logEvent({
       tip: "INFO",
-      opis: `Biljke oznacene kao preradjene (PROCESSED). Count=${plants.length}, IDs: ${plants
-        .map((p) => p.id)
-        .join(", ")}`,
+      opis: `Biljke uspjesno preradjene u parfem. ( ukupno: ${plants.length})`,
     });
 
     return { processedIds: plants.map((p) => p.id), processedCount: plants.length };
