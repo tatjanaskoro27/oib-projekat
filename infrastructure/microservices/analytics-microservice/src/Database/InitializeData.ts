@@ -1,4 +1,6 @@
 ///OBRISANO ZA SEED PODATKE , OVO VISE NE KORISTIMOOO!!!
+//OVO JE BILO SAMO ZA KT TACKU AL SAM OSTAVILA DQA STOJI
+
 
 import { DataSource } from "typeorm";
 import { FiskalniRacun } from "../Domain/models/FiskalniRacun";
