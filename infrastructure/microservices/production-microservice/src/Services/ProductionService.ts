@@ -59,7 +59,7 @@ export class ProductionService implements IProductionService {
 
     await this.events.logEvent({
       tip: "INFO",
-      opis: `Promjenjena jacina ulja za biljku sa ${plant.oilStrength} na ${saved.oilStrength} (percent=${percent})`,
+      opis: `Promjenjena jacina ulja za biljku na ${saved.oilStrength} (percent=${percent})`,
     });
 
     return saved;
