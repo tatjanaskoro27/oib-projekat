@@ -180,7 +180,6 @@ export class ProductionService implements IProductionService {
       .createQueryBuilder("p")
       .select("p.name", "name")
 
-      // ✅ MySQL-safe kada postoji više latin/origin za isti name
       .addSelect("ANY_VALUE(p.latinName)", "latinName")
       .addSelect("ANY_VALUE(p.originCountry)", "originCountry")
 

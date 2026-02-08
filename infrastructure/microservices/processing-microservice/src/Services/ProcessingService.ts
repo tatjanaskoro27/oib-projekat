@@ -114,7 +114,8 @@ export class ProcessingService implements IProcessingService {
       tip: "INFO",
       opis: `Uspjesno preradjeno ${finalPerfumes.length} bocica parfema naziva "${dto.perfumeName}"`,
     });
-     // ✅ NOVO: spakuj i pošalji u skladište kao ambalažu (agregat)
+
+     //spakuj i pošalji u skladište kao ambalažu
     await this.packAndSendToWarehouse(finalPerfumes);
 
     return finalPerfumes;

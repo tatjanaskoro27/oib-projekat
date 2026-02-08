@@ -13,7 +13,7 @@ export class Plant {
   id!: number;
 
   @Column({ type: "varchar", length: 120 })
-  name!: string; // opšti naziv
+  name!: string;
 
   @Column({ type: "varchar", length: 160 })
   latinName!: string;
