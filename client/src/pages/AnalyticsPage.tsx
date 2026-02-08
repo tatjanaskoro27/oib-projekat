@@ -8,6 +8,9 @@ import {
   Top10PrihodItem,
 } from "../models/analytics/AnalyticsDTOs";
 
+import { useNavigate } from "react-router-dom";
+
+
 type Props = {
   analyticsAPI: IAnalyticsAPI;
 };
@@ -217,6 +220,8 @@ function BarChart({
 
 export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
   const { token } = useAuth();
+  const navigate = useNavigate();
+
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
@@ -326,28 +331,28 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
   };
 
   const onExportPdf = async () => {
-  try {
-    if (!token) {
-      setErr("Niste prijavljeni.");
-      return;
+    try {
+      if (!token) {
+        setErr("Niste prijavljeni.");
+        return;
+      }
+
+      const blob = await analyticsAPI.getIzvestajPdf(token, {
+        start: start || undefined,
+        end: end || undefined,
+        godina: godina || undefined,
+      });
+
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+
+      // opcionalno: oslobodi memoriju posle malo vremena
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e: any) {
+      console.error(e);
+      setErr(e?.message ?? "Greška pri preuzimanju PDF izveštaja");
     }
-
-    const blob = await analyticsAPI.getIzvestajPdf(token, {
-      start: start || undefined,
-      end: end || undefined,
-      godina: godina || undefined,
-    });
-
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-
-    // opcionalno: oslobodi memoriju posle malo vremena
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  } catch (e: any) {
-    console.error(e);
-    setErr(e?.message ?? "Greška pri preuzimanju PDF izveštaja");
-  }
-};
+  };
 
 
   const s = {
@@ -504,22 +509,22 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
       gap: 12,
     } as React.CSSProperties,
     stat: (_grad: string) =>
-      ({
-        padding: 14,
-        borderRadius: 16,
-        background: "#fff",
-        border: "1px solid rgba(2,6,23,0.08)",
-        boxShadow: "0 10px 24px rgba(2,6,23,0.06)",
-        position: "relative",
-        overflow: "hidden",
-      } as React.CSSProperties),
+    ({
+      padding: 14,
+      borderRadius: 16,
+      background: "#fff",
+      border: "1px solid rgba(2,6,23,0.08)",
+      boxShadow: "0 10px 24px rgba(2,6,23,0.06)",
+      position: "relative",
+      overflow: "hidden",
+    } as React.CSSProperties),
     statOverlay: (grad: string) =>
-      ({
-        position: "absolute",
-        inset: 0,
-        opacity: 0.08,
-        background: grad,
-      } as React.CSSProperties),
+    ({
+      position: "absolute",
+      inset: 0,
+      opacity: 0.08,
+      background: grad,
+    } as React.CSSProperties),
     statLabel: {
       position: "relative",
       fontSize: 12,
@@ -633,6 +638,14 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
 
           <div style={s.topRight}>
             <button
+              style={s.btn}
+              onClick={() => navigate(-1)}
+              title="Nazad"
+            >
+              ⬅ Nazad na meni
+            </button>
+
+            <button
               style={{ ...s.btn, ...(loading ? s.btnDisabled : null) }}
               onClick={onRefresh}
               disabled={loading}
@@ -644,6 +657,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
               Export PDF
             </button>
           </div>
+
         </div>
 
         <div style={{ ...s.card, marginTop: 12 }}>
@@ -875,7 +889,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
         </div>
 
         <div style={s.foot}>
-         
+
         </div>
 
         {isNarrow ? (
