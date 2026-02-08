@@ -7,7 +7,6 @@ type Uloga = "MENADZER_PRODAJE" | "PRODAVAC";
 export class GatewayClient {
   private readonly client: AxiosInstance;
 
-  // putanje preko env-a (da nema hardcode)
   private readonly analyticsCreateReceiptPath: string;
   private readonly dogadjajiPath: string;
 
@@ -35,7 +34,6 @@ export class GatewayClient {
     this.processingStartPath =
     process.env.PROCESSING_START_PATH ?? "/internal/processing/start";
 
-    // ako ga koristiš negde (može ostati)
     this.processingPackSendPath =
       process.env.GATEWAY_PROCESSING_PACK_SEND_PATH ??
       "/internal/processing/packing/send";
@@ -137,7 +135,6 @@ export class GatewayClient {
 
   const raw = (res.data?.poslato ?? []) as any[];
 
-  // ✅ NORMALIZUJ: prihvati i (name/quantity) i (naziv/kolicina)
   const normalized = Array.isArray(raw)
     ? raw.map((x: any) => ({
         name: String(x?.name ?? x?.naziv ?? "").trim(),
@@ -159,7 +156,6 @@ export class GatewayClient {
     return res.data;
   }
 
-  // kompatibilno sa starim imenima ako ih negde koristiš
   async skladisteStanje(names: string[], uloga: Uloga) {
     return this.requestPerfumeStateFromStorage(names, uloga);
   }

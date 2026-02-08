@@ -6,7 +6,7 @@ import type { UserDTO } from "../models/users/UserDTO";
 import type { CreateUserDTO } from "../models/users/CreateUserDTO";
 import type { UpdateUserDTO } from "../models/users/UpdateUserDTO";
 
-type SortKey = "id" | "username" | "email" | "role";
+type SortKey = "username" | "email" | "role";
 type SortDir = "asc" | "desc";
 
 const emptyCreate: CreateUserDTO = {
@@ -21,18 +21,17 @@ export const UsersPage: React.FC = () => {
   const auth = useContext(AuthContext);
   const token = auth?.token;
 
-  const navigate = useNavigate(); // ✅ DODATO (minimalno)
-
+  const navigate = useNavigate();
   const api = useMemo(() => new UserAPI(), []);
 
   const [users, setUsers] = useState<UserDTO[]>([]);
   const [loading, setLoading] = useState(false);
-  const [busy, setBusy] = useState(false); // za create/edit/delete
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
   const [q, setQ] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("id");
+  const [sortKey, setSortKey] = useState<SortKey>("username");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   // CREATE state
@@ -70,11 +69,11 @@ export const UsersPage: React.FC = () => {
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
+
     const base = !term
       ? users
       : users.filter((u) => {
           return (
-            String(u.id).includes(term) ||
             (u.username || "").toLowerCase().includes(term) ||
             (u.email || "").toLowerCase().includes(term) ||
             (u.role || "").toLowerCase().includes(term)
@@ -84,10 +83,6 @@ export const UsersPage: React.FC = () => {
     const sorted = [...base].sort((a, b) => {
       const av = (a as any)[sortKey];
       const bv = (b as any)[sortKey];
-
-      if (typeof av === "number" && typeof bv === "number") {
-        return sortDir === "asc" ? av - bv : bv - av;
-      }
 
       const as = String(av ?? "").toLowerCase();
       const bs = String(bv ?? "").toLowerCase();
@@ -117,7 +112,6 @@ export const UsersPage: React.FC = () => {
       email: u.email,
       role: u.role,
       profileImage: u.profileImage ?? "",
-      // password ne popunjavamo (ne prikazuje se)
     });
   };
 
@@ -134,7 +128,6 @@ export const UsersPage: React.FC = () => {
     try {
       setBusy(true);
 
-      // minimalna front validacija (backend je glavni)
       if (!createDto.username || createDto.username.trim().length < 3) {
         setError("Username mora imati bar 3 karaktera.");
         return;
@@ -189,7 +182,6 @@ export const UsersPage: React.FC = () => {
             : (editDto.profileImage ?? "").toString().trim(),
       };
 
-      // password samo ako korisnik nešto unese
       if (editDto.password && editDto.password.trim().length > 0) {
         payload.password = editDto.password;
       } else {
@@ -217,7 +209,7 @@ export const UsersPage: React.FC = () => {
     setError(null);
     setInfo(null);
 
-    const ok = window.confirm(`Obrisati korisnika #${id}?`);
+    const ok = window.confirm(`Obrisati korisnika?`);
     if (!ok) return;
 
     try {
@@ -240,9 +232,24 @@ export const UsersPage: React.FC = () => {
     <div className="overlay-blur-none" style={{ minHeight: "100vh" }}>
       <div
         className="window"
-        style={{ width: "1100px", maxWidth: "95%", margin: "30px auto" }}
+        style={{
+          width: "1100px",
+          maxWidth: "95%",
+          margin: "30px auto",
+          height: "82vh",
+        }}
       >
-        <div className="window-content" style={{ padding: 24 }}>
+        <div
+          className="window-content"
+          style={{
+            padding: 24,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          {/* HEADER */}
           <div
             style={{
               display: "flex",
@@ -252,14 +259,13 @@ export const UsersPage: React.FC = () => {
             }}
           >
             <div>
-              <h2 style={{ margin: 0, fontSize: 22 }}>Users microservice</h2>
+              <h2 style={{ margin: 0, fontSize: 22 }}>Korisnici</h2>
               <div style={{ opacity: 0.8, marginTop: 6 }}>
-                Pregled korisnika (admin).
+                Pregled korisnika.
               </div>
             </div>
 
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              {/* ✅ DODATO: NAZAD NA MENI */}
               <button
                 className="btn"
                 onClick={() => navigate("/dashboard")}
@@ -381,24 +387,20 @@ export const UsersPage: React.FC = () => {
               gap: 12,
               flexWrap: "wrap",
               marginTop: 16,
+              alignItems: "center",
             }}
           >
             <input
-              placeholder="Pretraga po ID / username / email / role..."
+              placeholder="Pretraga po username / email / role..."
               value={q}
               onChange={(e) => setQ(e.target.value)}
               disabled={loading}
-              style={{ minWidth: 320 }}
+              style={{ minWidth: 360 }}
             />
+
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <span style={{ opacity: 0.8 }}>Sort:</span>
-              <button
-                className="btn"
-                onClick={() => toggleSort("id")}
-                disabled={loading}
-              >
-                ID {sortKey === "id" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-              </button>
+
               <button
                 className="btn"
                 onClick={() => toggleSort("username")}
@@ -407,6 +409,7 @@ export const UsersPage: React.FC = () => {
                 Username{" "}
                 {sortKey === "username" ? (sortDir === "asc" ? "▲" : "▼") : ""}
               </button>
+
               <button
                 className="btn"
                 onClick={() => toggleSort("email")}
@@ -415,6 +418,7 @@ export const UsersPage: React.FC = () => {
                 Email{" "}
                 {sortKey === "email" ? (sortDir === "asc" ? "▲" : "▼") : ""}
               </button>
+
               <button
                 className="btn"
                 onClick={() => toggleSort("role")}
@@ -426,27 +430,33 @@ export const UsersPage: React.FC = () => {
           </div>
 
           {/* STATUS */}
-          {error && (
-            <div style={{ marginTop: 14, color: "crimson" }}>{error}</div>
-          )}
+          {error && <div style={{ marginTop: 14, color: "crimson" }}>{error}</div>}
           {info && (
             <div style={{ marginTop: 14, color: "var(--win11-accent)" }}>
               {info}
             </div>
           )}
 
-          <div style={{ marginTop: 16, opacity: 0.8 }}>
+          <div style={{ marginTop: 12, opacity: 0.8 }}>
             {loading
               ? "Učitavam..."
               : `Prikazano: ${filtered.length} / ${users.length}`}
           </div>
 
-          {/* TABLE */}
-          <div style={{ marginTop: 12, overflowX: "auto" }}>
+          {/* TABLE (scroll interno) */}
+          <div
+            style={{
+              marginTop: 12,
+              overflowX: "auto",
+              overflowY: "auto",
+              flex: 1,
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+              paddingTop: 8,
+            }}
+          >
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ textAlign: "left", opacity: 0.85 }}>
-                  <th style={{ padding: "10px 8px" }}>ID</th>
                   <th style={{ padding: "10px 8px" }}>Username</th>
                   <th style={{ padding: "10px 8px" }}>Email</th>
                   <th style={{ padding: "10px 8px" }}>Role</th>
@@ -464,8 +474,6 @@ export const UsersPage: React.FC = () => {
                       key={u.id}
                       style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
                     >
-                      <td style={{ padding: "10px 8px" }}>{u.id}</td>
-
                       <td style={{ padding: "10px 8px" }}>
                         {isEdit ? (
                           <input
@@ -555,13 +563,7 @@ export const UsersPage: React.FC = () => {
                             </button>
                           </div>
                         ) : (
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: 8,
-                              flexWrap: "wrap",
-                            }}
-                          >
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                             <input
                               placeholder="New password (optional)"
                               type="password"
@@ -598,21 +600,13 @@ export const UsersPage: React.FC = () => {
 
                 {!loading && filtered.length === 0 && (
                   <tr>
-                    <td
-                      colSpan={6}
-                      style={{ padding: "14px 8px", opacity: 0.75 }}
-                    >
+                    <td colSpan={5} style={{ padding: "14px 8px", opacity: 0.75 }}>
                       Nema rezultata.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
-          </div>
-
-          <div style={{ marginTop: 14, opacity: 0.65, fontSize: 13 }}>
-            Napomena: u tvom GatewayController-u endpoint <code>/users</code> je{" "}
-            <strong>admin only</strong>.
           </div>
         </div>
       </div>

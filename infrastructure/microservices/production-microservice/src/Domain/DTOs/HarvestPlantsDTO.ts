@@ -1,4 +1,4 @@
 export interface HarvestPlantsDTO {
-  name: string;  // vrsta/opšti naziv
-  count: number; // koliko da ubere
+  name: string; 
+  count: number;
 }

@@ -17,8 +17,6 @@ import { CreatePlantDTO } from "../models/production/CreatePlantDTO";
 import { UpdateOilStrengthDTO } from "../models/production/UpdateOilStrengthDTO";
 import { PlantTypeSummaryDTO } from "../models/production/PlantTypeSummaryDTO";
 
-/* ---------------- Types ---------------- */
-
 type PlantRowGrouped = {
   key: string;
   name: string;
@@ -38,8 +36,6 @@ type PlantRowFlat = {
   status: PlantStatus;
   statusLabel: "Posađena" | "Ubrana" | "Prerađena";
 };
-
-/* -------------- Helpers --------------- */
 
 const toNumber = (v: string | number): number => {
   const n = typeof v === "number" ? v : Number(v);
@@ -201,8 +197,6 @@ const sortDogadjajiNewestFirst = (items: DogadjajDTO[]): DogadjajDTO[] => {
     return (Number.isNaN(tb) ? 0 : tb) - (Number.isNaN(ta) ? 0 : ta);
   });
 };
-
-/* -------------- Minimal UI styles -------------- */
 
 const ui: Record<string, React.CSSProperties> = {
   page: {
@@ -380,8 +374,6 @@ const ui: Record<string, React.CSSProperties> = {
   },
 };
 
-/* -------------- Component -------------- */
-
 export const ProductionPage: React.FC = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
@@ -544,8 +536,7 @@ export const ProductionPage: React.FC = () => {
 
   const disabledAction = false;
 
-  /* ---------------- Actions ---------------- */
-
+  
   const handleCreatePlant = async () => {
     if (!token) return;
 
@@ -914,7 +905,6 @@ export const ProductionPage: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* ✅ FIX: responsive layout (only look) */}
                     {plantMode === "existing" && (
                       <div
                         style={{
@@ -1047,7 +1037,6 @@ export const ProductionPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* ✅ FIX: responsive layout (only look) */}
                     {plantMode === "new" && (
                       <div
                         style={{

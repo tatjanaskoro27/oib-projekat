@@ -4,7 +4,6 @@ import {
 } from "../Domain/DTOs/PurchaseRequestDTO";
 import { SalesService } from "../Services/SalesService";
 
-// mali lokalni tip za normalizovane stavke
 type NormalizedItem = { perfumeId: number; quantity: number };
 
 export class SalesController {

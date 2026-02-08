@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express";
-import axios from "axios"; // ✅ DODATO
+import axios from "axios"; 
 import { IGatewayService } from "../Domain/services/IGatewayService";
 import { LoginUserDTO } from "../Domain/DTOs/user/LoginUserDTO";
 import { RegistrationUserDTO } from "../Domain/DTOs/user/RegistrationUserDTO";
@@ -60,7 +60,7 @@ export class GatewayController {
     this.router.get("/analytics/prodaja/kolicina/mesecna/:godina", authenticate, authorize("admin"), this.getKolicinaMesecna.bind(this));
     this.router.get("/analytics/prodaja/kolicina/godisnja/:godina", authenticate, authorize("admin"), this.getKolicinaGodisnja.bind(this));
     //pdf
-    // ✅ PDF izvestaj (proxy -> analytics mikroservis)
+    //PDF izvestaj (proxy -> analytics mikroservis)
     this.router.get(
       "/analytics/izvestaj/pdf",
       authenticate,
@@ -106,7 +106,7 @@ export class GatewayController {
     this.router.post("/sales/purchase", authenticate, authorize("admin","manager", "seller"), this.salesPurchase.bind(this));
 
     this.router.post("/internal/skladiste/poslji-ambalaze", internalAuth, this.internalSendAmbalaze.bind(this));
-    // ✅ INTERNAL skladiste (server-to-server): prijem ambalaze
+    // INTERNAL skladiste (server-to-server): prijem ambalaze
     this.router.post("/internal/skladiste/skladista/:id/prijem", internalAuth, this.internalPrijemAmbalaze.bind(this));
     this.router.post("/internal/processing/get", internalAuth, this.internalGetProcessingPerfumes.bind(this));
     this.router.post("/internal/processing/packing/send",internalAuth,this.internalProcessingPackAndSend.bind(this));
@@ -119,7 +119,7 @@ export class GatewayController {
     // INTERNAL skladiste slanje parfema (server-to-server) - STANJE/ISPORUKA
     this.router.post("/internal/skladiste/slanje", internalAuth, this.internalSkladisteSlanje.bind(this));
     
-    // ✅ INTERNAL processing start (server-to-server)
+    // INTERNAL processing start (server-to-server)
     this.router.post("/internal/processing/start", internalAuth, this.internalStartProcessing.bind(this));
 
     // INTERNAL analytics racuni (server-to-server)
@@ -130,9 +130,9 @@ export class GatewayController {
     this.router.post("/skladiste/send", authenticate, authorize("seller", "manager"), this.sendAmbalaze.bind(this));
     this.router.get("/skladiste/ambalaze", authenticate, authorize("seller", "manager"), this.getAmbalaze.bind(this));
 
-    // ✅ DODATO: Performance (proxy -> performance-microservice)
+    // DODATO: Performance (proxy -> performance-microservice)
     // Mora i "/performance" i "/performance/*"
-    // ✅ Performance (proxy -> performance-microservice)
+    // Performance (proxy -> performance-microservice)
 
     this.router.use(
       "/performance",
@@ -744,22 +744,22 @@ export class GatewayController {
     }
   }
 
-  // ✅ DODATO: generički proxy za performance mikroservis
+  // DODATO: generički proxy za performance mikroservis
   // Gateway ruta:  /api/v1/performance/...
   // Mikroservis:   ${PERFORMANCE_SERVICE_API}/...
-  // ✅ DODATO: generički proxy za performance mikroservis
+  // DODATO: generički proxy za performance mikroservis
   // Gateway ruta:  /api/v1/performance/...
   // Mikroservis:   ${PERFORMANCE_SERVICE_API}/api/v1/performanse/...
   private async proxyPerformance(req: Request, res: Response): Promise<void> {
     try {
       const base = String(process.env.PERFORMANCE_SERVICE_API || "").replace(/\/$/, "");
 
-      // ✅ performance MS je mountovan na /api/v1/performanse
+      //  performance MS je mountovan na /api/v1/performanse
       const targetBase = base.endsWith("/api/v1/performanse")
         ? base
         : `${base}/api/v1/performanse`;
 
-      // ✅ req.url je putanja posle "/performance" + query string
+      //  req.url je putanja posle "/performance" + query string
       // npr: "/izvestaji/1/pdf?download=1"
       const forwardPath = req.url && req.url.length > 0 ? req.url : "/";
 
@@ -775,13 +775,13 @@ export class GatewayController {
           "content-type": req.headers["content-type"] || "application/json",
         },
         validateStatus: () => true,
-        responseType: "arraybuffer", // ✅ da PDF radi (a i JSON ostaje OK)
+        responseType: "arraybuffer", 
       });
 
       const contentType = String(response.headers["content-type"] || "");
       const buf = Buffer.from(response.data);
 
-      // ✅ Ako je PDF, vrati PDF (ne JSON)
+      // Ako je PDF, vrati PDF (ne JSON)
       if (contentType.includes("application/pdf")) {
         res.setHeader("Content-Type", "application/pdf");
         const dispo = response.headers["content-disposition"];
@@ -790,14 +790,14 @@ export class GatewayController {
         return;
       }
 
-      // ✅ JSON / text iz arraybuffer-a
+      //  JSON / text iz arraybuffer-a
       if (contentType.includes("application/json") || contentType.startsWith("text/")) {
         res.setHeader("Content-Type", contentType || "application/json");
         res.status(response.status).send(buf.toString("utf8"));
         return;
       }
 
-      // ✅ ostalo binarno
+      // ostalo binarno
       res.setHeader("Content-Type", contentType || "application/octet-stream");
       res.status(response.status).send(buf);
     } catch (err: any) {
@@ -860,7 +860,7 @@ export class GatewayController {
       return res.status(500).json({ message: "SKLADISTE_SERVICE_API nije podešen u .env" });
     }
 
-    // ✅ skladiste mikroservis ruta: /api/v1/skladista/:id/prijem
+    // skladiste mikroservis ruta: /api/v1/skladista/:id/prijem
     const url = `${base}/skladista/${id}/prijem`;
 
     const response = await axios.request({
@@ -900,7 +900,7 @@ export class GatewayController {
       return res.status(500).json({ message: "PROCESSING_SERVICE_API nije podešen u .env" });
     }
 
-    // ✅ processing mikroservis ruta: /api/v1/packing/send
+    // processing mikroservis ruta: /api/v1/packing/send
     const url = `${base}/packing/send`;
 
     const response = await axios.request({

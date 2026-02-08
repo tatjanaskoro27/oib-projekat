@@ -391,19 +391,16 @@ async getAmbalaze(): Promise<any> {
 }
 
 
-// ✅ INTERNAL: lista skladista (za Processing da izabere gde šalje)
 public async internalGetSkladista() {
   const res = await this.skladisteClient.get("/skladista");
   return res.data;
 }
 
-// ✅ INTERNAL: processing catalog (za Sales da dobije meta + cenu/opis)
 public async internalGetProcessingCatalog() {
   const res = await this.processingClient.get("/processing/catalog");
   return res.data;
 }
 
-// ✅ INTERNAL: slanje ka skladistu (STANJE/ISPORUKA), prosleđuje header-e
 public async internalSkladisteSlanje(body: any, uloga: string, mode: string) {
   const res = await this.skladisteClient.post("/slanje", body, {
     headers: {

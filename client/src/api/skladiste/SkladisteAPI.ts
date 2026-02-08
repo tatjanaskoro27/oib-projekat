@@ -18,7 +18,6 @@ export class SkladisteAPI {
   }
 
   async getWarehouses(token: string): Promise<WarehouseDTO[]> {
-    // ✅ public gateway ruta koju si dodala u controlleru
     const res = await this.client.get("/skladiste/skladista", {
       headers: this.authHeaders(token),
     });

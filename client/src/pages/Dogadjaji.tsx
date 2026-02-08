@@ -68,49 +68,47 @@ export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
           <div
             style={{
               display: "flex",
-              alignItems: "end",
+              alignItems: "flex-end",
               justifyContent: "space-between",
               gap: 12,
+              flexWrap: "wrap",
             }}
           >
             <div>
-              <h2 style={{ margin: 0, fontSize: 22 }}>Događaji / Audit log</h2>
+              <h2 style={{ margin: 0, fontSize: 22 }}>Događaji</h2>
               <div style={{ opacity: 0.8, marginTop: 6 }}>
                 Pregled i filtriranje događaja po tipu.
               </div>
             </div>
 
-            {/* DESNO: dugmad */}
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <button
                 type="button"
-                className="ms-pill"
-                onClick={() => navigate(-1)}
+                className="btn"
+                onClick={() => navigate("/dashboard")}
                 disabled={loading}
+                title="Nazad na meni"
                 style={{
-                  background: "transparent",
-                  border: "1px solid rgba(255,255,255,0.25)",
-                  color: "white",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  background: "rgba(255,255,255,0.06)",
+                  boxShadow: "0 6px 18px rgba(0,0,0,0.25)",
                   padding: "10px 14px",
-                  borderRadius: 999,
-                  cursor: loading ? "not-allowed" : "pointer",
+                  borderRadius: 10,
                 }}
               >
-                Nazad na meni
+                ⬅ Nazad na meni
               </button>
 
               <button
                 type="button"
-                className="ms-pill"
+                className="btn btn-accent"
                 onClick={load}
                 disabled={loading}
+                title="Osveži listu"
                 style={{
-                  background: "white",
-                  border: "1px solid white",
-                  color: "#111",
+                  boxShadow: "0 10px 22px rgba(0,0,0,0.25)",
                   padding: "10px 14px",
-                  borderRadius: 999,
-                  cursor: loading ? "not-allowed" : "pointer",
+                  borderRadius: 10,
                 }}
               >
                 {loading ? "Učitavam..." : "Osveži"}
@@ -124,18 +122,24 @@ export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
               gap: 12,
               marginTop: 16,
               alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
-            <div style={{ opacity: 0.8 }}>Filter:</div>
+            <div style={{ opacity: 0.85 }}>Filter:</div>
 
             <select
               value={tip}
               onChange={(e) => setTip(e.target.value as any)}
+              disabled={loading}
               style={{
                 padding: "10px 12px",
                 borderRadius: 10,
                 width: "100%",
                 maxWidth: 820,
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "inherit",
+                outline: "none",
               }}
             >
               {TIPOVI.map((x) => (
@@ -145,7 +149,7 @@ export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
               ))}
             </select>
 
-            <div style={{ marginLeft: "auto", opacity: 0.8, whiteSpace: "nowrap" }}>
+            <div style={{ marginLeft: "auto", opacity: 0.85, whiteSpace: "nowrap" }}>
               Ukupno: <b>{data.length}</b>
             </div>
           </div>
@@ -157,6 +161,7 @@ export const DogadjajiPage: React.FC<Props> = ({ dogadjajiAPI }) => {
                 padding: 12,
                 borderRadius: 12,
                 background: "rgba(255,0,0,0.08)",
+                border: "1px solid rgba(255,0,0,0.18)",
               }}
             >
               ❌ {err}
