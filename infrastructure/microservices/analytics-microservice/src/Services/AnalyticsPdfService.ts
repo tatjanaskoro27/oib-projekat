@@ -1,5 +1,5 @@
 import PDFDocument from "pdfkit";
-//staro import PDFDocument = require("pdfkit");
+
 
 import { Response } from "express";
 
@@ -9,7 +9,7 @@ export type IzvestajAnalizePdf = {
   ukupnaProdaja: number;
   ukupnoKomada: number;
 
-  // opcionalno – ako proslediš query
+  
   period?: {
     start: string;
     end: string;
@@ -92,7 +92,7 @@ export class AnalyticsPdfService {
     });
     doc.moveDown(0.5);
 
-    doc.fontSize(12).text(`Ukupna prodaja (RSD): ${izvestaj.ukupnaProdaja.toFixed(2)}`);
+    doc.fontSize(12).text(`Ukupna prodaja (EUR): ${izvestaj.ukupnaProdaja.toFixed(2)}`);
     doc.text(`Ukupno prodatih komada: ${izvestaj.ukupnoKomada}`);
     doc.moveDown();
 
@@ -108,7 +108,7 @@ export class AnalyticsPdfService {
           izvestaj.period.end
         )}`
       );
-      doc.text(`Prodaja u periodu (RSD): ${izvestaj.period.ukupnaProdaja.toFixed(2)}`);
+      doc.text(`Prodaja u periodu (EUR): ${izvestaj.period.ukupnaProdaja.toFixed(2)}`);
       doc.text(`Komada u periodu: ${izvestaj.period.ukupnoKomada}`);
       doc.moveDown();
     }
@@ -121,7 +121,7 @@ export class AnalyticsPdfService {
       doc.moveDown(0.5);
 
       doc.fontSize(12).text(`Godina: ${izvestaj.godisnja.godina}`);
-      doc.text(`Ukupno (RSD): ${izvestaj.godisnja.ukupno.toFixed(2)}`);
+      doc.text(`Ukupno (EUR): ${izvestaj.godisnja.ukupno.toFixed(2)}`);
       doc.text(`Ukupno komada: ${izvestaj.godisnja.ukupnoKomada}`);
       doc.moveDown();
     }
@@ -136,7 +136,7 @@ export class AnalyticsPdfService {
       doc.fontSize(12).text(`Godina: ${izvestaj.mesecna.godina}`);
       doc.moveDown(0.5);
 
-      doc.fontSize(12).text(AnalyticsPdfService.normalizeText("Prodaja po mesecima (RSD):"));
+      doc.fontSize(12).text(AnalyticsPdfService.normalizeText("Prodaja po mesecima (EUR):"));
       doc.moveDown(0.25);
       doc.fontSize(10);
 
@@ -164,7 +164,7 @@ export class AnalyticsPdfService {
       doc.moveDown();
     }
 
-    // TREND (ako postoji)
+    // TREND 
     if (izvestaj.trend?.length) {
       doc.fontSize(14).text(AnalyticsPdfService.normalizeText("Trend prodaje"), {
         underline: true,
@@ -177,7 +177,7 @@ export class AnalyticsPdfService {
       const rows = izvestaj.trend.slice(0, maxRows);
 
       for (const r of rows) {
-        doc.text(`${r.datum}: ${Number(r.ukupno).toFixed(2)} RSD`);
+        doc.text(`${r.datum}: ${Number(r.ukupno).toFixed(2)} EUR`);
       }
 
       if (izvestaj.trend.length > maxRows) {
@@ -217,14 +217,14 @@ export class AnalyticsPdfService {
     } else {
       izvestaj.top10Prihod.forEach((p, i) => {
         doc.text(
-          `${i + 1}. ${AnalyticsPdfService.normalizeText(p.parfemNaziv)} — ${Number(p.prihod).toFixed(2)} RSD`
+          `${i + 1}. ${AnalyticsPdfService.normalizeText(p.parfemNaziv)} — ${Number(p.prihod).toFixed(2)} EUR`
         );
       });
     }
 
     doc.moveDown(0.5);
     doc.fontSize(12).text(
-      `Ukupan prihod (top 10 zbir): ${Number(izvestaj.ukupanPrihodTop10).toFixed(2)} RSD`
+      `Ukupan prihod (top 10 zbir): ${Number(izvestaj.ukupanPrihodTop10).toFixed(2)} EUR`
     );
   }
 }

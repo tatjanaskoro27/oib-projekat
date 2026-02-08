@@ -8,7 +8,7 @@ export class FiskalnaStavka {
 
   @Index()
   @Column()
-  racunId!: number; // FK ka FiskalniRacun.id
+  racunId!: number; 
 
   @Column({ length: 100 })
   parfemNaziv!: string;

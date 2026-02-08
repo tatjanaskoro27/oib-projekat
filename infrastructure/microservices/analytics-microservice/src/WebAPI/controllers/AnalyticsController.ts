@@ -23,9 +23,9 @@ export class AnalyticsController {
   }
 
   private registerRoutes() {
-    // =========================
+    
     // RACUNI
-    // =========================
+   
 
     // kreiranje računa + stavki
     this.router.post("/racuni", async (req, res) => {
@@ -49,9 +49,9 @@ export class AnalyticsController {
       }
     });
 
-    // =========================
+ 
     // ZARADA / PRIHOD (NOVAC)
-    // =========================
+    
 
     // ukupna zarada/prihod
     this.router.get("/prodaja/ukupno", async (req, res) => {
@@ -63,8 +63,7 @@ export class AnalyticsController {
       }
     });
 
-    // nedeljna/period zarada (query: start, end)
-    // primer: /prodaja/nedeljna?start=2026-01-01&end=2026-01-07
+  
     this.router.get("/prodaja/nedeljna", async (req, res) => {
       try {
         const start = String(req.query.start ?? "");
@@ -123,8 +122,7 @@ export class AnalyticsController {
       }
     });
 
-    // trend zarade po danima (query: start, end)
-    // primer: /prodaja/trend?start=2026-01-01&end=2026-01-31
+    
     this.router.get("/prodaja/trend", async (req, res) => {
       try {
         const start = String(req.query.start ?? "");
@@ -145,9 +143,7 @@ export class AnalyticsController {
       }
     });
 
-    // =========================
-    // PRODAJA (KOLIČINA / KOMADI)
-    // =========================
+  
 
     // ukupno prodatih komada
     this.router.get("/prodaja/kolicina/ukupno", async (req, res) => {
@@ -159,8 +155,7 @@ export class AnalyticsController {
       }
     });
 
-    // prodatih komada u opsegu (query: start, end)
-    // primer: /prodaja/kolicina/nedeljna?start=2026-01-01&end=2026-01-07
+   
     this.router.get("/prodaja/kolicina/nedeljna", async (req, res) => {
       try {
         const start = String(req.query.start ?? "");
@@ -217,9 +212,7 @@ export class AnalyticsController {
       }
     });
 
-    // =========================
-    // TOP 10
-    // =========================
+  
 
     // top 10 po količini
     this.router.get("/prodaja/top10", async (req, res) => {
@@ -231,7 +224,7 @@ export class AnalyticsController {
       }
     });
 
-    // ukupan prihod top 10 (jedan broj)
+    // ukupan prihod top 10 
     this.router.get("/prodaja/top10-prihod/ukupno", async (req, res) => {
       try {
         const ukupno = await this.service.ukupanPrihodTop10();
@@ -254,13 +247,7 @@ export class AnalyticsController {
     });
 
 
-    // =========================
-// IZVEŠTAJI ANALIZE (Baza)
-// =========================
-
-// snimi izveštaj analize u bazu
-// POST /izvestaji
-// body: { nazivIzvestaja, kriterijum?, od?, do?, rezultati, zakljucak? }
+   
 this.router.post("/izvestaji", async (req, res) => {
   try {
     const created = await this.service.sacuvajIzvestajAnalize(req.body);
@@ -273,7 +260,7 @@ this.router.post("/izvestaji", async (req, res) => {
 });
 
   // pregled prethodnih izveštaja
-  // GET /izvestaji
+ 
   this.router.get("/izvestaji", async (req, res) => {
    try {
      const data = await Db.getRepository(IzvestajAnalize).find({
@@ -285,9 +272,7 @@ this.router.post("/izvestaji", async (req, res) => {
    }
   });
 
-  // =========================
-// IZVESTAJ ANALIZE – PDF PO ID-u
-// =========================
+
 // GET /izvestaji/:id/pdf
 this.router.get("/izvestaji/:id/pdf", async (req, res) => {
   try {
@@ -328,14 +313,7 @@ this.router.get("/izvestaji/:id/pdf", async (req, res) => {
 });
 
 
-    // =========================
-    // PDF IZVESTAJ (NOVO)
-    // =========================
-    // Primeri:
-    // /izvestaj/pdf
-    // /izvestaj/pdf?godina=2026
-    // /izvestaj/pdf?start=2026-01-01&end=2026-01-31
-    // /izvestaj/pdf?godina=2026&start=2026-01-01&end=2026-01-31
+  
     this.router.get("/izvestaj/pdf", async (req, res) => {
       try {
         const start = req.query.start ? String(req.query.start) : undefined;
@@ -358,7 +336,7 @@ this.router.get("/izvestaji/:id/pdf", async (req, res) => {
           ukupanPrihodTop10,
         };
 
-        // period + trend (ako imamo start/end)
+        // period + trend 
         if (start && end) {
           const p = await this.service.nedeljnaProdaja(start, end);
           const k = await this.service.prodatihKomadaUPeriodu(start, end);
@@ -373,7 +351,7 @@ this.router.get("/izvestaji/:id/pdf", async (req, res) => {
           izvestaj.trend = trend;
         }
 
-        // godisnja + mesecna (ako imamo godinu)
+        // godisnja + mesecna 
         if (godina && !Number.isNaN(godina)) {
           const god = await this.service.godisnjaProdaja(godina);
           const godKom = await this.service.godisnjeProdatihKomada(godina);

@@ -44,7 +44,7 @@ function fillMissingDays(
     map.set(k, clamp(Number(p.ukupno || 0)));
   }
 
-  // čuvamo u lokalnoj vremenskoj zoni da ne “preskoči” dan zbog timezone
+  // čuvamo u lokalnoj vremenskoj zoni
   const startD = new Date(startISO + "T00:00:00");
   const endD = new Date(endISO + "T00:00:00");
 
@@ -166,7 +166,7 @@ function LineChart({
   );
 }
 
-/** Mini SVG bar chart (bez biblioteka) */
+
 function BarChart({
   title,
   items,
@@ -375,7 +375,7 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
 
-      // opcionalno: oslobodi memoriju posle malo vremena
+     
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (e: any) {
       console.error(e);

@@ -55,7 +55,7 @@ export class AnalyticsService {
     }));
   }
 
-  // kreiranje računa + stavki (POST /racuni)
+  // kreiranje računa + stavki 
   async kreirajFiskalniRacun(
     dto: KreirajRacunDto
   ): Promise<{ racunId: number; ukupanIznos: number }> {
@@ -111,9 +111,8 @@ export class AnalyticsService {
     });
   }
 
-  // ===============================
-  // NOVO – TOP 10 ANALIZE
-  // ===============================
+
+  
 
   // TOP 10 najprodavanijih parfema (po količini)
   async top10NajprodavanijihParfema(): Promise<
@@ -151,7 +150,7 @@ export class AnalyticsService {
     }));
   }
 
-  // ✅ DODATO: UKUPAN PRIHOD TOP 10 (zbir svih prihoda iz top10 liste)
+  
   async ukupanPrihodTop10(): Promise<number> {
     const top10 = await this.prihodTop10Parfema();
     return top10.reduce((sum, p) => sum + Number(p.prihod || 0), 0);
@@ -248,9 +247,6 @@ export class AnalyticsService {
     }));
   }
 
-  // ===============================
-  // NOVO – PRODATO KOMADA (količina)
-  // ===============================
 
   async ukupnoProdatihKomada(): Promise<number> {
     const result = await this.fiskalnaStavkaRepository
@@ -336,9 +332,7 @@ export class AnalyticsService {
     };
   }
 
-  // ===============================
-// NOVO – ČUVANJE IZVEŠTAJA ANALIZE
-// ===============================
+ 
 async sacuvajIzvestajAnalize(input: {
   nazivIzvestaja: string;
   kriterijum?: string;
