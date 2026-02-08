@@ -125,9 +125,7 @@ export class ProcessingService implements IProcessingService {
   }
 
   
-  // ✅ NOVO: katalog (meta + price), BEZ fajlova
   async getCatalog(): Promise<CatalogItemDTO[]> {
-    // izvučemo sve parfeme i agregiramo po (name,type,netoMl)
     const all = await this.perfumeRepo.find();
 
     const key = (p: Perfume) =>
@@ -144,12 +142,10 @@ export class ProcessingService implements IProcessingService {
         cur.count += 1;
       }
     }
-
-    // Cena = pravilo iz ENV (bez hardcode kataloga)
-    const base = toNum(process.env.PRICE_BASE, 50); // npr 50
-    const perMl = toNum(process.env.PRICE_PER_ML, 0.4); // npr 0.4
-    const parfumMult = toNum(process.env.PRICE_PARFUM_MULT, 1.3); // npr 1.3
-    const cologneMult = toNum(process.env.PRICE_COLOGNE_MULT, 1.0); // npr 1.0
+    const base = toNum(process.env.PRICE_BASE, 50); 
+    const perMl = toNum(process.env.PRICE_PER_ML, 0.4); 
+    const parfumMult = toNum(process.env.PRICE_PARFUM_MULT, 1.3); 
+    const cologneMult = toNum(process.env.PRICE_COLOGNE_MULT, 1.0); 
     const descPrefix = process.env.DESCRIPTION_PREFIX ?? "Parfem";
 
     const out: CatalogItemDTO[] = [];
@@ -199,7 +195,6 @@ export class ProcessingService implements IProcessingService {
       return;
     }
 
-    // ✅ realne stavke: svaki parfem je 1 stavka (perfumeId + naziv)
     const items = perfumes.map((p) => ({
       perfumeId: String(p.id),
       naziv: String(p.name),

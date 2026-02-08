@@ -15,12 +15,6 @@ function makeKey(name: string, type: string, ml: number): NeedKey {
   return `${name}||${type}||${ml}`;
 }
 
-/**
- * Novi servis koji samo DODAJE funkcionalnost:
- * Processing -> (pakovanje) -> Skladiste prijem
- *
- * Ne dira postojece /processing/start i /processing/get.
- */
 export class PackingService implements IPackingService {
   private readonly gateway = new GatewayClient();
 
@@ -39,7 +33,6 @@ export class PackingService implements IPackingService {
     const packageRef = (dto.nazivAmbalaze || `AMB-${Date.now()}`).trim();
     const adresaPosiljaoca = (dto.adresaPosiljaoca || "Processing centar").trim();
 
-    // 1) Izracunaj koliko nam treba po (name,type,ml)
     const needs = new Map<NeedKey, { name: string; type: string; ml: number; qty: number }>();
     for (const it of dto.items) {
       const name = (it.perfumeName || "").trim();
@@ -57,11 +50,9 @@ export class PackingService implements IPackingService {
       else needs.set(k, { name, type, ml, qty });
     }
 
-    // 2) Nadji vec spakovane parfeme (da ih izuzmemo)
     const packed = await this.packedRepo.find({ select: ["perfumeId"] });
     const packedIds = packed.map((x) => x.perfumeId);
 
-    // 3) Za svaku potrebu vidi koliko imamo ne-spakovanih; ako fali - napravi.
     let createdPerfumes = 0;
     for (const need of needs.values()) {
       const countAvailable = await this.perfumeRepo.count({
@@ -73,7 +64,6 @@ export class PackingService implements IPackingService {
         } as any,
       });
 
-       // ✅ TypeScript: StartProcessingDTO.bottleVolume je 150 | 250
       const volNumber = need.ml;
       if (volNumber !== 150 && volNumber !== 250) {
         throw new Error(`bottleVolume mora biti 150 ili 250. Dobijeno: ${volNumber}`);
@@ -95,11 +85,9 @@ export class PackingService implements IPackingService {
       }
     }
 
-    // Refresh packedIds after creation (not necessary but safe)
     const packed2 = await this.packedRepo.find({ select: ["perfumeId"] });
     const packedIds2 = packed2.map((x) => x.perfumeId);
 
-    // 4) Izaberi parfeme za pakovanje + upisi u packed_perfumes
     const perfumeIdsToPack: number[] = [];
     for (const need of needs.values()) {
       const found = await this.perfumeRepo.find({
@@ -132,7 +120,6 @@ export class PackingService implements IPackingService {
 
     await this.packedRepo.save(packedRows);
 
-    // 5) Napravi dto za skladiste prijem: items = [{name, quantity}]
     const itemsForWarehouse: PrijemAmbalazeDTO["items"] = [];
     for (const need of needs.values()) {
       itemsForWarehouse.push({ name: need.name, quantity: need.qty });
@@ -144,7 +131,6 @@ export class PackingService implements IPackingService {
       items: itemsForWarehouse,
     };
 
-    //await this.gateway.receiveAmbalazaToWarehouse(skladisteId, prijem);
 
     await this.gateway.logEvent({
       tip: "INFO",
