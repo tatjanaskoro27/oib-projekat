@@ -9,7 +9,7 @@ export type FiskalnaStavkaDTO = {
 
 export type FiskalniRacunDTO = {
   id: number;
-  datum: string;          // ISO string
+  datum: string;          
   ukupanIznos: number;
   tipProdaje?: string | null;
   nacinPlacanja?: string | null;

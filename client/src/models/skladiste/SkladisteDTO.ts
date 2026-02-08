@@ -3,7 +3,7 @@ export type WarehouseDTO = {
   naziv: string;
   lokacija: string;
   maxAmbalaza: number;
-  trenutnoAmbalaza?: number; // ako backend vraća
+  trenutnoAmbalaza?: number; 
 };
 
 export type PackageDTO = {
@@ -21,5 +21,5 @@ export type SendPackagesRequestDTO = {
 
 export type SendPackagesResponseDTO = {
   message?: string;
-  items?: PackageDTO[]; // ako backend vraća poslate
+  items?: PackageDTO[]; 
 };

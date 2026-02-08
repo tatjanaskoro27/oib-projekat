@@ -3,10 +3,7 @@ import { Response } from "express";
 import { IzvestajPerformanse } from "../Domain/models/IzvestajPerformanse";
 
 export class PdfService {
-  /**
-   * Fallback: PDFKit default fontovi ne podržavaju latin-ext,
-   * pa normalizujemo čćšđž -> ccsdjz da se ne pojavljuju čudni simboli.
-   */
+  
   private static normalizeText(input: string): string {
     if (!input) return "";
 
@@ -23,13 +20,11 @@ export class PdfService {
       .replace(/Ž/g, "Z");
   }
 
-  /**
-   * STREAM varijanta: direktno piše PDF u response.
-   */
+  
   static streamIzvestajPdf(res: Response, izvestaj: IzvestajPerformanse) {
     const doc = new PDFDocument({ size: "A4", margin: 50 });
 
-    // Bitno: prvo pipe, pa onda sadržaj
+  
     doc.pipe(res);
 
     // Koristimo samo ugrađeni font
@@ -40,9 +35,7 @@ export class PdfService {
     doc.end();
   }
 
-  /**
-   * BUFFER varijanta: vraća Promise<Buffer>
-   */
+  
   static generateIzvestajPdf(izvestaj: IzvestajPerformanse): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
@@ -65,9 +58,7 @@ export class PdfService {
     });
   }
 
-  /**
-   * Zajednička logika koja upisuje sadržaj u PDFDocument
-   */
+  
   private static fillPdf(doc: PDFKit.PDFDocument, izvestaj: IzvestajPerformanse) {
     // NASLOV
     doc.font("Helvetica").fontSize(18).text(PdfService.normalizeText("Izveštaj performansi"), {
@@ -93,7 +84,7 @@ export class PdfService {
       const obj = JSON.parse(izvestaj.rezultatiJson);
       rezultatiTekst = JSON.stringify(obj, null, 2);
     } catch {
-      // ostaje string
+    
     }
 
     // JSON normalizujemo da ne puknu slova
@@ -104,7 +95,7 @@ export class PdfService {
 
     doc.moveDown();
 
-    // ZAKLJUCAK (bez kvačica da ne bude "Zaklju Ö")
+    //  (bez kvačica da ne bude "Zaklju Ö")
     doc.fontSize(14).text(PdfService.normalizeText("Zaključak"), { underline: true });
     doc.moveDown(0.5);
     doc.fontSize(12).text(PdfService.normalizeText(izvestaj.zakljucak), {

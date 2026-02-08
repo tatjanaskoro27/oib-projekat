@@ -7,6 +7,6 @@ export interface PlantDTO {
   originCountry: string;
   oilStrength: number;
   status: PlantStatus;
-  createdAt: string; // dolazi kao string iz JSON-a
+  createdAt: string; 
   updatedAt: string;
 }

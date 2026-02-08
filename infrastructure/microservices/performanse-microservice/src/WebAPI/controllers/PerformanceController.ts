@@ -39,7 +39,7 @@ export class PerformanseController {
 
     this.router.get("/izvestaji", async (req: Request, res: Response) => {
       try {
-        // ✅ helper: uzmi prvi element ako je query dupliran (string[])
+       
         const pickFirst = (v: any): string | undefined => {
           if (typeof v === "string") return v;
           if (Array.isArray(v) && typeof v[0] === "string") return v[0];

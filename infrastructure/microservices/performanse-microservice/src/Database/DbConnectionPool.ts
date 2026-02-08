@@ -22,8 +22,7 @@ export const Db = new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 
-  // Ako vam ne treba SSL lokalno, možeš ovo skroz da izbrišeš.
-  // Ako MySQL traži SSL, ostavi ovako.
+  
   ssl: { rejectUnauthorized: false },
 
   synchronize: true,

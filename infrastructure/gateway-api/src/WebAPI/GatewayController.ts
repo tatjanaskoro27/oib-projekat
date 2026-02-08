@@ -744,23 +744,16 @@ export class GatewayController {
     }
   }
 
-  // DODATO: generički proxy za performance mikroservis
-  // Gateway ruta:  /api/v1/performance/...
-  // Mikroservis:   ${PERFORMANCE_SERVICE_API}/...
-  // DODATO: generički proxy za performance mikroservis
-  // Gateway ruta:  /api/v1/performance/...
-  // Mikroservis:   ${PERFORMANCE_SERVICE_API}/api/v1/performanse/...
   private async proxyPerformance(req: Request, res: Response): Promise<void> {
     try {
       const base = String(process.env.PERFORMANCE_SERVICE_API || "").replace(/\/$/, "");
 
-      //  performance MS je mountovan na /api/v1/performanse
+   
       const targetBase = base.endsWith("/api/v1/performanse")
         ? base
         : `${base}/api/v1/performanse`;
 
-      //  req.url je putanja posle "/performance" + query string
-      // npr: "/izvestaji/1/pdf?download=1"
+    
       const forwardPath = req.url && req.url.length > 0 ? req.url : "/";
 
       const url = `${targetBase}${forwardPath}`;
@@ -781,7 +774,7 @@ export class GatewayController {
       const contentType = String(response.headers["content-type"] || "");
       const buf = Buffer.from(response.data);
 
-      // Ako je PDF, vrati PDF (ne JSON)
+     
       if (contentType.includes("application/pdf")) {
         res.setHeader("Content-Type", "application/pdf");
         const dispo = response.headers["content-disposition"];
@@ -790,14 +783,14 @@ export class GatewayController {
         return;
       }
 
-      //  JSON / text iz arraybuffer-a
+    
       if (contentType.includes("application/json") || contentType.startsWith("text/")) {
         res.setHeader("Content-Type", contentType || "application/json");
         res.status(response.status).send(buf.toString("utf8"));
         return;
       }
 
-      // ostalo binarno
+    
       res.setHeader("Content-Type", contentType || "application/octet-stream");
       res.status(response.status).send(buf);
     } catch (err: any) {
@@ -860,7 +853,7 @@ export class GatewayController {
       return res.status(500).json({ message: "SKLADISTE_SERVICE_API nije podešen u .env" });
     }
 
-    // skladiste mikroservis ruta: /api/v1/skladista/:id/prijem
+    
     const url = `${base}/skladista/${id}/prijem`;
 
     const response = await axios.request({
@@ -900,7 +893,7 @@ export class GatewayController {
       return res.status(500).json({ message: "PROCESSING_SERVICE_API nije podešen u .env" });
     }
 
-    // processing mikroservis ruta: /api/v1/packing/send
+    
     const url = `${base}/packing/send`;
 
     const response = await axios.request({

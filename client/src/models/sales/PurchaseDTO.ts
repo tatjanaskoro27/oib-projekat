@@ -1,5 +1,5 @@
 export type PurchaseItemDTO = {
-  name: string;       // ✅ backend koristi naziv
+  name: string;     
   quantity: number;
 };
 

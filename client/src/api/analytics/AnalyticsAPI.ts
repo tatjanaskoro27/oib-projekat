@@ -22,7 +22,7 @@ export class AnalyticsAPI implements IAnalyticsAPI {
   private axiosInstance: AxiosInstance;
 
   constructor() {
-    const baseURL = import.meta.env.VITE_GATEWAY_URL; // npr. http://localhost:4000/api/v1
+    const baseURL = import.meta.env.VITE_GATEWAY_URL; 
     this.axiosInstance = axios.create({ baseURL });
   }
 

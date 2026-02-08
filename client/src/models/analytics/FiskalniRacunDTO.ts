@@ -5,5 +5,5 @@ export type FiskalniRacunDTO = {
   brojRacuna: string;
   datumVreme: string;
   stavke: FiskalnaStavkaDTO[];
-  ukupno?: number; // ako backend vraca
+  ukupno?: number; 
 };

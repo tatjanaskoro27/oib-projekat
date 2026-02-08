@@ -7,6 +7,6 @@ export type FiskalnaStavkaDTO = {
 
 export type KreirajRacunDTO = {
   brojRacuna: string;
-  datumVreme: string; // ISO string (new Date().toISOString())
+  datumVreme: string; 
   stavke: FiskalnaStavkaDTO[];
 };

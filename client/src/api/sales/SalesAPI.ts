@@ -42,7 +42,7 @@ export class SalesAPI implements ISalesAPI {
     const res = await this.axiosInstance.post<PurchaseResponseDTO>("/sales/purchase", dto, {
       headers: {
         ...this.authHeaders(token),
-        "x-uloga": "PRODAVAC", // ili MENADZER_PRODAJE ako treba
+        "x-uloga": "PRODAVAC",
       },
     });
     return res.data;

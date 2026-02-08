@@ -2,9 +2,9 @@ export type PerformanceReportDTO = {
   id: number;
   nazivIzvestaja: string;
   algoritam: string;
-  rezultatiJson: string; // backend čuva string
+  rezultatiJson: string;
   zakljucak: string;
-  datumKreiranja: string; // dolazi kao string u JSON-u
+  datumKreiranja: string; 
 };
 
 export type SimulirajDTO = {
