@@ -29,7 +29,37 @@ function clamp(n: number) {
   return Math.max(0, n);
 }
 
-/** Mini SVG line chart (bez biblioteka) */
+function fillMissingDays(
+  startISO: string,
+  endISO: string,
+  points: { datum: string; ukupno: number }[]
+) {
+  const map = new Map<string, number>();
+  for (const p of points || []) {
+    const k = (p.datum || "").slice(0, 10);
+    map.set(k, clamp(Number(p.ukupno || 0)));
+  }
+
+  // čuvamo u lokalnoj vremenskoj zoni da ne “preskoči” dan zbog timezone
+  const startD = new Date(startISO + "T00:00:00");
+  const endD = new Date(endISO + "T00:00:00");
+
+  const out: { label: string; value: number }[] = [];
+  const cur = new Date(startD);
+
+  while (cur <= endD) {
+    const key = iso(cur);
+    out.push({
+      label: key,
+      value: map.get(key) ?? 0,
+    });
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  return out;
+}
+
+
 function LineChart({
   title,
   items,
@@ -293,12 +323,14 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
     if (!canLoad) return;
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canLoad, godina]);
+  }, [canLoad, godina, start, end]);
 
-  const trendChart = (trend ?? []).map((t) => ({
-    label: t.datum?.slice(0, 10) ?? "",
-    value: clamp(t.ukupno),
-  }));
+
+  const trendChart = useMemo(() => {
+    if (!start || !end) return [];
+    return fillMissingDays(start, end, trend ?? []);
+  }, [start, end, trend]);
+
 
   const mesecnaChart = (mesecnaPrihod ?? []).map((m) => ({
     label: String(m.mesec),
@@ -764,17 +796,24 @@ export const AnalyticsPage: React.FC<Props> = ({ analyticsAPI }) => {
         </div>
 
         <div style={{ ...s.grid2, gridTemplateColumns: gridCols }}>
-          <LineChart title="Trend prihoda (period)" items={trendChart} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <LineChart title="Trend prihoda (period)" items={trendChart} />
+
+            {!loading &&
+              trendChart.length > 0 &&
+              trendChart.every((x) => x.value === 0) ? (
+              <div style={s.noData}>Nema prodaje u izabranom periodu.</div>
+            ) : null}
+          </div>
+
           <div>
-            <BarChart
-              title={`Prihod po mesecima (${godina})`}
-              items={mesecnaChart}
-            />
+            <BarChart title={`Prihod po mesecima (${godina})`} items={mesecnaChart} />
             {!loading && mesecnaChart.length === 0 ? (
               <div style={s.noData}>Nema podataka za izabranu godinu.</div>
             ) : null}
           </div>
         </div>
+
 
         <div style={{ ...s.grid2, gridTemplateColumns: gridCols }}>
           <div style={{ ...s.card, ...s.cardFill }}>
