@@ -5,7 +5,6 @@ import { validirajKreiranjeSkladista } from "../validators/KreirajSkladisteValid
 import { validirajPrijemAmbalaze } from "../validators/PrijemAmbalazeValidator";
 import { validirajSlanje } from "../validators/SlanjeAmbalazeValidator";
 
-// ✅ DODAJ OVAJ IMPORT (prilagodi putanju ako ti je drugačija)
 import { StatusAmbalaze } from "../../Domain/enums/StatusAmbalaze";
 
 export class SkladisteController {
@@ -21,7 +20,6 @@ export class SkladisteController {
     this.router.post("/skladista", this.kreirajSkladiste.bind(this));
     this.router.post("/skladista/:id/prijem", this.prijemAmbalaze.bind(this));
 
-    // ✅ Gateway gađa baš /slanje sa { trazenaKolicina }
     this.router.post("/slanje", this.posalji.bind(this));
 
     this.router.get("/ambalaze", this.sveAmbalaze.bind(this));
@@ -31,7 +29,6 @@ export class SkladisteController {
     return this.router;
   }
 
-  // ✅ OVDE: filtriraj POSLATA da UI vidi realno stanje
   private async svaSkladista(req: Request, res: Response) {
     const data: any[] = await this.servis.svaSkladista();
 
@@ -45,7 +42,6 @@ export class SkladisteController {
     return res.json(filtered);
   }
 
-  // ✅ OVDE: po želji isto filtriraj /ambalaze (da ne vidiš POSLATA u listi)
   private async sveAmbalaze(_req: Request, res: Response) {
     const data: any[] = await this.servis.sveAmbalaze();
 
@@ -81,8 +77,6 @@ export class SkladisteController {
     }
   }
 
-  // ✅ KLJUČNO: uskladi sa Gateway-om (NE DIRAJ OVO)
-  // u src/WebAPI/controllers/SkladisteController.ts
 private async posalji(req: Request, res: Response) {
   try {
     const ulogaHeader = req.header("x-uloga");

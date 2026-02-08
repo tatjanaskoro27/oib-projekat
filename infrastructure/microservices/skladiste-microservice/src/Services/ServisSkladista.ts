@@ -41,7 +41,6 @@ export class ServisSkladista implements IServisSkladista {
     });
   }
 
-  // 🔥 PRIJEM AMBALAŽE – REALNI PARFEMI
   async prijemAmbalaze(
     skladisteId: number,
     parfemi: { perfumeId: string; naziv: string }[]
@@ -97,7 +96,6 @@ export class ServisSkladista implements IServisSkladista {
   const strategija = this.strategijaZaUlogu(uloga);
   const rezultat: { perfumeId: string; naziv: string }[] = [];
 
-  // (možeš zadržati sleep po strategiji)
   await sleep(strategija.kasnjenjeMs());
 
   for (const item of items) {
@@ -128,7 +126,6 @@ export class ServisSkladista implements IServisSkladista {
 
   const strategija = this.strategijaZaUlogu(uloga);
 
-  // ✅ limit po specifikaciji: 3 ili 1
   const max = strategija.maxAmbalazaPoSlanju();
   if (trazenaKolicina > max) {
     throw new Error(
@@ -136,7 +133,6 @@ export class ServisSkladista implements IServisSkladista {
     );
   }
 
-  // ✅ vreme nabavke po specifikaciji: 0.5s ili 2.5s
   await sleep(strategija.kasnjenjeMs());
 
   const dostupne = await this.ambalazaRepo.find({

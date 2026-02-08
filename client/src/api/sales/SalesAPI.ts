@@ -3,7 +3,7 @@ import type { ISalesAPI } from "./ISalesAPI";
 import type { SalesPerfumeDTO } from "../../models/sales/SalesPerfumeDTO";
 import type { PurchaseRequestDTO, PurchaseResponseDTO } from "../../models/sales/PurchaseDTO";
 
-type ProcessingPerfumeDTO = {
+/*type ProcessingPerfumeDTO = {
   id: number;
   name: string;
   type: string;        // "parfum"
@@ -13,7 +13,7 @@ type ProcessingPerfumeDTO = {
   expiryDate: string;
   createdAt: string;
   updatedAt: string;
-};
+};*/
 
 export class SalesAPI implements ISalesAPI {
   private readonly axiosInstance: AxiosInstance;
@@ -29,10 +29,6 @@ export class SalesAPI implements ISalesAPI {
     return { Authorization: `Bearer ${token}` };
   }
 
-  /**
-   * ✅ Katalog parfema se povlači iz Processing (realni podaci iz baze),
-   * preko Gateway-a: POST /processing/get
-   */
   async getPerfumes(token: string): Promise<SalesPerfumeDTO[]> {
   const res = await this.axiosInstance.get<SalesPerfumeDTO[]>("/sales/perfumes", {
     headers: this.authHeaders(token),

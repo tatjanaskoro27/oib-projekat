@@ -14,8 +14,6 @@ export interface IServisSkladista {
     parfemi: { perfumeId: string; naziv: string }[]
   ): Promise<Ambalaza>;
 
-  // ✅ STANJE: vraća agregat (naziv/kolicina)
-  // ✅ ISPORUKA: vraća konkretne isporučene parfeme (perfumeId/naziv)
   posaljiParfeme(
     items: { naziv: string; kolicina: number }[],
     uloga: Uloga,

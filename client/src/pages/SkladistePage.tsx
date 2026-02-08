@@ -21,7 +21,6 @@ type PackageDTO = {
   status: "SPAKOVANA" | "POSLATA" | "USKLADISTENA" | "ISPORUCENA";
   skladiste: WarehouseDTO | null;
 
-  // ✅ NOVO: realne stavke iz baze (TypeORM relations)
   stavke?: PackageItemDTO[];
 };
 
@@ -92,7 +91,6 @@ function statusPill(status: PackageDTO["status"]) {
       };
 }
 
-// ✅ kapacitet kao na slici: SVE ambalaze u skladistu / maksimalanBrojAmbalaza
 function usedInWarehouse(all: PackageDTO[], warehouseId: number) {
   return all.filter((p) => p.skladiste?.id === warehouseId).length;
 }
@@ -233,12 +231,10 @@ export default function SkladistePage() {
 
   const total = packages.length;
 
-  // ✅ “u skladistu” = USKLADISTENA/SPAKOVANA
   const uskladistena = packages.filter(
     (p) => p.status === "SPAKOVANA" || p.status === "USKLADISTENA",
   ).length;
 
-  // ✅ “poslate” = POSLATA/ISPORUCENA
   const isporucena = packages.filter(
     (p) => p.status === "POSLATA" || p.status === "ISPORUCENA",
   ).length;
@@ -547,12 +543,11 @@ return (
                     ? `${p.skladiste.naziv} (${p.skladiste.lokacija})`
                     : "—";
 
-                  // ✅ PackageItemDTO nema quantity -> broj parfema = broj stavki
                   const totalPerfumes = Array.isArray(p.stavke) ? p.stavke.length : 0;
 
                   return (
                     <tr key={p.id} style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }}>
-                      {/* ✅ PRIKAZUJEMO NAZIV AMBALAŽE, NE p.id */}
+                      {}
                       <td
                         style={{
                           padding: 12,

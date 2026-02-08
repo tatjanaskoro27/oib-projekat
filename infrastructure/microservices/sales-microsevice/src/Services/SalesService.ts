@@ -25,8 +25,8 @@ type ParsedItem = {
 
 type ProcessingCatalogItem = {
   name: string;
-  type: string;   // "parfum" | "cologne" (kod tebe string)
-  netoMl: number; // 150 | 250
+  type: string;   
+  netoMl: number; 
   description: string;
   price: number;
 };
@@ -38,9 +38,7 @@ export class SalesService {
     private readonly gatewayClient: GatewayClient,
   ) {}
 
-  // ✅ Katalog: meta iz Processing-a, stanje iz Skladišta, cena/opis iz Sales DB (ako postoji)
   async getAllPerfumes(): Promise<any[]> {
-    // 1) Processing katalog (name,type,ml,description,price)
     let catalog: ProcessingCatalogItem[] = [];
     try {
       catalog = await this.gatewayClient.getProcessingCatalog();
@@ -53,11 +51,9 @@ export class SalesService {
 
     const names = catalog.map((c) => c.name);
 
-    // 2) Stanje iz Skladišta (STANJE mode) – po nazivima
     let stanje: Array<{ name: string; quantity: number }> = [];
     try {
       stanje = await this.gatewayClient.requestPerfumeStateFromStorage(names, "PRODAVAC"); 
-      // uloga ovde nije bitna za STANJE, ali skladiste traži header
     } catch (e: any) {
       console.error("❌ Storage stanje failed:", e?.message ?? e);
       stanje = [];
@@ -65,7 +61,6 @@ export class SalesService {
 
     const stanjeMap = new Map(stanje.map((s) => [String(s.name).trim().toLowerCase(), Number(s.quantity)]));
 
-    // 3) (opciono) meta iz Sales baze (opis/cena) – ako je imaš
     const meta = await this.perfumeRepo.findBy({ name: In(names) });
     const metaMap = new Map(meta.map((m) => [String(m.name).trim().toLowerCase(), m]));
 
@@ -74,7 +69,6 @@ export class SalesService {
       const key = String(c.name).trim().toLowerCase();
       const stock = stanjeMap.get(key) ?? 0;
 
-      // Ako nemaš meta u Sales DB, koristi Processing cenu/opis
       const m = metaMap.get(key);
       const priceNum = Number((m as any)?.price ?? c.price);
       const safePrice = Number.isFinite(priceNum) ? priceNum : Number(c.price) || 0;

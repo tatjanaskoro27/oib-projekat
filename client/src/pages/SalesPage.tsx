@@ -132,7 +132,7 @@ export const SalesPage: React.FC = () => {
   }
 
   const items = cart.map((x) => ({
-  name: x.perfume.name,      // ✅ NAZIV
+  name: x.perfume.name,
   quantity: x.quantity,
 })) as any;
 
@@ -149,24 +149,18 @@ export const SalesPage: React.FC = () => {
 
     const res: any = await api.purchase(token, dto);
 
-    // ✅ SAČUVAJ STAVKE KUPOVINE (za prikaz na fiskalnom)
+   
     const last = cart.map((x) => ({
       naziv: x.perfume.name,
       kol: x.quantity,
       cena: Number(x.perfume.price),
     }));
-    setLastItems(last);
-
-    // ✅ racun je u res.racun
+    setLastItems(last);    
     setReceipt(res?.racun ?? null);
-
-    // ✅ QR ostaje kako jeste
+    
     setQrCode(res?.qrCode ?? null);
-
-    // očisti korpu
     setCart([]);
 
-    // osveži katalog odmah (stock će se smanjiti)
     const fresh = await api.getPerfumes(token);
     setPerfumes(fresh);
   } catch (err: any) {
@@ -181,18 +175,14 @@ export const SalesPage: React.FC = () => {
   }
 };
 
-
-  // ✅ Normalizacija računa (ako nekad dođe ugnježdeno)
   const r = receipt?.racun ?? receipt;
 
-  // ✅ Normalizacija stavki (stavke/items)
   const receiptItems: any[] = Array.isArray(r?.stavke)
     ? r.stavke
     : Array.isArray(r?.items)
       ? r.items
       : [];
 
-  // ✅ Ukupno: probaj polja, ako nema – izračunaj iz stavki
   const receiptTotal =
     Number(
       r?.ukupnoZaNaplatu ??
@@ -225,7 +215,15 @@ return (
         margin: "20px auto",
       }}
     >
-      <div className="window-content" style={{ padding: 22 }}>
+      <div
+        className="window-content"
+        style={{
+          padding: 22,
+          maxHeight: "calc(100vh - 40px)", 
+          overflowY: "auto",
+          paddingRight: 16,
+        }}
+      >
         {/* TOP BAR */}
         <div
           style={{
@@ -239,7 +237,7 @@ return (
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               className="btn"
-              onClick={() => navigate("/warehouse")}
+              onClick={() => navigate("/skladiste")}
               disabled={loading}
               style={{
                 borderRadius: 12,
@@ -337,9 +335,7 @@ return (
               Tip prodaje
               <select
                 value={saleType}
-                onChange={(e) =>
-                  setSaleType(e.target.value as PurchaseRequestDTO["saleType"])
-                }
+                onChange={(e) => setSaleType(e.target.value as PurchaseRequestDTO["saleType"])}
                 disabled={loading}
                 style={{ borderRadius: 12, padding: "10px 12px" }}
               >
@@ -358,17 +354,16 @@ return (
                 disabled={loading}
                 style={{ borderRadius: 12, padding: "10px 12px" }}
               >
+                {/*  vrednosti usklađene sa DTO */}
                 <option value="GOTOVINA">GOTOVINA</option>
-                <option value="UPLATA">UPLATA</option>
-                <option value="KARTICA">KARTICA</option>
+                <option value="UPLATA_NA_RACUN">UPLATA_NA_RACUN</option>
+                <option value="KARTICNO_PLACANJE">KARTICNO_PLACANJE</option>
               </select>
             </label>
           </div>
         </div>
 
-        {error && (
-          <div style={{ marginTop: 12, color: "crimson", fontWeight: 700 }}>{error}</div>
-        )}
+        {error && <div style={{ marginTop: 12, color: "crimson", fontWeight: 700 }}>{error}</div>}
 
         {/* GRID */}
         <div
@@ -411,9 +406,10 @@ return (
             <div style={{ padding: 12 }}>
               <div
                 style={{
-                  maxHeight: "calc(100vh - 260px)",
+                  maxHeight: "calc(100vh - 340px)", 
                   overflowY: "auto",
                   paddingRight: 6,
+                  paddingBottom: 18, 
                 }}
               >
                 {perfumes.length === 0 && (
@@ -440,9 +436,8 @@ return (
                         {p.description}
                       </div>
                       <div style={{ opacity: 0.85, marginTop: 8, fontSize: 13 }}>
-                        Cena: <b>{Number(p.price).toFixed(2)}</b> | Na stanju:{" "}
-                        <b>{p.stock}</b> | Status:{" "}
-                        <b>{p.available ? "dostupan" : "nedostupan"}</b>
+                        Cena: <b>{Number(p.price).toFixed(2)}</b> | Na stanju: <b>{p.stock}</b> |
+                        Status: <b>{p.available ? "dostupan" : "nedostupan"}</b>
                       </div>
                     </div>
 
@@ -472,6 +467,9 @@ return (
               boxShadow: "0 10px 22px rgba(0,0,0,0.06)",
               position: "sticky",
               top: 14,
+              maxHeight: "calc(100vh - 60px)", 
+              display: "flex",
+              flexDirection: "column",
             }}
           >
             <div
@@ -492,7 +490,8 @@ return (
               </div>
             </div>
 
-            <div style={{ padding: 12, maxHeight: "calc(100vh - 170px)", overflowY: "auto" }}>
+            
+            <div style={{ padding: 12, overflowY: "auto", flex: 1, minHeight: 0, paddingBottom: 22 }}>
               <div
                 style={{
                   background: "rgba(0,0,0,0.06)",
@@ -588,12 +587,18 @@ return (
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                       <div style={{ opacity: 0.9 }}>
-                        <div><b>Tip prodaje:</b> {saleType}</div>
-                        <div><b>Način plaćanja:</b> {paymentType}</div>
+                        <div>
+                          <b>Tip prodaje:</b> {saleType}
+                        </div>
+                        <div>
+                          <b>Način plaćanja:</b> {paymentType}
+                        </div>
                       </div>
 
                       <div style={{ textAlign: "right", opacity: 0.9 }}>
-                        <div><b>Broj računa:</b> {receipt?.racunId ?? receipt?.id ?? "-"}</div>
+                        <div>
+                          <b>Broj računa:</b> {receipt?.racunId ?? receipt?.id ?? "-"}
+                        </div>
                         <div>
                           <b>Ukupan iznos:</b>{" "}
                           {Number(receipt?.ukupanIznos ?? receipt?.ukupno ?? total).toFixed(2)}
@@ -619,9 +624,7 @@ return (
                         <div style={{ fontWeight: 800, textAlign: "right" }}>Ukupno</div>
 
                         {lastItems.length === 0 ? (
-                          <div style={{ gridColumn: "1 / -1", opacity: 0.75 }}>
-                            Nema stavki za prikaz.
-                          </div>
+                          <div style={{ gridColumn: "1 / -1", opacity: 0.75 }}>Nema stavki za prikaz.</div>
                         ) : (
                           lastItems.map((s, idx) => {
                             const line = Number(s.kol) * Number(s.cena);
@@ -658,7 +661,7 @@ return (
                 </div>
               )}
 
-              {/* QR KOD (NE DIRAM LOGIKU) */}
+              {/* QR KOD */}
               {qrCode && (
                 <div style={{ marginTop: 16, textAlign: "center" }}>
                   <div style={{ fontWeight: 900, marginBottom: 10 }}>QR kod računa</div>
@@ -671,17 +674,24 @@ return (
                       border: "1px solid rgba(0,0,0,0.10)",
                     }}
                   >
-                    <img src={qrCode} alt="QR kod" style={{ width: 220, maxWidth: "100%", height: "auto" }} />
+                    <img
+                      src={qrCode}
+                      alt="QR kod"
+                      style={{ width: 220, maxWidth: "100%", height: "auto" }}
+                    />
                   </div>
                 </div>
               )}
             </div>
           </div>
         </div>
+
+        <div style={{ height: 16 }} />
       </div>
     </div>
   </div>
 );
+
 
 
 }

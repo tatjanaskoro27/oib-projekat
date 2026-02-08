@@ -101,18 +101,14 @@ export interface IGatewayService {
   getSkladista(): Promise<any>;
 
 
-  // ✅ INTERNAL: lista skladista (server-to-server)
-internalGetSkladista(): Promise<any>;
+  internalGetSkladista(): Promise<any>;
 
-// ✅ INTERNAL: processing catalog (server-to-server)
-internalGetProcessingCatalog(): Promise<any>;
+  internalGetProcessingCatalog(): Promise<any>;
 
-// ✅ INTERNAL: skladiste slanje (STANJE/ISPORUKA)
-internalSkladisteSlanje(body: any, uloga: string, mode: string): Promise<any>;
+  internalSkladisteSlanje(body: any, uloga: string, mode: string): Promise<any>;
 
-// ✅ PUBLIC: ambalaze (za UI)
-getAmbalaze(): Promise<any>;
-internalStartProcessing(dto: any): Promise<any>;
+  getAmbalaze(): Promise<any>;
+  internalStartProcessing(dto: any): Promise<any>;
 
 
 }
